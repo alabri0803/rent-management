@@ -1,0 +1,67 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card max-w-2xl mx-auto p-8">
+    <h2 class="text-2xl font-bold mb-6">{{ title }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+            {{ form.lease.as_field_group }}
+            {{ form.payment_date.as_field_group }}
+            {{ form.amount.as_field_group }}
+            {{ form.payment_for_month.as_field_group }}
+            {{ form.payment_for_year.as_field_group }}
+            {{ form.payment_method.as_field_group }}
+            
+            <div id="check-fields" class="bg-blue-50 p-4 rounded-lg space-y-4" style="display: none;">
+                <h3 class="font-semibold text-blue-900">{% trans "تفاصيل الشيك" %}</h3>
+                {{ form.check_number.as_field_group }}
+                {{ form.check_date.as_field_group }}
+                {{ form.bank_name.as_field_group }}
+                {{ form.check_status.as_field_group }}
+                
+                <div id="return-reason-field" style="display: none;">
+                    {{ form.return_reason.as_field_group }}
+                </div>
+            </div>
+            
+            {{ form.notes.as_field_group }}
+        </div>
+        <button type="submit" class="btn-primary w-full mt-6 py-2 rounded-lg">{% trans "حفظ" %}</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentMethodField = document.getElementById('id_payment_method');
+    const checkFields = document.getElementById('check-fields');
+    const checkStatusField = document.getElementById('id_check_status');
+    const returnReasonField = document.getElementById('return-reason-field');
+    
+    function toggleCheckFields() {
+        if (paymentMethodField.value === 'check') {
+            checkFields.style.display = 'block';
+            toggleReturnReasonField();
+        } else {
+            checkFields.style.display = 'none';
+        }
+    }
+    
+    function toggleReturnReasonField() {
+        if (checkStatusField && checkStatusField.value === 'returned') {
+            returnReasonField.style.display = 'block';
+        } else {
+            returnReasonField.style.display = 'none';
+        }
+    }
+    
+    paymentMethodField.addEventListener('change', toggleCheckFields);
+    if (checkStatusField) {
+        checkStatusField.addEventListener('change', toggleReturnReasonField);
+    }
+    
+    toggleCheckFields();
+});
+</script>
+{% endblock %}

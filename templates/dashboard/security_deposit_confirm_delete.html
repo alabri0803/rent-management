@@ -1,0 +1,15 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">{% trans "تأكيد الحذف" %}</h1>
+<p class="mb-4">{% trans "هل أنت متأكد من حذف سجل التأمين هذا؟" %}</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">{% trans "حذف" %}</button>
+  <a href="{% url 'security_deposit_list' %}" class="px-4 py-2 bg-gray-200 rounded">{% trans "إلغاء" %}</a>
+</form>
+{% endblock %}
+
+

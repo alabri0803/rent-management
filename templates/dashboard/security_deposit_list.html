@@ -1,0 +1,56 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-semibold">{% trans "التأمينات" %}</h1>
+  <a href="{% url 'security_deposit_create' %}" class="px-4 py-2 bg-green-600 text-white rounded">{% trans "تسجيل تأمين" %}</a>
+  </div>
+
+<div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="p-4 border rounded">
+    <div class="text-gray-500">{% trans "إجمالي المحتجز" %}</div>
+    <div class="text-xl font-bold">{{ total_held }}</div>
+  </div>
+  <div class="p-4 border rounded">
+    <div class="text-gray-500">{% trans "إجمالي المُعاد" %}</div>
+    <div class="text-xl font-bold">{{ total_refunded }}</div>
+  </div>
+</div>
+
+<div class="overflow-x-auto bg-white border rounded">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-4 py-2 text-right">{% trans "العقد" %}</th>
+        <th class="px-4 py-2 text-right">{% trans "المستأجر" %}</th>
+        <th class="px-4 py-2 text-right">{% trans "تاريخ الاستلام" %}</th>
+        <th class="px-4 py-2 text-right">{% trans "المبلغ" %}</th>
+        <th class="px-4 py-2 text-right">{% trans "طريقة الدفع" %}</th>
+        <th class="px-4 py-2 text-right">{% trans "الحالة" %}</th>
+        <th class="px-4 py-2"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-200">
+      {% for d in deposits %}
+      <tr>
+        <td class="px-4 py-2">{{ d.lease.contract_number }}</td>
+        <td class="px-4 py-2">{{ d.lease.tenant.name }}</td>
+        <td class="px-4 py-2">{{ d.received_date }}</td>
+        <td class="px-4 py-2">{{ d.amount }}</td>
+        <td class="px-4 py-2">{{ d.get_payment_method_display }}</td>
+        <td class="px-4 py-2">{{ d.get_status_display }}</td>
+        <td class="px-4 py-2 text-left">
+          <a class="text-blue-600" href="{% url 'security_deposit_update' d.pk %}">{% trans "تعديل" %}</a>
+          <a class="text-red-600 ml-3" href="{% url 'security_deposit_delete' d.pk %}">{% trans "حذف" %}</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td class="px-4 py-6 text-center text-gray-500" colspan="7">{% trans "لا توجد سجلات" %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+

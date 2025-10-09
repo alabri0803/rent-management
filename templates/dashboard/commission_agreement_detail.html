@@ -1,0 +1,85 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "تفاصيل اتفاقية العمولة" %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">{% trans "تفاصيل اتفاقية العمولة" %} #{{ agreement.agreement_number }}</h1>
+        <div class="flex gap-2">
+            <a href="{% url 'commission_agreement_update' agreement.pk %}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">{% trans "تعديل" %}</a>
+            <a href="{% url 'commission_agreement_list' %}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors">{% trans "العودة" %}</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold mb-4">{% trans "معلومات الاتفاقية" %}</h2>
+            <div class="space-y-2 text-sm">
+                <div><span class="text-gray-500">{% trans "رقم الاتفاقية" %}:</span> <span class="font-medium">{{ agreement.agreement_number }}</span></div>
+                <div><span class="text-gray-500">{% trans "المكتب العقاري" %}:</span> <span class="font-medium">{{ agreement.real_estate_office.name }}</span></div>
+                <div><span class="text-gray-500">{% trans "مالك المبنى" %}:</span> <span class="font-medium">{{ agreement.building_owner.name }}</span></div>
+                <div><span class="text-gray-500">{% trans "المبنى" %}:</span> <span class="font-medium">{{ agreement.building.name }}</span></div>
+                <div><span class="text-gray-500">{% trans "نسبة العمولة" %}:</span> <span class="font-medium">{{ agreement.commission_rate }}%</span></div>
+                <div><span class="text-gray-500">{% trans "الفترة" %}:</span> <span class="font-medium">{{ agreement.start_date }} → {{ agreement.end_date }}</span></div>
+                <div>
+                    <span class="text-gray-500">{% trans "الحالة" %}:</span>
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                        {% if agreement.status == 'active' %}bg-green-100 text-green-800
+                        {% elif agreement.status == 'expired' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ agreement.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold mb-4">{% trans "ملاحظات" %}</h2>
+            <div class="prose max-w-none text-sm">
+                {{ agreement.notes|default:_('لا توجد ملاحظات') }}
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">{% trans "آخر عمليات الاستلام المرتبطة" %}</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "رقم العقد" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "المستأجر" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "المبلغ" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "التاريخ" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "الحالة" %}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for c in collections %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ c.lease.contract_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ c.lease.tenant.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ c.amount_collected }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ c.collection_date }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                {% if c.status == 'collected' %}bg-green-100 text-green-800
+                                {% elif c.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ c.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">{% trans "لا توجد بيانات" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

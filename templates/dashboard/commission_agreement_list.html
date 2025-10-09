@@ -1,0 +1,105 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "اتفاقيات العمولة" %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">{% trans "اتفاقيات العمولة" %}</h1>
+        <a href="{% url 'commission_agreement_create' %}" class="bg-[#993333] text-white px-6 py-2 rounded-lg hover:bg-[#7a2626] transition-colors">
+            {% trans "إضافة اتفاقية عمولة جديدة" %}
+        </a>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <form method="get" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="q" value="{{ request.GET.q }}" 
+                       placeholder="{% trans 'البحث في الاتفاقيات...' %}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#993333] focus:border-transparent">
+            </div>
+            <div class="min-w-48">
+                <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#993333] focus:border-transparent">
+                    <option value="">{% trans "جميع الحالات" %}</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "نشط" %}</option>
+                    <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>{% trans "منتهي" %}</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>{% trans "ملغي" %}</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-[#993333] text-white px-6 py-2 rounded-lg hover:bg-[#7a2626] transition-colors">
+                {% trans "بحث" %}
+            </button>
+            {% if request.GET.q or request.GET.status %}
+                <a href="{% url 'commission_agreement_list' %}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                    {% trans "مسح" %}
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "رقم الاتفاقية" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "المكتب العقاري" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "مالك المبنى" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "المبنى" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "نسبة العمولة" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "الحالة" %}</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "الإجراءات" %}</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for agreement in agreements %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ agreement.agreement_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ agreement.real_estate_office.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ agreement.building_owner.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ agreement.building.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ agreement.commission_rate }}%</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                {% if agreement.status == 'active' %}bg-green-100 text-green-800
+                                {% elif agreement.status == 'expired' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ agreement.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2 space-x-reverse">
+                                <a href="{% url 'commission_agreement_detail' agreement.pk %}" class="text-blue-600 hover:text-blue-900">{% trans "عرض" %}</a>
+                                <a href="{% url 'commission_agreement_update' agreement.pk %}" class="text-indigo-600 hover:text-indigo-900">{% trans "تعديل" %}</a>
+                                <a href="{% url 'commission_agreement_delete' agreement.pk %}" class="text-red-600 hover:text-red-900">{% trans "حذف" %}</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">{% trans "لا توجد اتفاقيات عمولة" %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="mt-6 flex justify-center">
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            {% if page_obj.has_previous %}
+                <a href="?page=1" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">{% trans "الأولى" %}</a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">{% trans "السابقة" %}</a>
+            {% endif %}
+            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">{% trans "صفحة" %} {{ page_obj.number }} {% trans "من" %} {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">{% trans "التالية" %}</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">{% trans "الأخيرة" %}</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

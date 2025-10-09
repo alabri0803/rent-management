@@ -1,0 +1,29 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><style>body { font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; }</style></head>
+<body>
+    <div style="text-align:center;"><h1>{% trans "تقرير الأرباح والخسائر" %} - {% blocktrans with month=report_month year=report_year %}{{ month }}/{{ year }}{% endblocktrans %}</h1></div>
+    <h2>{% trans "الإيرادات" %}</h2>
+    <table style="width:100%; border-collapse: collapse;">
+        <thead><tr><th style="border:1px solid #ccc; padding:8px;">{% trans "التاريخ" %}</th><th style="border:1px solid #ccc; padding:8px;">{% trans "المستأجر" %}</th><th style="border:1px solid #ccc; padding:8px;">{% trans "المبلغ" %}</th></tr></thead>
+        <tbody>{% for item in income_list %}<tr><td style="border:1px solid #ccc; padding:8px;">{{ item.payment_date|date:"d M Y" }}</td><td style="border:1px solid #ccc; padding:8px;">{{ item.lease.tenant.name }}</td><td style="border:1px solid #ccc; padding:8px;">{{ item.amount|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+        <tfoot><tr><td colspan="2" style="font-weight:bold; padding:8px;">{% trans "إجمالي الإيرادات" %}</td><td style="font-weight:bold; padding:8px;">{{ total_income|floatformat:2 }} {% trans "ر.ع" %}</td></tr></tfoot>
+    </table>
+    <h2 style="margin-top: 30px;">{% trans "المصاريف" %}</h2>
+    <table style="width:100%; border-collapse: collapse;">
+        <thead><tr><th style="border:1px solid #ccc; padding:8px;">{% trans "التاريخ" %}</th><th style="border:1px solid #ccc; padding:8px;">{% trans "الوصف" %}</th><th style="border:1px solid #ccc; padding:8px;">{% trans "المبلغ" %}</th></tr></thead>
+        <tbody>{% for item in expenses_list %}<tr><td style="border:1px solid #ccc; padding:8px;">{{ item.expense_date|date:"d M Y" }}</td><td style="border:1px solid #ccc; padding:8px;">{{ item.description }}</td><td style="border:1px solid #ccc; padding:8px;">{{ item.amount|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+        <tfoot><tr><td colspan="2" style="font-weight:bold; padding:8px;">{% trans "إجمالي المصاريف" %}</td><td style="font-weight:bold; padding:8px;">{{ total_expenses|floatformat:2 }} {% trans "ر.ع" %}</td></tr></tfoot>
+    </table>
+    <div style="margin-top: 30px; padding: 20px; border-radius: 8px; {% if net_profit < 0 %}background-color: #fee2e2; color: #991b1b;{% else %}background-color: #d1fae5; color: #065f46;{% endif %}">
+        <h2 style="margin: 0;">
+            {% if net_profit < 0 %}
+                {% trans "توجد لديك خسارة" %}: {{ net_profit|floatformat:2 }} {% trans "ر.ع" %}
+            {% else %}
+                {% trans "أرباح" %}: {{ net_profit|floatformat:2 }} {% trans "ر.ع" %}
+            {% endif %}
+        </h2>
+    </div>
+</body>
+</html>

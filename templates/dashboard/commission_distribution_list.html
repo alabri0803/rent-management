@@ -1,0 +1,224 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "توزيع العمولات" %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">{% trans "توزيع العمولات" %}</h1>
+        <a href="{% url 'commission_distribution_create' %}" class="bg-[#993333] text-white px-6 py-2 rounded-lg hover:bg-[#7a2626] transition-colors">
+            {% trans "تسجيل توزيع عمولة جديد" %}
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">{% trans "إجمالي الموزع" %}</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ total_distributed|floatformat:2 }} {% trans "ريال" %}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">{% trans "في الانتظار" %}</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ pending_distributions }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">{% trans "إجمالي التوزيعات" %}</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ distributions|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <form method="get" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="q" value="{{ request.GET.q }}" 
+                       placeholder="{% trans 'البحث في توزيع العمولات...' %}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#993333] focus:border-transparent">
+            </div>
+            <div class="min-w-48">
+                <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#993333] focus:border-transparent">
+                    <option value="">{% trans "جميع الحالات" %}</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>{% trans "في الانتظار" %}</option>
+                    <option value="distributed" {% if request.GET.status == 'distributed' %}selected{% endif %}>{% trans "تم التوزيع" %}</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>{% trans "ملغي" %}</option>
+                </select>
+            </div>
+            <div class="min-w-48">
+                <select name="owner" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#993333] focus:border-transparent">
+                    <option value="">{% trans "جميع المالكين" %}</option>
+                    {% for owner in owners %}
+                        <option value="{{ owner.pk }}" {% if request.GET.owner == owner.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ owner.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="bg-[#993333] text-white px-6 py-2 rounded-lg hover:bg-[#7a2626] transition-colors">
+                {% trans "بحث" %}
+            </button>
+            {% if request.GET.q or request.GET.status or request.GET.owner %}
+                <a href="{% url 'commission_distribution_list' %}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                    {% trans "مسح" %}
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Distributions Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "مالك المبنى" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "رقم العقد" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "المكتب العقاري" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "حصة المالك" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "عمولة المكتب" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "تاريخ التوزيع" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "الحالة" %}
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {% trans "الإجراءات" %}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for distribution in distributions %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ distribution.building_owner.name }}</div>
+                            <div class="text-sm text-gray-500">{{ distribution.building_owner.phone }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ distribution.rent_collection.lease.contract_number }}</div>
+                            <div class="text-sm text-gray-500">{{ distribution.rent_collection.lease.tenant.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ distribution.commission_agreement.real_estate_office.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                            {{ distribution.owner_share|floatformat:2 }} {% trans "ريال" %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                            {{ distribution.office_commission|floatformat:2 }} {% trans "ريال" %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if distribution.distribution_date %}
+                                {{ distribution.distribution_date|date:"Y-m-d" }}
+                            {% else %}
+                                <span class="text-gray-400">{% trans "لم يتم التوزيع" %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if distribution.status == 'distributed' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    {% trans "تم التوزيع" %}
+                                </span>
+                            {% elif distribution.status == 'pending' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    {% trans "في الانتظار" %}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    {% trans "ملغي" %}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2 space-x-reverse">
+                                <a href="{% url 'commission_distribution_detail' distribution.pk %}" 
+                                   class="text-blue-600 hover:text-blue-900">{% trans "عرض" %}</a>
+                                <a href="{% url 'commission_distribution_update' distribution.pk %}" 
+                                   class="text-indigo-600 hover:text-indigo-900">{% trans "تعديل" %}</a>
+                                <a href="{% url 'commission_distribution_delete' distribution.pk %}" 
+                                   class="text-red-600 hover:text-red-900">{% trans "حذف" %}</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                            {% trans "لا توجد توزيعات عمولات" %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="mt-6 flex justify-center">
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            {% if page_obj.has_previous %}
+                <a href="?page=1" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    {% trans "الأولى" %}
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    {% trans "السابقة" %}
+                </a>
+            {% endif %}
+
+            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                {% trans "صفحة" %} {{ page_obj.number }} {% trans "من" %} {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    {% trans "التالية" %}
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    {% trans "الأخيرة" %}
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">{{ title }}</h1>
+
+<form method="post" class="space-y-4">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for field in form %}
+      <div>
+        <label class="block text-sm mb-1">{{ field.label_tag }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="text-xs text-gray-500">{{ field.help_text }}</p>{% endif %}
+        {% for error in field.errors %}<p class="text-xs text-red-600">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="flex items-center gap-2">
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "حفظ" %}</button>
+    <a href="{% url 'commission_distribution_list' %}" class="px-4 py-2 bg-gray-200 rounded">{% trans "رجوع" %}</a>
+  </div>
+  </form>
+{% endblock %}

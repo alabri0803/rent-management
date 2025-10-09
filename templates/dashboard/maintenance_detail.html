@@ -1,0 +1,32 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "تفاصيل طلب الصيانة" %}{% endblock %}
+{% block content %}
+<div class="card max-w-4xl mx-auto p-8">
+    <h2 class="text-2xl font-bold mb-2">{{ object.title }}</h2>
+    <p class="text-gray-500 mb-4">{% trans "مقدم من" %} {{ object.lease.tenant.name }} {% trans "في" %} {{ object.reported_date|date:"d M Y, P" }}</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-gray-50 p-4 rounded-lg"><strong>{% trans "الوحدة" %}:</strong> {{ object.lease.unit }}</div>
+        <div class="bg-gray-50 p-4 rounded-lg"><strong>{% trans "الأولوية" %}:</strong> {{ object.get_priority_display }}</div>
+        <div class="bg-gray-50 p-4 rounded-lg"><strong>{% trans "الحالة" %}:</strong> {{ object.get_status_display }}</div>
+    </div>
+    <div class="mb-6">
+        <h4 class="font-bold mb-2">{% trans "وصف المشكلة" %}</h4>
+        <p class="bg-gray-50 p-4 rounded-lg">{{ object.description }}</p>
+    </div>
+    {% if object.image %}
+    <div class="mb-6">
+        <h4 class="font-bold mb-2">{% trans "صورة مرفقة" %}</h4>
+        <img src="{{ object.image.url }}" alt="{% trans 'صورة مرفقة' %}" class="max-w-sm rounded-lg border">
+    </div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <h3 class="text-xl font-bold mb-2">{% trans "تحديث الطلب" %}</h3>
+        <div class="space-y-4">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn-primary w-full mt-4 py-2 rounded-lg">{% trans "حفظ التحديث" %}</button>
+    </form>
+</div>
+{% endblock %}

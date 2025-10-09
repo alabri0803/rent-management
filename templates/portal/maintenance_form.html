@@ -1,0 +1,13 @@
+{% extends 'portal/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "إنشاء طلب صيانة" %}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-6">{% trans "إنشاء طلب صيانة جديد" %}</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="space-y-4">{{ form.as_p }}</div>
+        <button type="submit" class="w-full bg-[#993333] text-white py-2 mt-6 rounded-lg">{% trans "إرسال الطلب" %}</button>
+    </form>
+</div>
+{% endblock %}

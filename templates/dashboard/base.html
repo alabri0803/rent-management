@@ -1,0 +1,312 @@
+{% load i18n %}
+{% load dashboard_extras %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{% if LANGUAGE_CODE == 'ar' %}rtl{% else %}ltr{% endif %}" class="{% if LANGUAGE_CODE == 'ar' %}lang-ar{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>{% block title %}{% trans "لوحة التحكم" %}{% endblock %} - {% get_company_name %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <link rel="apple-touch-icon" href="{% static 'favicon.svg' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Inter:wght@400;700&display=swap');
+        body { font-family: '{% if LANGUAGE_CODE == 'ar' %}Tajawal{% else %}Inter{% endif %}', sans-serif; background-color: #f7fafc; }
+        :root { --primary-color: #993333; --secondary-color: #D4AF37; }
+        .sidebar { background-color: #1a202c; transition: transform 0.3s ease-in-out; }
+        .sidebar nav a { color: #a0aec0; transition: all 0.2s; min-height: 44px; display: flex; align-items: center; }
+        .sidebar nav a:hover, .sidebar nav a.active { background-color: var(--primary-color); color: white; }
+        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        .btn-primary { background-color: var(--primary-color); color: white; transition: background-color 0.2s; min-height: 44px; }
+        .btn-primary:hover { background-color: #7c2a2a; }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+        .status-active { background-color: #dcfce7; color: #166534; }
+        .status-expiring { background-color: #fef9c3; color: #854d0e; }
+        .status-expired { background-color: #fee2e2; color: #991b1b; }
+        .status-cancelled { background-color: #e5e7eb; color: #374151; }
+
+        /* Icon & nav layout */
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; }
+        .nav-icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: currentColor; display: inline-block; }
+        .lang-ar .nav-item { flex-direction: row-reverse; }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: auto;
+                height: 100vh;
+                z-index: 50;
+                transform: translateX(-100%);
+            }
+            .lang-ar .sidebar { left: auto; right: 0; transform: translateX(100%); }
+            .sidebar.open { transform: translateX(0) !important; }
+            .overlay {
+                position: fixed;
+                inset: 0;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 40;
+                display: none;
+            }
+            .overlay.show { display: block; }
+        }
+
+        button, a, input, select, textarea {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        @media (max-width: 640px) {
+            body { font-size: 16px; }
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<button onclick="toggleMenu()" class="md:hidden fixed top-4 {% if LANGUAGE_CODE == 'ar' %}right{% else %}left{% endif %}-4 z-50 bg-[#993333] text-white p-3 rounded-lg shadow-lg" aria-label="Menu">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+</button>
+
+<div class="flex h-screen overflow-hidden">
+<aside class="sidebar w-64 p-6 text-white flex-shrink-0 flex flex-col overflow-y-auto" id="sidebar" aria-hidden="true">
+    <button onclick="toggleMenu()" class="md:hidden absolute top-4 {% if LANGUAGE_CODE == 'ar' %}left{% else %}right{% endif %}-4 text-white" aria-label="Close">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+
+    <div class="text-center mb-6 md:mb-10">
+        {% get_company_logo as logo %}
+        {% if logo %}
+        <img src="{{ logo.url }}" alt="logo" class="w-16 h-16 md:w-20 md:h-20 mx-auto mb-2 md:mb-4 rounded-full">
+        {% endif %}
+        <h1 class="text-xl md:text-2xl font-bold">{% get_company_name %}</h1>
+        <p class="text-xs md:text-sm text-gray-400">{% trans "ادارة الايجارات" %}</p>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto" role="navigation" aria-label="{% trans 'Primary' %}">
+        <a href="{% url 'dashboard_home' %}" class="block py-3 px-4 rounded-lg mb-2 text-sm md:text-base nav-item {% if request.resolver_match.url_name == 'dashboard_home' %}active{% endif %}">
+            <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-7 9 7v7a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V12H9v7a2 2 0 0 1-2 2H3z"/></svg>
+            {% trans "لوحة المعلومات" %}
+        </a>
+
+        {# Property Management Section #}
+        <div class="nav-dropdown">
+            <button type="button" class="flex items-center justify-between w-full py-3 px-4 rounded-lg mb-2 text-sm md:text-base text-gray-400 hover:bg-gray-700 focus:outline-none" onclick="toggleDropdown(this)">
+                <span class="nav-item">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5M12 7h4"/></svg>
+                    {% trans "إدارة العقارات" %}
+                </span>
+                <svg class="w-4 h-4 transform transition-transform duration-200 {% if LANGUAGE_CODE == 'ar' %}rotate-90{% else %}-rotate-90{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <div class="nav-dropdown-content hidden pl-6 {% if LANGUAGE_CODE == 'ar' %}pr-6{% endif %}">
+                <a href="{% url 'building_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'building' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21V7a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v14M3 21h18"/></svg>
+                    {% trans "المباني" %}
+                </a>
+                <a href="{% url 'unit_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'unit' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    {% trans "الوحدات" %}
+                </a>
+                <a href="{% url 'lease_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'lease' in request.resolver_match.url_name or request.path == '/dashboard/' %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6M9 8h6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    {% trans "العقود" %}
+                </a>
+            </div>
+        </div>
+
+        {# Financials Section #}
+        <div class="nav-dropdown">
+            <button type="button" class="flex items-center justify-between w-full py-3 px-4 rounded-lg mb-2 text-sm md:text-base text-gray-400 hover:bg-gray-700 focus:outline-none" onclick="toggleDropdown(this)">
+                <span class="nav-item">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    {% trans "المالية" %}
+                </span>
+                <svg class="w-4 h-4 transform transition-transform duration-200 {% if LANGUAGE_CODE == 'ar' %}rotate-90{% else %}-rotate-90{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <div class="nav-dropdown-content hidden pl-6 {% if LANGUAGE_CODE == 'ar' %}pr-6{% endif %}">
+                <a href="{% url 'payment_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3v4M8 3v4"/></svg>
+                    {% trans "المدفوعات" %}
+                </a>
+                <a href="{% url 'check_management' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'check' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M21 12v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h11"/></svg>
+                    {% trans "إدارة الشيكات" %}
+                </a>
+                <a href="{% url 'expense_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2"/></svg>
+                    {% trans "المصاريف" %}
+                </a>
+                <a href="{% url 'invoice_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    {% trans "الفواتير" %}
+                </a>
+                <a href="{% url 'security_deposit_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'security_deposit' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg>
+                    {% trans "التأمينات" %}
+                </a>
+            </div>
+        </div>
+
+        {# Real Estate Office Management Section #}
+        <div class="nav-dropdown">
+            <button type="button" class="flex items-center justify-between w-full py-3 px-4 rounded-lg mb-2 text-sm md:text-base text-gray-400 hover:bg-gray-700 focus:outline-none" onclick="toggleDropdown(this)">
+                <span class="nav-item">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    {% trans "إدارة المكاتب العقارية" %}
+                </span>
+                <svg class="w-4 h-4 transform transition-transform duration-200 {% if LANGUAGE_CODE == 'ar' %}rotate-90{% else %}-rotate-90{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <div class="nav-dropdown-content hidden pl-6 {% if LANGUAGE_CODE == 'ar' %}pr-6{% endif %}">
+                <a href="{% url 'real_estate_office_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'real_estate_office' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    {% trans "المكاتب العقارية" %}
+                </a>
+                <a href="{% url 'building_owner_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'building_owner' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    {% trans "مالكو المباني" %}
+                </a>
+                <a href="{% url 'commission_agreement_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'commission_agreement' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    {% trans "اتفاقيات العمولة" %}
+                </a>
+                <a href="{% url 'rent_collection_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'rent_collection' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg>
+                    {% trans "استلام الإيجارات" %}
+                </a>
+                <a href="{% url 'commission_distribution_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'commission_distribution' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    {% trans "توزيع العمولات" %}
+                </a>
+            </div>
+        </div>
+
+        {# Operations Section #}
+        <div class="nav-dropdown">
+            <button type="button" class="flex items-center justify-between w-full py-3 px-4 rounded-lg mb-2 text-sm md:text-base text-gray-400 hover:bg-gray-700 focus:outline-none" onclick="toggleDropdown(this)">
+                <span class="nav-item">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                    {% trans "العمليات" %}
+                </span>
+                <svg class="w-4 h-4 transform transition-transform duration-200 {% if LANGUAGE_CODE == 'ar' %}rotate-90{% else %}-rotate-90{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <div class="nav-dropdown-content hidden pl-6 {% if LANGUAGE_CODE == 'ar' %}pr-6{% endif %}">
+                <a href="{% url 'tenant_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'tenant' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.6 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    {% trans "المستأجرين" %}
+                </a>
+                <a href="{% url 'maintenance_admin_list' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'maintenance' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.24 13.78l-7.07-7.07a4 4 0 00-5.66 5.66l7.07 7.07a4 4 0 005.66-5.66z"/></svg>
+                    {% trans "الصيانة" %}
+                </a>
+                <a href="{% url 'user_management' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 12a4 4 0 100-8 4 4 0 000 8z"/></svg>
+                    {% trans "إدارة المستخدمين" %}
+                </a>
+                <a href="{% url 'report_selection' %}" class="block py-2 px-4 rounded-lg mb-1 text-sm md:text-base nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                    {% trans "التقارير" %}
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="mt-auto pt-4 border-t border-gray-700">
+        <a href="{% url 'company_update' %}" class="block py-2 px-4 rounded-lg mb-2 text-sm md:text-base text-gray-300 hover:bg-gray-700">{% trans "الاعدادات" %}</a>
+
+        <form action="{% url 'set_language' %}" method="post" class="mb-4">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path|slice:'3:' }}">
+            <select name="language" onchange="this.form.submit()" class="w-full bg-gray-700 text-white p-2 rounded-md text-sm md:text-base">
+                {% get_current_language as LANGUAGE_CODE %}{% get_available_languages as LANGUAGES %}
+                {% for lang_code, lang_name in LANGUAGES %}
+                <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>{{ lang_name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="w-full text-left py-3 px-4 rounded-lg text-sm md:text-base text-gray-400 hover:bg-red-800 hover:text-white">{% trans "تسجيل الخروج" %}</button></form>
+    </div>
+</aside>
+
+<main class="flex-1 overflow-y-auto p-4 md:p-8 w-full">
+    <div class="max-w-7xl mx-auto">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="p-3 md:p-4 mb-4 text-sm md:text-base rounded-lg {% if message.tags == 'success' %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
+</main>
+</div>
+
+<script>
+function toggleMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    // For mobile, ensure starting transform matches language before toggling
+    if (!sidebar.classList.contains('open')) {
+        if ("{{ LANGUAGE_CODE }}" === "ar") {
+            sidebar.style.transform = 'translateX(100%)';
+            sidebar.style.right = '0';
+            sidebar.style.left = 'auto';
+        } else {
+            sidebar.style.transform = 'translateX(-100%)';
+            sidebar.style.left = '0';
+            sidebar.style.right = 'auto';
+        }
+        // trigger a frame so transition applies
+        requestAnimationFrame(() => sidebar.classList.add('open'));
+        overlay.classList.add('show');
+    } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+    }
+}
+
+document.querySelectorAll('.sidebar nav a').forEach(link => {
+    link.addEventListener('click', function() {
+        if (window.innerWidth < 768) {
+            toggleMenu();
+        }
+    });
+});
+
+function toggleDropdown(button) {
+    const dropdownContent = button.nextElementSibling;
+    const arrowIcon = button.querySelector('svg:last-child');
+
+    dropdownContent.classList.toggle('hidden');
+    if ("{{ LANGUAGE_CODE }}" === "ar") {
+        arrowIcon.classList.toggle('rotate-90');
+        arrowIcon.classList.toggle('-rotate-90');
+    } else {
+        arrowIcon.classList.toggle('-rotate-90');
+        arrowIcon.classList.toggle('rotate-0');
+    }
+}
+
+// Open dropdowns if any child link is active on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.nav-dropdown-content').forEach(content => {
+        if (content.querySelector('.active')) {
+            content.classList.remove('hidden');
+            const button = content.previousElementSibling;
+            const arrowIcon = button.querySelector('svg:last-child');
+            if ("{{ LANGUAGE_CODE }}" === "ar") {
+                arrowIcon.classList.remove('rotate-90');
+                arrowIcon.classList.add('-rotate-90');
+            } else {
+                arrowIcon.classList.remove('-rotate-90');
+                arrowIcon.classList.add('rotate-0');
+            }
+        }
+    });
+});
+</script>
+</body>
+</html>

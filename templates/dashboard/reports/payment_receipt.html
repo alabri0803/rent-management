@@ -1,0 +1,363 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @font-face { 
+            font-family: 'Tajawal'; 
+            src: url(https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1nzSBC45I.woff2) format('woff2'); 
+        }
+        
+        body { 
+            font-family: 'Tajawal', Arial, sans-serif; 
+            direction: rtl; 
+            text-align: right; 
+            font-size: 14px;
+            margin: 0;
+            padding: 10px;
+            background: white;
+        }
+        
+        .receipt-container { 
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 15px;
+            border: 2px solid #000;
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+        
+        .header { 
+            text-align: center; 
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px; 
+            margin-bottom: 15px; 
+        }
+        
+        .header h1 {
+            margin: 5px 0 3px 0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        
+        .header h2 {
+            margin: 3px 0;
+            font-size: 18px;
+            font-weight: normal;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+        }
+        
+        .arabic-section {
+            flex: 1;
+            border-left: 2px solid #000;
+            padding-left: 15px;
+        }
+        
+        .english-section {
+            flex: 1;
+            direction: ltr;
+            text-align: left;
+            font-family: Arial, sans-serif;
+        }
+        
+        .currency {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .date-section {
+            text-align: center;
+            margin: 15px 0;
+            padding: 8px 0;
+            border-bottom: 1px dashed #000;
+        }
+        
+        .details-section {
+            margin: 15px 0;
+            line-height: 2.2;
+        }
+        
+        .detail-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding: 4px 0;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            min-width: 130px;
+        }
+        
+        .detail-value {
+            flex: 1;
+            text-align: right;
+            border-bottom: 1px dotted #000;
+            margin-right: 8px;
+        }
+        
+        .english-detail {
+            display: flex;
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+        
+        .english-label {
+            font-weight: bold;
+            width: 100px;
+            flex-shrink: 0;
+        }
+        
+        .english-value {
+            flex: 1;
+            border-bottom: 1px dotted #000;
+            margin-left: 8px;
+        }
+        
+        .divider {
+            border-top: 2px solid #000;
+            margin: 15px 0;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #000;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            margin: 5px 0;
+            padding-top: 20px;
+        }
+        
+        .receipt-number {
+            text-align: left;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .footer {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        /* تصميم خاص للعرض الأفقي */
+        .horizontal-layout {
+            display: flex;
+            flex-direction: row;
+        }
+        
+        .vertical-divider {
+            border-left: 2px solid #000;
+            margin: 0 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <!-- رقم السند -->
+        <div class="receipt-number">
+            {% trans "رقم السند" %}: {{ payment.id|default:"0001" }}
+        </div>
+        
+        <!-- الرأس -->
+        <div class="header">
+            <h1>{% trans "سند قبض" %}</h1>
+            <h2>{% trans "Receipt Voucher" %}</h2>
+            <div class="currency">
+                {% trans "ريال عماني" %} ر.ع
+            </div>
+        </div>
+
+
+        <!-- المحتوى الرئيسي - أفقي -->
+        <div class="main-content horizontal-layout">
+            <!-- القسم العربي على اليمين -->
+            <div class="arabic-section">
+                <div class="date-section">
+                    {% trans "تاريخ" %}: {{ payment.payment_date|date:"d / m / Y"|default:"__ / __ / ____" }}
+                </div>
+                
+                <div class="details-section">
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "استلمنا من السيد" %}:</span>
+                        <span class="detail-value">{{ lease.tenant.name|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "مبلغ وقدره" %}:</span>
+                        <span class="detail-value">{{ payment.amount|floatformat:2|default:"________________" }} {% trans "ريال عماني" %}</span>
+                    </div>
+                    
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "طريقة الدفع" %}:</span>
+                        <span class="detail-value">{{ payment.get_payment_method_display|default:"________________" }}</span>
+                    </div>
+                    
+                    {% if payment.payment_method == 'check' %}
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "رقم الشيك" %}:</span>
+                        <span class="detail-value">{{ payment.check_number|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "تاريخ الشيك" %}:</span>
+                        <span class="detail-value">{{ payment.check_date|date:"d / m / Y"|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "اسم البنك" %}:</span>
+                        <span class="detail-value">{{ payment.bank_name|default:"________________" }}</span>
+                    </div>
+                    
+                    {% if payment.check_status %}
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "حالة الشيك" %}:</span>
+                        <span class="detail-value">{{ payment.get_check_status_display }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if payment.check_status == 'returned' and payment.return_reason %}
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "سبب الإرجاع" %}:</span>
+                        <span class="detail-value">{{ payment.return_reason }}</span>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "على بناء" %}:</span>
+                        <span class="detail-value">{{ lease.unit.building.name|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="detail-line">
+                        <span class="detail-label">{% trans "وذلك مقابل" %}:</span>
+                        <span class="detail-value">
+                            {% trans "دفعة إيجار عن شهر" %} {{ payment.payment_for_month|default:"__" }} / {{ payment.payment_for_year|default:"____" }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <div>{% trans "المحاسب" %}:</div>
+                        <div class="signature-line"></div>
+                    </div>
+                    
+                    <div class="signature-box">
+                        <div>{% trans "المستلم" %}:</div>
+                        <div class="signature-line"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- الخط الفاصل -->
+            <div class="vertical-divider"></div>
+
+
+            <!-- القسم الإنجليزي على اليسار -->
+            <div class="english-section">
+                <div class="date-section" style="direction: ltr; text-align: center;">
+                    Date: {{ payment.payment_date|date:"m/d/Y"|default:"__/__/____" }}
+                </div>
+                
+                <div class="details-section">
+                    <div class="english-detail">
+                        <span class="english-label">Received From Mr:</span>
+                        <span class="english-value">{{ lease.tenant.name_en|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="english-detail">
+                        <span class="english-label">Amount:</span>
+                        <span class="english-value">{{ payment.amount|floatformat:2|default:"________________" }} OMR</span>
+                    </div>
+                    
+                    <div class="english-detail">
+                        <span class="english-label">Payment Method:</span>
+                        <span class="english-value">{{ payment.payment_method|default:"________________" }}</span>
+                    </div>
+                    
+                    {% if payment.payment_method == 'check' %}
+                    <div class="english-detail">
+                        <span class="english-label">Check Number:</span>
+                        <span class="english-value">{{ payment.check_number|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="english-detail">
+                        <span class="english-label">Check Date:</span>
+                        <span class="english-value">{{ payment.check_date|date:"m/d/Y"|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="english-detail">
+                        <span class="english-label">Bank Name:</span>
+                        <span class="english-value">{{ payment.bank_name|default:"________________" }}</span>
+                    </div>
+                    
+                    {% if payment.check_status %}
+                    <div class="english-detail">
+                        <span class="english-label">Check Status:</span>
+                        <span class="english-value">{{ payment.check_status }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if payment.check_status == 'returned' and payment.return_reason %}
+                    <div class="english-detail">
+                        <span class="english-label">Return Reason:</span>
+                        <span class="english-value">{{ payment.return_reason }}</span>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <div class="english-detail">
+                        <span class="english-label">For Building:</span>
+                        <span class="english-value">{{ lease.unit.building.name_en|default:"________________" }}</span>
+                    </div>
+                    
+                    <div class="english-detail">
+                        <span class="english-label">For:</span>
+                        <span class="english-value">
+                            Rent payment for month {{ payment.payment_for_month|default:"__" }} / {{ payment.payment_for_year|default:"____" }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="signature-section" style="direction: ltr;">
+                    <div class="signature-box">
+                        <div>Accountant:</div>
+                        <div class="signature-line"></div>
+                    </div>
+                    
+                    <div class="signature-box">
+                        <div>Receiver:</div>
+                        <div class="signature-line"></div>
+                    </div>
+                </div>
+            </div>
+        </div> 
+    </div>
+</body>
+</html>
