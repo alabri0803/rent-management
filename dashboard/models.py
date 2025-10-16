@@ -411,7 +411,7 @@ class Lease(models.Model):
             print(f"Creating initial invoice for lease {self.id}")
             try:
                 from django.template.loader import get_template
-                template_invoice = get_template('dashboard/reports/lease_renewal_invoice.html')
+                template_invoice = get_template('dashboard/reports/lease_initial_invoice.html')
                 context_invoice = {
                     'lease': self,
                     'today': timezone.now().date(),
@@ -422,7 +422,7 @@ class Lease(models.Model):
                 
                 # استخدم generate_pdf_bytes للحصول على الدعم الكامل
                 from .utils import generate_pdf_bytes
-                pdf_bytes_invoice = generate_pdf_bytes('dashboard/reports/lease_renewal_invoice.html', context_invoice)
+                pdf_bytes_invoice = generate_pdf_bytes('dashboard/reports/lease_initial_invoice.html', context_invoice)
                     
                 contract_num = self.contract_number or f"lease_{self.id}"
                 filename_invoice = f"lease_initial_invoice_{contract_num}.pdf"
@@ -441,10 +441,48 @@ class Lease(models.Model):
                 logger.exception(f"Failed to generate initial invoice for lease {self.id}: {e}")
                 print(f"Failed to generate initial invoice for lease {self.id}: {e}")
                 # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
-            
         except Exception as e:
             logger.exception(f"Failed to generate initial invoice for lease {self.id}: {e}")
             print(f"Failed to generate initial invoice for lease {self.id}: {e}")
+            # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
+    def _generate_renewal_notice(self):
+        """إنشاء استمارة تجديد تلقائياً وإرفاقها بالعقد"""
+        try:
+            from django.template.loader import get_template
+            from django.conf import settings
+            from io import BytesIO
+            from django.core.files.base import ContentFile
+            from django.utils.translation import gettext as _
+            import logging
+
+            logger = logging.getLogger(__name__)
+
+            template = get_template('dashboard/reports/lease_renewal_notice.html')
+            context = {
+                'lease': self,
+                'today': timezone.now().date(),
+                'company': Company.objects.first(),
+            }
+            html = template.render(context)
+
+            try:
+                from weasyprint import HTML
+                pdf_bytes = HTML(string=html, base_url=settings.BASE_DIR).write_pdf()
+            except Exception:
+                # Fallback to xhtml2pdf
+                from xhtml2pdf import pisa
+                result = BytesIO()
+                pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
+                pdf_bytes = result.getvalue()
+
+            filename = f"lease_renewal_{self.contract_number}.pdf"
+            doc = Document(lease=self, title=_('استمارة تجديد عقد') + f" - {self.contract_number}")
+            doc.file.save(filename, ContentFile(pdf_bytes))
+            doc.save()
+            logger.info(f"Renewal notice generated for lease {self.id}")
+
+        except Exception as e:
+            logger.exception(f"Failed to generate renewal notice for lease {self.id}: {e}")
             # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
 
 class Payment(models.Model):
@@ -454,7 +492,7 @@ class Payment(models.Model):
         ('bank_transfer', _('تحويل بنكي')),
         ('other', _('أخرى'))
     ]
-    
+
     CHECK_STATUS_CHOICES = [
         ('pending', _('معلق - في الانتظار')),
         ('cashed', _('تم الصرف')),

@@ -6,126 +6,395 @@
   <meta charset="UTF-8">
   <title>{% trans "استمارة تجديد عقد الإيجار" %}</title>
   <style>
-    @font-face {
-      font-family: 'Amiri';
-      src: url("{% static 'fonts/Amiri-Regular.ttf' %}") format('truetype');
-      font-weight: normal; font-style: normal;
+    /*
+      تصميم استمارة تجديد عقد الإيجار بالأسلوب الكلاسيكي الرسمي
+      يركز على البساطة والوضوح مع الجداول المنظمة
+    */
+    :root {
+      --font-family-classic: Arial, Helvetica, sans-serif;
+      --text-color: #000000;
+      --border-color: #888888;
+      --header-bg-color: #f2f2f2;
+      --warning-bg-color: #fff9c4;
     }
-    html, body { height: 100%; }
-    body { font-family: 'Amiri', Arial, sans-serif; direction: rtl; text-align: right; margin: 0; }
-    .page { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 10mm; box-sizing: border-box; border: 2px solid #000; position: relative; }
-    .top-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .top-box { border: 2px solid #000; padding: 8px; min-height: 54px; }
-    .title-en { font-size: 18px; font-weight: 700; text-align: center; }
-    .title-ar { font-size: 16px; font-weight: 700; text-align: center; }
-    .logo-wrap { display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .circle { width: 54px; height: 54px; border: 2px solid #000; border-radius: 50%; }
-    .qr { width: 70px; height: 70px; border: 2px solid #000; margin: 0 auto; }
-    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; }
-    .pair div { border: 1px dashed #aaa; padding: 6px; min-height: 26px; }
-    .muted { color: #666; font-size: 11px; }
-    .section { border: 2px solid #000; margin-top: 8px; }
-    .section-title { background: #eaeaea; border-bottom: 2px solid #000; padding: 4px 8px; font-weight: 700; display: flex; justify-content: space-between; }
-    .fields { padding: 6px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
-    .field { border: 1px solid #000; padding: 6px; font-size: 12px; grid-column: span 3; min-height: 30px; }
-    .field .lbl { color: #444; font-size: 11px; display: block; }
-    .field .val { font-weight: 700; }
-    .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { border: 1px solid #000; padding: 6px; font-size: 12px; }
-    .dash { border: 2px dashed #333; min-height: 60px; padding: 6px; }
-    .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-    .tiny { font-size: 10px; color: #333; }
-    .footer { position: absolute; bottom: 6mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; font-size: 12px; }
-    .badge { background: #ffeaa7; border: 1px solid #d4b36c; padding: 4px 8px; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family-classic);
+      direction: rtl;
+      text-align: right;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #e9e9e9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10mm auto;
+      padding: 15mm;
+      background: #ffffff;
+      border: 1px solid #333;
+      position: relative;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+    }
+
+    /* Header Section */
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--text-color);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .header-info {
+      text-align: right;
+      flex: 1;
+    }
+    .header-info div {
+      margin-bottom: 8px;
+    }
+
+    .logo-placeholder {
+      width: 120px;
+      height: 60px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      color: #777;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 15px 0 30px 0;
+    }
+
+    /* Top Grid Styling */
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 15px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 10px;
+      border: 2px solid #dee2e6;
+    }
+    .top-box {
+      border: 2px solid var(--border-color);
+      padding: 12px;
+      min-height: 60px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Section Styling */
+    .section {
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-weight: bold;
+        font-size: 13px;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    /* Fields Grid */
+    .fields {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .field {
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      font-size: 11px;
+      background: #fafafa;
+      border-radius: 4px;
+      min-height: 35px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .field .lbl {
+      color: #333;
+      font-size: 9px;
+      display: block;
+      margin-bottom: 2px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .field .val {
+      font-weight: bold;
+      color: #1a73e8;
+      font-size: 10px;
+    }
+
+    /* Contract Table */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .table th {
+      background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .table td {
+      background: white;
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #333;
+      font-weight: 500;
+    }
+    .table tr:nth-child(even) td {
+      background: #f8f9fa;
+    }
+    .table tr:hover td {
+      background: #e3f2fd;
+    }
+
+    /* Declaration */
+    .declaration {
+      background-color: var(--warning-bg-color);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      margin: 25px 0;
+      text-align: justify;
+      line-height: 1.6;
+    }
+
+    /* Signature Grid */
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 8px;
+      border: 2px dashed #1a73e8;
+    }
+    .sig-grid > div {
+      text-align: center;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    /* Dash Lines for Signatures */
+    .dash {
+      border: none;
+      border-bottom: 2px solid #1a73e8;
+      background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+      min-height: 25px;
+      border-radius: 4px;
+      position: relative;
+      margin: 8px 0;
+    }
+    .dash::after {
+      content: '✍️';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #1a73e8;
+      font-size: 10px;
+    }
+
+    /* Text Styling */
+    .muted {
+      color: #666;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .tiny {
+      font-size: 9px;
+      color: #333;
+    }
+
+    .badge {
+      background: #ffeaa7;
+      border: 1px solid #d4b36c;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 8px;
+      font-weight: bold;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 15mm;
+      left: 15mm;
+      right: 15mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border-color);
+      margin-top: 20px;
+    }
+
+    @media print {
+      @page {
+        margin: 15mm;
+        size: A4;
+      }
+
+      body {
+        background-color: #fff;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        margin: 0;
+        padding: 15mm;
+        box-shadow: none;
+        border: 1px solid #ccc;
+        background: white;
+        width: 100%;
+        min-height: auto;
+        box-sizing: border-box;
+      }
+
+      .footer {
+        position: fixed;
+        bottom: 0;
+        left: 15mm;
+        right: 15mm;
+      }
+    }
+
+    @media screen and (max-width: 768px) {
+      .page {
+        margin: 5mm auto;
+        padding: 10mm;
+        width: 95%;
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      }
+
+      .header-container {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .logo-placeholder {
+        width: 100px;
+        height: 50px;
+      }
+
+      .main-title {
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="top-grid">
-      <div>
-        <div class="top-box">
-          <div class="muted">{% trans "Agreement No." %}</div>
-          <div class="dash">{{ old_lease.contract_number|default:"" }}</div>
-        </div>
-        <div class="top-box" style="margin-top:8px;">
-          <div class="muted">{% trans "Form No." %}</div>
-          <div class="dash">{{ lease.contract_number|default:"" }}</div>
-        </div>
-      </div>
-      <div>
-        <div class="logo-wrap" style="margin-bottom:6px;">
-          <div class="circle"></div>
-          <div class="circle"></div>
-          <div class="circle"></div>
-        </div>
-        <div class="title-en">Rent Contract Form</div>
-        <div class="title-ar">استمارة عقد إيجار</div>
-      </div>
-      <div>
-        <div class="qr"></div>
+    <!-- Header Section -->
+    <div class="header-container">
+      <div class="logo-placeholder">شعار الشركة</div>
+      <div class="header-info">
+        <div><strong>رقم العقد الأصلي:</strong> {{ old_lease.contract_number|default:"________________" }}</div>
+        <div><strong>رقم النموذج:</strong> {{ lease.contract_number|default:"________________" }}</div>
       </div>
     </div>
 
+    <div class="main-title">استمارة تجديد عقد الإيجار</div>
+
+    <!-- Property Owner Information -->
     <div class="section">
-      <div class="section-title">
-        <span>{% trans "بيانات مالك العقار" %}</span>
-      </div>
+      <div class="section-title">بيانات مالك العقار</div>
       <div class="fields">
-        <div class="field"><span class="lbl">{% trans "اسم المالك" %}</span><span class="val">{{ lease.unit.building.owner.name|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "صلة المالك" %}</span><span class="val">{{ lease.unit.building.owner.owner_type|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "رقم المالك" %}</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "جوال" %}</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
+        <div class="field"><span class="lbl">اسم المالك</span><span class="val">{{ lease.unit.building.owner.name|default:"" }}</span></div>
+        <div class="field"><span class="lbl">صلة المالك</span><span class="val">{{ lease.unit.building.owner.owner_type|default:"" }}</span></div>
+        <div class="field"><span class="lbl">رقم المالك</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
+        <div class="field"><span class="lbl">جوال</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
       </div>
     </div>
 
+    <!-- Lessor Information -->
     <div class="section">
-      <div class="section-title">
-        <span>{% trans "بيانات المؤجر" %}</span>
-      </div>
+      <div class="section-title">بيانات المؤجر</div>
       <div class="fields">
-        <div class="field"><span class="lbl">{% trans "اسم المؤجر" %}</span><span class="val">{{ lease.unit.building.owner.name|default:"" }}</span></div>
+        <div class="field"><span class="lbl">اسم المؤجر</span><span class="val">{{ lease.unit.building.owner.name|default:"" }}</span></div>
         <div class="field"><span class="lbl">Email</span><span class="val">{{ lease.unit.building.owner.email|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "رقم المؤجر" %}</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "جوال" %}</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
+        <div class="field"><span class="lbl">رقم المؤجر</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
+        <div class="field"><span class="lbl">جوال</span><span class="val">{{ lease.unit.building.owner.phone|default:"" }}</span></div>
       </div>
     </div>
 
+    <!-- Tenant Information -->
     <div class="section">
-      <div class="section-title">
-        <span>{% trans "بيانات المستأجر" %}</span>
-      </div>
+      <div class="section-title">بيانات المستأجر</div>
       <div class="fields">
-        <div class="field"><span class="lbl">{% trans "اسم المستأجر" %}</span><span class="val">{{ lease.tenant.name|default:"" }}</span></div>
+        <div class="field"><span class="lbl">اسم المستأجر</span><span class="val">{{ lease.tenant.name|default:"" }}</span></div>
         <div class="field"><span class="lbl">Email</span><span class="val">{{ lease.tenant.email|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "رقم المستأجر" %}</span><span class="val">{{ lease.tenant.phone|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "جوال" %}</span><span class="val">{{ lease.tenant.phone|default:"" }}</span></div>
+        <div class="field"><span class="lbl">رقم المستأجر</span><span class="val">{{ lease.tenant.phone|default:"" }}</span></div>
+        <div class="field"><span class="lbl">جوال</span><span class="val">{{ lease.tenant.phone|default:"" }}</span></div>
       </div>
     </div>
 
+    <!-- Property Information -->
     <div class="section">
-      <div class="section-title">
-        <span>{% trans "بيانات العقار" %}</span>
-      </div>
+      <div class="section-title">بيانات العقار</div>
       <div class="fields">
-        <div class="field"><span class="lbl">{% trans "اسم العقار" %}</span><span class="val">{{ lease.unit.building.name|default:lease.unit }}</span></div>
-        <div class="field"><span class="lbl">{% trans "القطعة" %}</span><span class="val">{{ lease.unit.unit_number|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "الشارع" %}</span><span class="val">{{ lease.unit.building.address|default:"" }}</span></div>
-        <div class="field"><span class="lbl">{% trans "المساحة" %}</span><span class="val">{{ lease.unit.area|default:"" }}</span></div>
+        <div class="field"><span class="lbl">اسم العقار</span><span class="val">{{ lease.unit.building.name|default:lease.unit }}</span></div>
+        <div class="field"><span class="lbl">القطعة</span><span class="val">{{ lease.unit.unit_number|default:"" }}</span></div>
+        <div class="field"><span class="lbl">الشارع</span><span class="val">{{ lease.unit.building.address|default:"" }}</span></div>
+        <div class="field"><span class="lbl">المساحة</span><span class="val">{{ lease.unit.area|default:"" }}</span></div>
       </div>
     </div>
 
+    <!-- Contract Details -->
     <div class="section">
-      <div class="section-title">
-        <span>{% trans "تفاصيل العقد" %}</span>
-      </div>
+      <div class="section-title">تفاصيل العقد</div>
       <table class="table">
         <thead>
           <tr>
-            <th>{% trans "نوع الدفع" %}</th>
-            <th>{% trans "قيمة الإيجار" %}</th>
-            <th>{% trans "من تاريخ" %}</th>
-            <th>{% trans "إلى تاريخ" %}</th>
-            <th>{% trans "المدة" %}</th>
+            <th>نوع الدفع</th>
+            <th>قيمة الإيجار</th>
+            <th>من تاريخ</th>
+            <th>إلى تاريخ</th>
+            <th>المدة</th>
           </tr>
         </thead>
         <tbody>
@@ -138,41 +407,41 @@
           </tr>
         </tbody>
       </table>
-      <div style="margin:6px;">
-        <div class="muted">{% trans "ملاحظات" %}</div>
+      <div style="margin:8px; padding:8px;">
+        <div class="muted">ملاحظات</div>
         <div class="dash"></div>
       </div>
     </div>
 
+    <!-- Declaration -->
     <div class="section">
-      <div class="section-title">
-        <span>{% trans "إقرار" %}</span>
+      <div class="section-title">إقرار</div>
+      <div class="declaration">
+        أقرّ بصحة البيانات الواردة في هذه الاستمارة والعقد المرفق، بما في ذلك قيمة الإيجار المتفق عليها، وأتحمّل كامل المسؤولية القانونية إذا ثبت عدم صحة أي بيانات. هذا التجديد يُعتبر امتداداً للعقد الأصلي.
       </div>
-      <div style="padding:8px; font-size:12px; line-height:1.8;">
-        {% trans "أقرّ بصحة البيانات الواردة في هذه الاستمارة والعقد المرفق، بما في ذلك قيمة الإيجار المتفق عليها، وأتحمّل كامل المسؤولية القانونية إذا ثبت عدم صحة أي بيانات. هذا التجديد يُعتبر امتداداً للعقد الأصلي." %}
-      </div>
-      <div class="sig-grid" style="padding: 0 8px 8px;">
+      <div class="sig-grid">
         <div>
-          <div class="muted">{% trans "الاسم" %}</div>
+          <div class="muted">الاسم</div>
           <div class="dash"></div>
-          <div class="tiny">{% trans "توقيع المستأجر" %}</div>
+          <div class="tiny">توقيع المستأجر</div>
         </div>
         <div>
-          <div class="muted">{% trans "الاسم" %}</div>
+          <div class="muted">الاسم</div>
           <div class="dash"></div>
-          <div class="tiny">{% trans "توقيع المؤجر" %}</div>
+          <div class="tiny">توقيع المؤجر</div>
         </div>
         <div>
-          <div class="muted">{% trans "التاريخ" %}</div>
+          <div class="muted">التاريخ</div>
           <div class="dash">{{ today|date:"d/m/Y" }}</div>
-          <div class="tiny">{% trans "الرقم المدني" %}</div>
+          <div class="tiny">الرقم المدني</div>
         </div>
       </div>
     </div>
 
+    <!-- Footer -->
     <div class="footer">
-      <div class="tiny">{% trans "هذه الاستمارة صالحة عند تجديد العقد عبر النظام" %}</div>
-      <div class="badge">{{ today|date:"d/m/Y" }}</div>
+      <span>هذه الاستمارة صالحة عند تجديد العقد عبر النظام</span>
+      <span class="badge">{{ today|date:"d/m/Y" }}</span>
     </div>
   </div>
 </body>

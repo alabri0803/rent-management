@@ -1,0 +1,478 @@
+{% load i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>{% trans "فاتورة رسوم تسجيل عقد الإيجار" %}</title>
+  <style>
+    /*
+      تم تصميم هذه الأنماط لمحاكاة التصميم الكلاسيكي الرسمي الموجود في الصورة المرفقة.
+      التركيز على البساطة، الجداول، والخطوط القياسية.
+    */
+    :root {
+      --font-family-classic: Arial, Helvetica, sans-serif;
+      --text-color: #000000;
+      --border-color: #888888;
+      --header-bg-color: #f2f2f2;
+      --warning-bg-color: #fff9c4; /* لون أصفر فاتح للإقرار */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family-classic);
+      direction: rtl;
+      text-align: right;
+      font-size: 11px; /* حجم خط مناسب للنماذج الرسمية */
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #e9e9e9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10mm auto;
+      padding: 15mm;
+      background: #ffffff;
+      border: 1px solid #333;
+      position: relative;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+    }
+
+    /* Header Section */
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--text-color);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .header-info {
+      text-align: right;
+      flex: 1;
+    }
+    .header-info div {
+      margin-bottom: 8px;
+    }
+
+    .logo-placeholder {
+      width: 120px;
+      height: 60px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      color: #777;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 15px 0 30px 0;
+    }
+
+    /* Top Grid Styling */
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 15px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 10px;
+      border: 2px solid #dee2e6;
+    }
+    .top-box {
+      border: 2px solid var(--border-color);
+      padding: 12px;
+      min-height: 60px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    
+    /* Section Styling */
+    .section {
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-weight: bold;
+        font-size: 13px;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    /* Generic Table for Data */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .table th {
+      background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .table td {
+      background: white;
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #333;
+      font-weight: 500;
+    }
+    .table tr:nth-child(even) td {
+      background: #f8f9fa;
+    }
+    .table tr:hover td {
+      background: #e3f2fd;
+    }
+
+    /* Contract Details Table */
+    .contract-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border-color);
+    }
+    .contract-table th, .contract-table td {
+      border: 1px solid var(--border-color);
+      padding: 6px;
+      text-align: center;
+    }
+    .contract-table th {
+      background-color: var(--header-bg-color);
+      font-weight: bold;
+    }
+
+    /* Declaration */
+    .declaration {
+      background-color: var(--warning-bg-color);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      margin: 25px 0;
+      text-align: justify;
+      line-height: 1.6;
+    }
+
+    /* Signature & Footer */
+    .signature-section {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 60px;
+      font-size: 12px;
+      padding: 20px 0;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 15mm;
+      left: 15mm;
+      right: 15mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border-color);
+      margin-top: 20px;
+    }
+
+    .fields {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 8px;
+      border: 2px dashed #1a73e8;
+    }
+    .sig-grid > div {
+      text-align: center;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .field {
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      font-size: 11px;
+      background: #fafafa;
+      border-radius: 4px;
+      min-height: 35px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .field .lbl {
+      color: #333;
+      font-size: 9px;
+      display: block;
+      margin-bottom: 2px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .field .val {
+      font-weight: bold;
+      color: #1a73e8;
+      font-size: 10px;
+    }
+
+    /* Signature Grid Styling */
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 8px;
+      border: 2px dashed #1a73e8;
+    }
+    .sig-grid > div {
+      text-align: center;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    /* Dash Lines for Signatures */
+    .dash {
+      border: none;
+      border-bottom: 2px solid #1a73e8;
+      background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+      min-height: 25px;
+      border-radius: 4px;
+      position: relative;
+      margin: 8px 0;
+    }
+    .dash::after {
+      content: '✍️';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #1a73e8;
+      font-size: 10px;
+    }
+
+    /* Text Styling */
+    .muted {
+      color: #666;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .tiny {
+      font-size: 9px;
+      color: #333;
+    }
+
+    .badge {
+      background: #ffeaa7;
+      border: 1px solid #d4b36c;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 8px;
+      font-weight: bold;
+    }
+
+    @media print {
+      @page {
+        margin: 15mm;
+        size: A4;
+      }
+
+      body {
+        background-color: #fff;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        margin: 0;
+        padding: 15mm;
+        box-shadow: none;
+        border: 1px solid #ccc;
+        background: white;
+        width: 100%;
+        min-height: auto;
+        box-sizing: border-box;
+      }
+
+      .footer {
+        position: fixed;
+        bottom: 0;
+        left: 15mm;
+        right: 15mm;
+      }
+    }
+
+    @media screen and (max-width: 768px) {
+      .page {
+        margin: 5mm auto;
+        padding: 10mm;
+        width: 95%;
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      }
+
+      .header-container {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .logo-placeholder {
+        width: 100px;
+        height: 50px;
+      }
+
+      .main-title {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-grid">
+      <div>
+        <div class="top-box">
+          <div class="muted">{% trans "Agreement No." %}</div>
+          <div class="dash">{{ lease.contract_number|default:"" }}</div>
+        </div>
+      </div>
+      <div>
+        <div class="title-en">Registration Fee Invoice</div>
+        <div class="title-ar">فاتورة رسوم تسجيل العقد</div>
+      </div>
+      <div>
+        <div class="qr"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "بيانات العقد" %}</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="lbl">{% trans "رقم العقد" %}</span><span class="val">{{ lease.contract_number|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "المستأجر" %}</span><span class="val">{{ lease.tenant.name|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "الوحدة" %}</span><span class="val">{{ lease.unit|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "تاريخ التسجيل" %}</span><span class="val">{{ today|date:"d/m/Y" }}</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "تفاصيل الرسوم بدون رسوم المكتب" %}</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% trans "نوع الرسوم" %}</th>
+            <th>{% trans "المبلغ (ر.ع)" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{% trans "الرسوم الإدارية" %}</td>
+            <td>{{ lease.admin_fee|default:0 }}</td>
+          </tr>
+          <tr>
+            <td>{% trans "رسوم تسجيل العقد (3%)" %}</td>
+            <td>{{ lease.registration_fee|default:0 }}</td>
+          </tr>
+          <tr style="background-color: #f0f0f0;">
+            <td><strong>{% trans "إجمالي الرسوم بدون رسوم المكتب" %}</strong></td>
+            <td><strong>{{ lease.admin_fee|add:lease.registration_fee|floatformat:2 }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "إجمالي الرسوم مع رسوم المكتب" %}</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% trans "نوع الرسوم" %}</th>
+            <th>{% trans "المبلغ (ر.ع)" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{% trans "رسوم المكتب" %}</td>
+            <td>{{ lease.office_fee|default:0 }}</td>
+          </tr>
+          <tr style="background-color: #e8f4fd;">
+            <td><strong>{% trans "إجمالي الرسوم الكامل" %}</strong></td>
+            <td><strong>{{ lease.office_fee|add:lease.admin_fee|add:lease.registration_fee|floatformat:2 }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "إشعار" %}</span>
+      </div>
+      <div style="padding:8px; font-size:12px; line-height:1.8;">
+        {% trans "هذه الفاتورة لرسوم تسجيل عقد الإيجار الأولي. يرجى دفع المبلغ في أسرع وقت ممكن." %}
+      </div>
+      <div class="sig-grid" style="padding: 0 8px 8px;">
+        <div>
+          <div class="muted">{% trans "التوقيع" %}</div>
+          <div class="dash"></div>
+        </div>
+        <div>
+          <div class="muted">{% trans "التاريخ" %}</div>
+          <div class="dash">{{ today|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="tiny">{% trans "فاتورة تلقائية عند تسجيل العقد" %}</div>
+      <div class="badge">{{ today|date:"d/m/Y" }}</div>
+    </div>
+  </div>
+</body>
+</html>
