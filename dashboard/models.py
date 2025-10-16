@@ -129,10 +129,15 @@ class Lease(models.Model):
         
         # إنشاء استمارة إلغاء تلقائياً عند إلغاء العقد
         if not self.pk:  # عند إنشاء عقد جديد
+            print(f"Creating new lease {self.contract_number}")
             super().save(*args, **kwargs)
+            print(f"New lease saved, calling _generate_initial_invoice")
+            # إنشاء فاتورة أولية للعقد الجديد
+            self._generate_initial_invoice()
         else:  # عند تحديث عقد موجود
             old_lease = Lease.objects.get(pk=self.pk)
             old_status = old_lease.status
+            print(f"Updating lease {self.id}, old status: {old_status}, new status: {self.status}")
             super().save(*args, **kwargs)
             
             # إذا تم إلغاء العقد، أنشئ استمارة الإلغاء تلقائياً
@@ -140,6 +145,7 @@ class Lease(models.Model):
                 self._generate_cancellation_notice()
             # إذا تم تجديد العقد، أنشئ استمارة التجديد تلقائياً
             elif old_status not in ['renewed', 'cancelled'] and self.status == 'renewed':
+                print(f"Calling _generate_renewal_notice for lease {self.id}")
                 self._generate_renewal_notice()
 
     def update_status(self):
@@ -370,8 +376,9 @@ class Lease(models.Model):
             logger.exception(f"Failed to generate cancellation notice for lease {self.id}: {e}")
             # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
     
-    def _generate_renewal_notice(self):
-        """إنشاء استمارة تجديد وفاتورة رسوم تلقائياً وإرفاقها بالعقد"""
+    def _generate_initial_invoice(self):
+        """إنشاء فاتورة أولية تلقائياً عند إنشاء عقد جديد"""
+        print(f"Generating initial invoice for lease {self.id}")
         try:
             from django.template.loader import get_template
             from django.conf import settings
@@ -382,60 +389,62 @@ class Lease(models.Model):
             
             logger = logging.getLogger(__name__)
             
-            # إنشاء استمارة التجديد باستخدام القالب الكامل
-            from django.template.loader import get_template
-            template = get_template('dashboard/reports/lease_renewal_notice.html')
-            context = {
-                'old_lease': self,
-                'lease': self,  # نفس العقد لأنه تم تجديده
-                'today': timezone.now().date(),
-                'company': Company.objects.first(),
-            }
+            # التحقق من وجود شركة أو إنشاء واحدة افتراضية
+            company = Company.objects.first()
+            if not company:
+                company = Company.objects.create(
+                    name="شركة افتراضية",
+                    contact_email="default@company.com",
+                    contact_phone="1234567890"
+                )
+                print(f"Created default company for lease {self.id}")
             
-            # استخدم generate_pdf_bytes للحصول على التصميم الكامل من القالب
-            from .utils import generate_pdf_bytes
-            pdf_bytes = generate_pdf_bytes('dashboard/reports/lease_renewal_notice.html', context)
-                
-            filename = f"lease_renewal_{self.contract_number or f'lease_{self.id}'}.pdf"
-            doc = Document(lease=self, title=_('استمارة تجديد عقد') + f" - {self.contract_number or f'lease_{self.id}'}")
-            doc.file.save(filename, ContentFile(pdf_bytes))
-            doc.save()
-            logger.info(f"Renewal notice generated for lease {self.id}")
-            
-            # إنشاء فاتورة رسوم التجديد
+            # حساب الرسوم
             office_fee = float(self.office_fee or 0)
             admin_fee = float(self.admin_fee or 0)
             registration_fee = float(self.registration_fee or 0)
             total_fees = office_fee + admin_fee + registration_fee
-            logger.info(f"Fees for lease {self.id}: office={office_fee}, admin={admin_fee}, registration={registration_fee}, total={total_fees}")
+            logger.info(f"Initial fees for lease {self.id}: office={office_fee}, admin={admin_fee}, registration={registration_fee}, total={total_fees}")
+            print(f"Fees calculated for lease {self.id}: office={office_fee}, admin={admin_fee}, registration={registration_fee}, total={total_fees}")
             
-            if total_fees > 0 or True:  # دائماً للاختبار
-                try:
-                    from django.template.loader import get_template
-                    template_invoice = get_template('dashboard/reports/lease_renewal_invoice.html')
-                    context_invoice = {
-                        'lease': self,
-                        'today': timezone.now().date(),
-                        'company': Company.objects.first(),
-                        'total_fees': total_fees,
-                    }
-                    html_invoice = template_invoice.render(context_invoice)
+            # إنشاء الفاتورة دائماً للاختبار
+            print(f"Creating initial invoice for lease {self.id}")
+            try:
+                from django.template.loader import get_template
+                template_invoice = get_template('dashboard/reports/lease_renewal_invoice.html')
+                context_invoice = {
+                    'lease': self,
+                    'today': timezone.now().date(),
+                    'company': company,
+                    'total_fees': total_fees,
+                }
+                html_invoice = template_invoice.render(context_invoice)
+                
+                # استخدم generate_pdf_bytes للحصول على الدعم الكامل
+                from .utils import generate_pdf_bytes
+                pdf_bytes_invoice = generate_pdf_bytes('dashboard/reports/lease_renewal_invoice.html', context_invoice)
                     
-                    # استخدم generate_pdf_bytes للحصول على الدعم الكامل
-                    from .utils import generate_pdf_bytes
-                    pdf_bytes_invoice = generate_pdf_bytes('dashboard/reports/lease_renewal_invoice.html', context_invoice)
-                        
-                    contract_num = self.contract_number or f"lease_{self.id}"
-                    filename_invoice = f"lease_renewal_invoice_{contract_num}.pdf"
-                    doc_invoice = Document(lease=self, title=_('فاتورة رسوم تجديد عقد') + f" - {contract_num}")
-                    doc_invoice.file.save(filename_invoice, ContentFile(pdf_bytes_invoice))
-                    doc_invoice.save()
-                    logger.info(f"Renewal invoice generated for lease {self.id}")
-                except Exception as e:
-                    logger.exception(f"Failed to generate renewal invoice for lease {self.id}: {e}")
+                contract_num = self.contract_number or f"lease_{self.id}"
+                filename_invoice = f"lease_initial_invoice_{contract_num}.pdf"
+                print(f"Saving document with title: فاتورة رسوم تسجيل عقد - {contract_num}")
+                print(f"Document lease: {self}")
+                print(f"Document file path: {filename_invoice}")
+                doc_invoice = Document(lease=self, title=_('فاتورة رسوم تسجيل عقد') + f" - {contract_num}")
+                doc_invoice.file.save(filename_invoice, ContentFile(pdf_bytes_invoice))
+                doc_invoice.save()
+                print(f"Document saved with ID: {doc_invoice.id}")
+                print(f"Document title: {doc_invoice.title}")
+                print(f"Document file: {doc_invoice.file}")
+                logger.info(f"Initial invoice generated for lease {self.id}")
+                print(f"Initial invoice saved for lease {self.id} - Document ID: {doc_invoice.id}")
+            except Exception as e:
+                logger.exception(f"Failed to generate initial invoice for lease {self.id}: {e}")
+                print(f"Failed to generate initial invoice for lease {self.id}: {e}")
+                # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
             
         except Exception as e:
-            logger.exception(f"Failed to generate renewal documents for lease {self.id}: {e}")
+            logger.exception(f"Failed to generate initial invoice for lease {self.id}: {e}")
+            print(f"Failed to generate initial invoice for lease {self.id}: {e}")
             # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
 
 class Payment(models.Model):
