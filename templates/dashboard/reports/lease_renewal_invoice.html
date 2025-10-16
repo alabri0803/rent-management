@@ -1,0 +1,129 @@
+{% load i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>{% trans "فاتورة رسوم تجديد عقد الإيجار" %}</title>
+  <style>
+    @font-face {
+      font-family: 'Amiri';
+      src: url("{% static 'fonts/Amiri-Regular.ttf' %}") format('truetype');
+      font-weight: normal; font-style: normal;
+    }
+    html, body { height: 100%; }
+    body { font-family: 'Amiri', Arial, sans-serif; direction: rtl; text-align: right; margin: 0; }
+    .page { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 10mm; box-sizing: border-box; border: 2px solid #000; position: relative; }
+    .top-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .top-box { border: 2px solid #000; padding: 8px; min-height: 54px; }
+    .title-en { font-size: 18px; font-weight: 700; text-align: center; }
+    .title-ar { font-size: 16px; font-weight: 700; text-align: center; }
+    .logo-wrap { display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .circle { width: 54px; height: 54px; border: 2px solid #000; border-radius: 50%; }
+    .qr { width: 70px; height: 70px; border: 2px solid #000; margin: 0 auto; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; }
+    .pair div { border: 1px dashed #aaa; padding: 6px; min-height: 26px; }
+    .muted { color: #666; font-size: 11px; }
+    .section { border: 2px solid #000; margin-top: 8px; }
+    .section-title { background: #eaeaea; border-bottom: 2px solid #000; padding: 4px 8px; font-weight: 700; display: flex; justify-content: space-between; }
+    .fields { padding: 6px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+    .field { border: 1px solid #000; padding: 6px; font-size: 12px; grid-column: span 3; min-height: 30px; }
+    .field .lbl { color: #444; font-size: 11px; display: block; }
+    .field .val { font-weight: 700; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table th, .table td { border: 1px solid #000; padding: 6px; font-size: 12px; }
+    .dash { border: 2px dashed #333; min-height: 60px; padding: 6px; }
+    .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+    .tiny { font-size: 10px; color: #333; }
+    .footer { position: absolute; bottom: 6mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; font-size: 12px; }
+    .badge { background: #ffeaa7; border: 1px solid #d4b36c; padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-grid">
+      <div>
+        <div class="top-box">
+          <div class="muted">{% trans "Agreement No." %}</div>
+          <div class="dash">{{ lease.contract_number|default:"" }}</div>
+        </div>
+      </div>
+      <div>
+        <div class="title-en">Renewal Fee Invoice</div>
+        <div class="title-ar">فاتورة رسوم تجديد العقد</div>
+      </div>
+      <div>
+        <div class="qr"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "بيانات العقد" %}</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="lbl">{% trans "رقم العقد" %}</span><span class="val">{{ lease.contract_number|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "المستأجر" %}</span><span class="val">{{ lease.tenant.name|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "الوحدة" %}</span><span class="val">{{ lease.unit|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "تاريخ التجديد" %}</span><span class="val">{{ today|date:"d/m/Y" }}</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "تفاصيل الرسوم" %}</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% trans "نوع الرسوم" %}</th>
+            <th>{% trans "المبلغ (ر.ع)" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{% trans "رسوم المكتب" %}</td>
+            <td>{{ lease.office_fee|default:0 }}</td>
+          </tr>
+          <tr>
+            <td>{% trans "الرسوم الإدارية" %}</td>
+            <td>{{ lease.admin_fee|default:0 }}</td>
+          </tr>
+          <tr>
+            <td>{% trans "رسوم تسجيل العقد (3%)" %}</td>
+            <td>{{ lease.registration_fee|default:0 }}</td>
+          </tr>
+          <tr style="background-color: #f0f0f0;">
+            <td><strong>{% trans "إجمالي الرسوم" %}</strong></td>
+            <td><strong>{% load mathfilters %}{{ lease.office_fee|add:lease.admin_fee|add:lease.registration_fee|default:0 }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "إشعار" %}</span>
+      </div>
+      <div style="padding:8px; font-size:12px; line-height:1.8;">
+        {% trans "هذه الفاتورة لرسوم تجديد عقد الإيجار. يرجى دفع المبلغ في أسرع وقت ممكن." %}
+      </div>
+      <div class="sig-grid" style="padding: 0 8px 8px;">
+        <div>
+          <div class="muted">{% trans "التوقيع" %}</div>
+          <div class="dash"></div>
+        </div>
+        <div>
+          <div class="muted">{% trans "التاريخ" %}</div>
+          <div class="dash">{{ today|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="tiny">{% trans "فاتورة تلقائية عند تجديد العقد" %}</div>
+      <div class="badge">{{ today|date:"d/m/Y" }}</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -371,7 +371,7 @@ class Lease(models.Model):
             # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
     
     def _generate_renewal_notice(self):
-        """إنشاء استمارة تجديد تلقائياً وإرفاقها بالعقد"""
+        """إنشاء استمارة تجديد وفاتورة رسوم تلقائياً وإرفاقها بالعقد"""
         try:
             from django.template.loader import get_template
             from django.conf import settings
@@ -382,6 +382,8 @@ class Lease(models.Model):
             
             logger = logging.getLogger(__name__)
             
+            # إنشاء استمارة التجديد باستخدام القالب الكامل
+            from django.template.loader import get_template
             template = get_template('dashboard/reports/lease_renewal_notice.html')
             context = {
                 'old_lease': self,
@@ -389,25 +391,51 @@ class Lease(models.Model):
                 'today': timezone.now().date(),
                 'company': Company.objects.first(),
             }
-            html = template.render(context)
             
-            try:
-                from weasyprint import HTML
-                pdf_bytes = HTML(string=html, base_url=settings.BASE_DIR).write_pdf()
-            except Exception:
-                from xhtml2pdf import pisa
-                result = BytesIO()
-                pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
-                pdf_bytes = result.getvalue()
+            # استخدم generate_pdf_bytes للحصول على التصميم الكامل من القالب
+            from .utils import generate_pdf_bytes
+            pdf_bytes = generate_pdf_bytes('dashboard/reports/lease_renewal_notice.html', context)
                 
-            filename = f"lease_renewal_{self.contract_number}.pdf"
-            doc = Document(lease=self, title=_('استمارة تجديد عقد') + f" - {self.contract_number}")
+            filename = f"lease_renewal_{self.contract_number or f'lease_{self.id}'}.pdf"
+            doc = Document(lease=self, title=_('استمارة تجديد عقد') + f" - {self.contract_number or f'lease_{self.id}'}")
             doc.file.save(filename, ContentFile(pdf_bytes))
             doc.save()
             logger.info(f"Renewal notice generated for lease {self.id}")
             
+            # إنشاء فاتورة رسوم التجديد
+            office_fee = float(self.office_fee or 0)
+            admin_fee = float(self.admin_fee or 0)
+            registration_fee = float(self.registration_fee or 0)
+            total_fees = office_fee + admin_fee + registration_fee
+            logger.info(f"Fees for lease {self.id}: office={office_fee}, admin={admin_fee}, registration={registration_fee}, total={total_fees}")
+            
+            if total_fees > 0 or True:  # دائماً للاختبار
+                try:
+                    from django.template.loader import get_template
+                    template_invoice = get_template('dashboard/reports/lease_renewal_invoice.html')
+                    context_invoice = {
+                        'lease': self,
+                        'today': timezone.now().date(),
+                        'company': Company.objects.first(),
+                        'total_fees': total_fees,
+                    }
+                    html_invoice = template_invoice.render(context_invoice)
+                    
+                    # استخدم generate_pdf_bytes للحصول على الدعم الكامل
+                    from .utils import generate_pdf_bytes
+                    pdf_bytes_invoice = generate_pdf_bytes('dashboard/reports/lease_renewal_invoice.html', context_invoice)
+                        
+                    contract_num = self.contract_number or f"lease_{self.id}"
+                    filename_invoice = f"lease_renewal_invoice_{contract_num}.pdf"
+                    doc_invoice = Document(lease=self, title=_('فاتورة رسوم تجديد عقد') + f" - {contract_num}")
+                    doc_invoice.file.save(filename_invoice, ContentFile(pdf_bytes_invoice))
+                    doc_invoice.save()
+                    logger.info(f"Renewal invoice generated for lease {self.id}")
+                except Exception as e:
+                    logger.exception(f"Failed to generate renewal invoice for lease {self.id}: {e}")
+            
         except Exception as e:
-            logger.exception(f"Failed to generate renewal notice for lease {self.id}: {e}")
+            logger.exception(f"Failed to generate renewal documents for lease {self.id}: {e}")
             # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
 
 class Payment(models.Model):

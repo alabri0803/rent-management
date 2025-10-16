@@ -52,10 +52,13 @@ class LeaseForm(forms.ModelForm):
     class Meta:
         model = Lease
         fields = ['unit', 'tenant', 'contract_number', 'contract_form_number', 'monthly_rent', 'start_date', 'end_date', 'electricity_meter', 'water_meter', 'office_fee', 'admin_fee']
-        widgets = {'start_date': forms.DateInput(attrs={'type': 'date'}), 'end_date': forms.DateInput(attrs={'type': 'date'})}
+        widgets = {'start_date': forms.DateInput(attrs={'type': 'text'}), 'end_date': forms.DateInput(attrs={'type': 'text'})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Accept both ISO (submitted by Flatpickr) and localized manual input
+        self.fields['start_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
+        self.fields['end_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
         if self.instance and self.instance.pk:
             self.fields['unit'].queryset = Unit.objects.filter(is_available=True) | Unit.objects.filter(pk=self.instance.unit.pk)
         else:
