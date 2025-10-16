@@ -1,0 +1,39 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "تفاصيل مالك المبنى" %}{% endblock %}
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+  <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">{{ owner.name }}</h2>
+  <div class="flex gap-2 flex-wrap">
+    <a href="{% url 'building_owner_update' owner.pk %}" class="btn-primary px-4 py-2 rounded-lg">{% trans "تعديل" %}</a>
+    <a href="{% url 'building_owner_delete' owner.pk %}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">{% trans "حذف" %}</a>
+    <a href="{% url 'building_owner_list' %}" class="text-blue-600 hover:underline px-2 py-2">{% trans "عودة للقائمة" %}</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="card p-6">
+    <h3 class="text-xl font-bold mb-4">{% trans "معلومات المالك" %}</h3>
+    <div class="space-y-2 text-sm">
+      <div><span class="text-gray-500">{% trans "الاسم" %}:</span> <span class="font-medium">{{ owner.name }}</span></div>
+      <div><span class="text-gray-500">{% trans "رقم الهاتف" %}:</span> <span class="font-medium">{{ owner.phone }}</span></div>
+      <div><span class="text-gray-500">{% trans "البريد الإلكتروني" %}:</span> <span class="font-medium">{{ owner.email|default:"—" }}</span></div>
+      <div><span class="text-gray-500">{% trans "العنوان" %}:</span> <span class="font-medium">{{ owner.address|default:"—" }}</span></div>
+    </div>
+  </div>
+
+  <div class="card p-6">
+    <h3 class="text-xl font-bold mb-4">{% trans "المباني المملوكة" %}</h3>
+    <div class="space-y-2 text-sm">
+      {% for building in owner.building_set.all %}
+      <div class="flex justify-between items-center bg-gray-50 p-3 rounded">
+        <div class="font-medium">{{ building.name }}</div>
+        <a href="{% url 'building_update' building.pk %}" class="text-blue-600 hover:underline">{% trans "تعديل" %}</a>
+      </div>
+      {% empty %}
+      <div class="text-gray-500">{% trans "لا توجد مباني مرتبطة" %}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

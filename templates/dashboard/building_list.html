@@ -47,6 +47,43 @@
         {% trans "لم يتم العثور على مباني." %}
     </div>
     {% endfor %}
+    {% if is_paginated %}
+    <div class="col-span-1 md:col-span-2 lg:col-span-3 p-4 flex justify-center">
+        <nav class="inline-flex items-center gap-1" aria-label="Pagination">
+            <a class="px-3 py-1 rounded border text-sm {% if not page_obj.has_previous %}opacity-50 pointer-events-none{% endif %}"
+               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1">
+                {% trans "الأولى" %}
+            </a>
+            {% if page_obj.has_previous %}
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                    {% trans "السابق" %}
+                </a>
+            {% else %}
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "السابق" %}</span>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+                    <a class="px-3 py-1 rounded border text-sm {% if num == page_obj.number %}bg-blue-600 text-white border-blue-600{% endif %}"
+                       href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                    {% trans "التالي" %}
+                </a>
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                    {% trans "الأخيرة" %}
+                </a>
+            {% else %}
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "التالي" %}</span>
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "الأخيرة" %}</span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "تقارير العقود" %}{% endblock %}
+{% block page_header_title %}{% trans "تقارير العقود" %}{% endblock %}
+{% block page_header_actions %}
+<form method="get" class="flex items-center gap-2">
+  <input type="date" name="start" value="{{ filters.start }}" class="p-2 border rounded-md text-sm">
+  <input type="date" name="end" value="{{ filters.end }}" class="p-2 border rounded-md text-sm">
+  <input type="text" name="q" value="{{ filters.q }}" placeholder="{% trans 'بحث' %}" class="p-2 border rounded-md text-sm">
+  <button class="btn-primary px-3 py-2 rounded-md text-sm">{% trans 'بحث' %}</button>
+  <a href="{% url 'export_leases_excel' %}" class="hidden sm:inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm">Excel</a>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-start min-w-max">
+      <thead class="bg-gray-50 border-b">
+        <tr>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">#</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'رقم العقد' %}</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'اسم المستأجر' %}</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'الوحدة' %}</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'الإيجار الشهري' %}</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'الحالة' %}</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'تاريخ البدء' %}</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'تاريخ الانتهاء' %}</th>
+          <th class="p-3 text-xs md:text-sm whitespace-nowrap">{% trans 'إجراءات' %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lease in leases %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="p-3 text-xs md:text-sm">{{ forloop.counter0|add:page_obj.start_index }}</td>
+          <td class="p-3 text-xs md:text-sm">{{ lease.contract_number }}</td>
+          <td class="p-3 text-xs md:text-sm">{{ lease.tenant.name }}</td>
+          <td class="p-3 text-xs md:text-sm whitespace-nowrap">{{ lease.unit.building.name }} - {{ lease.unit.unit_number }}</td>
+          <td class="p-3 text-xs md:text-sm font-mono whitespace-nowrap">{{ lease.monthly_rent|floatformat:2 }}</td>
+          <td class="p-3 text-xs md:text-sm">
+            <span class="status-badge status-{{ lease.get_status_color }}">{{ lease.get_status_display }}</span>
+          </td>
+          <td class="p-3 text-xs md:text-sm whitespace-nowrap">{{ lease.start_date|date:'Y-m-d' }}</td>
+          <td class="p-3 text-xs md:text-sm whitespace-nowrap">{{ lease.end_date|date:'Y-m-d' }}</td>
+          <td class="p-3 text-xs md:text-sm whitespace-nowrap">
+            <a href="{% url 'lease_detail' lease.pk %}" class="text-blue-600 hover:underline">{% trans 'عرض' %}</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="p-6 text-center text-gray-500 text-sm">{% trans 'لا توجد بيانات' %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

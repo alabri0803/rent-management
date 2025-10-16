@@ -109,10 +109,24 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ['title', 'file']
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Make title optional with a default value
+        self.fields['title'].required = False
         self.fields['title'].widget.attrs.update({'class': 'w-full p-2 border rounded-md', 'placeholder': _('مثال: نسخة من العقد الموقّع')})
         self.fields['file'].widget.attrs.update({'class': 'w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100'})
+    
+    def clean_title(self):
+        title = self.cleaned_data.get('title')
+        if not title:
+            # Use filename as default title if title is empty
+            file = self.cleaned_data.get('file')
+            if file:
+                title = file.name
+            else:
+                title = _('مستند')
+        return title
 
 class ExpenseForm(forms.ModelForm):
     class Meta:

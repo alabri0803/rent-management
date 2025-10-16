@@ -82,7 +82,13 @@ class ContractTemplate(models.Model):
         return self.title
 
 class Lease(models.Model):
-    STATUS_CHOICES = [('active', _('نشط')), ('expiring_soon', _('قريب الانتهاء')), ('expired', _('منتهي')), ('cancelled', _('ملغي'))]
+    STATUS_CHOICES = [
+        ('active', _('نشط')),
+        ('expiring_soon', _('قريب الانتهاء')),
+        ('expired', _('منتهي')),
+        ('renewed', _('تم تجديد')),
+        ('cancelled', _('ملغي')),
+    ]
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE, verbose_name=_("الوحدة"))
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, verbose_name=_("المستأجر"))
     contract_number = models.CharField(_("رقم العقد"), max_length=50, unique=True)
@@ -120,11 +126,26 @@ class Lease(models.Model):
         is_being_cancelled = 'cancellation_reson' in kwargs.get('update_fields', [])
         if not is_being_cancelled:
             self.update_status()
-        super().save(*args, **kwargs)
+        
+        # إنشاء استمارة إلغاء تلقائياً عند إلغاء العقد
+        if not self.pk:  # عند إنشاء عقد جديد
+            super().save(*args, **kwargs)
+        else:  # عند تحديث عقد موجود
+            old_lease = Lease.objects.get(pk=self.pk)
+            old_status = old_lease.status
+            super().save(*args, **kwargs)
+            
+            # إذا تم إلغاء العقد، أنشئ استمارة الإلغاء تلقائياً
+            if old_status != 'cancelled' and self.status == 'cancelled':
+                self._generate_cancellation_notice()
+            # إذا تم تجديد العقد، أنشئ استمارة التجديد تلقائياً
+            elif old_status not in ['renewed', 'cancelled'] and self.status == 'renewed':
+                self._generate_renewal_notice()
 
     def update_status(self):
         today = timezone.now().date()
-        if self.status == 'cancelled': return
+        if self.status in ['cancelled', 'renewed']:
+            return
         if self.end_date < today: self.status = 'expired'
         elif self.end_date - relativedelta(months=1) <= today: self.status = 'expiring_soon'
         else: self.status = 'active'
@@ -133,6 +154,7 @@ class Lease(models.Model):
         if self.status == 'active': return 'active'
         if self.status == 'expiring_soon': return 'expiring'
         if self.status == 'expired': return 'expired'
+        if self.status == 'renewed': return 'active'
         return 'cancelled'
     
     def days_until_expiry(self):
@@ -143,8 +165,9 @@ class Lease(models.Model):
         return delta.days
     
     def duration_display(self):
-        """مدة العقد بصيغة (سنة، شهر، يوم) باستخدام start_date و end_date"""
-        rd = relativedelta(self.end_date, self.start_date)
+        """مدة العقد بصيغة (سنة، شهر، يوم) باستخدام start_date و end_date (حساب شامل ليوم الانتهاء)"""
+        # اجعل الحساب شامل ليوم الانتهاء لتفادي نتائج مثل 11 شهر و 30 يوم لعقد سنة كاملة
+        rd = relativedelta(self.end_date + datetime.timedelta(days=1), self.start_date)
         parts = []
         if rd.years:
             parts.append(_("%(years)s سنة") % {"years": rd.years})
@@ -154,6 +177,40 @@ class Lease(models.Model):
         if rd.days or not parts:
             parts.append(_("%(days)s يوم") % {"days": rd.days})
         return "، ".join(parts)
+
+    def overdue_duration_display(self):
+        """مدة التأخير بصيغة (سنة، شهر، يوم) للعقود المنتهية"""
+        if self.status not in ['expired', 'renewed']:
+            return None
+        today = timezone.now().date()
+        if today <= self.end_date:
+            return None
+        rd = relativedelta(today, self.end_date)
+        parts = []
+        if rd.years:
+            parts.append(_("%(years)s سنة") % {"years": rd.years})
+        if rd.months:
+            parts.append(_("%(months)s شهر") % {"months": rd.months})
+        if rd.days or not parts:
+            parts.append(_("%(days)s يوم") % {"days": rd.days})
+        return "، ".join(parts)
+    
+    def days_overdue(self):
+        """عدد أيام التأخير للعقود المنتهية"""
+        if self.status not in ['expired', 'renewed']:
+            return 0
+        today = timezone.now().date()
+        if today <= self.end_date:
+            return 0
+        return (today - self.end_date).days
+
+    def can_renew(self):
+        """يسمح بالتجديد فقط إذا كنا ضمن 3 أشهر من تاريخ الانتهاء أو بعد الانتهاء."""
+        if self.status == 'cancelled':
+            return False
+        today = timezone.now().date()
+        threshold = self.end_date - relativedelta(months=3)
+        return today >= threshold
     
     def total_rent_without_fees(self):
         months = (self.end_date.year - self.start_date.year) * 12 + (self.end_date.month - self.start_date.month) + 1
@@ -222,8 +279,136 @@ class Lease(models.Model):
     def get_absolute_url(self):
         return reverse('lease_detail', kwargs={'pk': self.pk})
 
+    def get_payment_summary(self):
+        summary = []
+        payments = self.payments.all().order_by('payment_for_year', 'payment_for_month')
+        current_date = self.start_date
+        while current_date <= self.end_date:
+            year, month = current_date.year, current_date.month
+            month_payments = payments.filter(payment_for_year=year, payment_for_month=month)
+            paid_for_month = month_payments.aggregate(total=Sum('amount'))['total'] or 0
+            balance = self.monthly_rent - paid_for_month
+            status = 'due'
+            payment_method = None
+            payment_date = None
+            
+            if month_payments.exists():
+                latest_payment = month_payments.first()
+                payment_method = latest_payment.get_payment_method_display()
+                payment_date = latest_payment.payment_date
+            
+            if paid_for_month >= self.monthly_rent:
+                status = 'paid'
+            elif paid_for_month > 0:
+                status = 'partial'
+                
+            today = timezone.now().date()
+            due_date = datetime.date(year, month, 1)
+            if due_date < today and status != 'due':
+                status = 'upcoming'
+            
+            next_payment_date = datetime.date(year, month, 1) + relativedelta(months=1)
+
+            summary.append({
+                'month': month,
+                'year': year,
+                'month_name': _(current_date.strftime('%B')),
+                'rent_due': self.monthly_rent,
+                'amount_paid': paid_for_month,
+                'balance': balance,
+                'status': status,
+                'payment_method': payment_method,
+                'payment_date': payment_date,
+                'next_payment_date': next_payment_date
+            })
+            current_date += relativedelta(months=1)
+        return summary
+
+    def get_absolute_url(self):
+        return reverse('lease_detail', kwargs={'pk': self.pk})
+
     def __str__(self):
         return f"{self.contract_number} - {self.tenant.name}"
+
+    def _generate_cancellation_notice(self):
+        """إنشاء استمارة إلغاء تلقائياً وإرفاقها بالعقد"""
+        try:
+            from django.template.loader import get_template
+            from django.conf import settings
+            from io import BytesIO
+            from django.core.files.base import ContentFile
+            from django.utils.translation import gettext as _
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            
+            template = get_template('dashboard/reports/lease_cancellation_notice.html')
+            context = {
+                'lease': self,
+                'today': timezone.now().date(),
+                'company': Company.objects.first(),
+            }
+            html = template.render(context)
+            
+            try:
+                from weasyprint import HTML
+                pdf_bytes = HTML(string=html, base_url=settings.BASE_DIR).write_pdf()
+            except Exception:
+                # Fallback to xhtml2pdf
+                from xhtml2pdf import pisa
+                result = BytesIO()
+                pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
+                pdf_bytes = result.getvalue()
+
+            filename = f"lease_cancellation_{self.contract_number}.pdf"
+            doc = Document(lease=self, title=_('استمارة إلغاء عقد') + f" - {self.contract_number}")
+            doc.file.save(filename, ContentFile(pdf_bytes))
+            doc.save()
+            logger.info(f"Cancellation notice generated for lease {self.id}")
+            
+        except Exception as e:
+            logger.exception(f"Failed to generate cancellation notice for lease {self.id}: {e}")
+            # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
+    
+    def _generate_renewal_notice(self):
+        """إنشاء استمارة تجديد تلقائياً وإرفاقها بالعقد"""
+        try:
+            from django.template.loader import get_template
+            from django.conf import settings
+            from io import BytesIO
+            from django.core.files.base import ContentFile
+            from django.utils.translation import gettext as _
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            
+            template = get_template('dashboard/reports/lease_renewal_notice.html')
+            context = {
+                'old_lease': self,
+                'lease': self,  # نفس العقد لأنه تم تجديده
+                'today': timezone.now().date(),
+                'company': Company.objects.first(),
+            }
+            html = template.render(context)
+            
+            try:
+                from weasyprint import HTML
+                pdf_bytes = HTML(string=html, base_url=settings.BASE_DIR).write_pdf()
+            except Exception:
+                from xhtml2pdf import pisa
+                result = BytesIO()
+                pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
+                pdf_bytes = result.getvalue()
+                
+            filename = f"lease_renewal_{self.contract_number}.pdf"
+            doc = Document(lease=self, title=_('استمارة تجديد عقد') + f" - {self.contract_number}")
+            doc.file.save(filename, ContentFile(pdf_bytes))
+            doc.save()
+            logger.info(f"Renewal notice generated for lease {self.id}")
+            
+        except Exception as e:
+            logger.exception(f"Failed to generate renewal notice for lease {self.id}: {e}")
+            # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
 
 class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [

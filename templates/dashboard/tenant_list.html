@@ -1,52 +1,34 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "إدارة المستأجرين" %}{% endblock %}
+
+{% block page_header_title %}{% trans "المستأجرين" %}{% endblock %}
+{% block page_header_actions %}
+<form method="get" class="flex items-center gap-2">
+    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'ابحث عن مستأجر...' %}"
+           class="p-2 md:p-2.5 border rounded-md text-sm md:text-base">
+    <select name="type" class="p-2 md:p-2.5 border rounded-md text-sm md:text-base">
+        <option value="">{% trans "كل الأنواع" %}</option>
+        <option value="individual" {% if request.GET.type == 'individual' %}selected{% endif %}>{% trans "فرد" %}</option>
+        <option value="company" {% if request.GET.type == 'company' %}selected{% endif %}>{% trans "شركة" %}</option>
+    </select>
+    <button type="submit" class="btn-primary px-3 py-2 rounded-md text-sm">{% trans "بحث" %}</button>
+    <a href="{% url 'export_tenants_excel' %}" class="hidden sm:inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm">📊 {% trans "تصدير" %}</a>
+    <a href="{% url 'tenant_create' %}" class="btn-primary px-3 py-2 rounded-md text-sm">{% trans "إضافة" %}</a>
+</form>
+{% endblock %}
+
 {% block content %}
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
-    <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">{% trans "المستأجرين" %}</h2>
-    <div class="flex gap-3 w-full sm:w-auto flex-wrap">
-        <a href="{% url 'export_tenants_excel' %}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg font-semibold w-full sm:w-auto text-center">
-            📊 {% trans "تصدير Excel" %}
-        </a>
-        <a href="{% url 'tenant_create' %}" class="btn-primary py-2 px-5 rounded-lg font-semibold w-full sm:w-auto text-center">{% trans "إضافة مستأجر جديد" %}</a>
-    </div>
-</div>
-
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="card p-4">
-        <p class="text-sm text-gray-600">{% trans "إجمالي المستأجرين" %}</p>
-        <p class="text-3xl font-bold text-gray-800">{{ total_tenants }}</p>
-    </div>
-    <div class="card p-4">
-        <p class="text-sm text-gray-600">{% trans "أفراد" %}</p>
-        <p class="text-3xl font-bold text-blue-600">{{ individual_tenants }}</p>
-    </div>
-    <div class="card p-4">
-        <p class="text-sm text-gray-600">{% trans "شركات" %}</p>
-        <p class="text-3xl font-bold text-green-600">{{ company_tenants }}</p>
-    </div>
-</div>
-
 <div class="card overflow-hidden">
-    <div class="p-4 border-b bg-gray-50">
-        <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'ابحث عن مستأجر...' %}" class="w-full p-2 border rounded-md">
-            <select name="type" class="w-full p-2 border rounded-md">
-                <option value="">{% trans "كل الأنواع" %}</option>
-                <option value="individual" {% if request.GET.type == 'individual' %}selected{% endif %}>{% trans "فرد" %}</option>
-                <option value="company" {% if request.GET.type == 'company' %}selected{% endif %}>{% trans "شركة" %}</option>
-            </select>
-            <button type="submit" class="btn-primary p-2 rounded-lg w-full">{% trans "بحث" %}</button>
-        </form>
-    </div>
     <div class="w-full overflow-x-auto">
-        <table class="w-full text-start min-w-[720px]">
+        <table class="w-full text-start min-w-[900px]">
             <thead class="bg-gray-50 border-b">
                 <tr>
                     <th class="p-4">{% trans "الاسم" %}</th>
-                    <th class="p-4">{% trans "النوع" %}</th>
                     <th class="p-4">{% trans "الهاتف" %}</th>
-                    <th class="p-4">{% trans "البريد الإلكتروني" %}</th>
+                    <th class="p-4">{% trans "النوع" %}</th>
+                    <th class="p-4">{% trans "عدد العقود النشطة" %}</th>
+                    <th class="p-4">{% trans "إجمالي الإيجار الشهري" %}</th>
                     <th class="p-4">{% trans "التقييم" %}</th>
                     <th class="p-4">{% trans "إجراءات" %}</th>
                 </tr>
@@ -55,9 +37,10 @@
                 {% for tenant in tenants %}
                 <tr class="border-b hover:bg-gray-50">
                     <td class="p-4"><a href="{% url 'tenant_detail' tenant.pk %}" class="font-bold text-blue-600">{{ tenant.name }}</a></td>
-                    <td class="p-4">{{ tenant.get_tenant_type_display }}</td>
                     <td class="p-4">{{ tenant.phone }}</td>
-                    <td class="p-4">{{ tenant.email|default:"-" }}</td>
+                    <td class="p-4">{{ tenant.get_tenant_type_display }}</td>
+                    <td class="p-4">{{ tenant.active_leases_count|default:0 }}</td>
+                    <td class="p-4 font-mono">{{ tenant.total_monthly_rent|default_if_none:"-" }}</td>
                     <td class="p-4">
                         <span class="text-yellow-500">
                             {% for i in "12345" %}
@@ -74,7 +57,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="p-6 text-center text-gray-500">{% trans "لم يتم العثور على مستأجرين." %}</td></tr>
+                <tr><td colspan="7" class="p-6 text-center text-gray-500">{% trans "لم يتم العثور على مستأجرين." %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

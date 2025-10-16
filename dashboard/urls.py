@@ -11,7 +11,7 @@ from .views import (
     PaymentListView, PaymentCreateView, PaymentUpdateView, PaymentDeleteView, PaymentReceiptPDFView,
     CheckManagementView, CheckStatusUpdateView,
     UserManagementView, UserCreateView, UserUpdateView, UserDeleteView,
-    ReportSelectionView, GenerateTenantStatementPDF, GenerateMonthlyPLReportPDF, GenerateAnnualPLReportPDF, GenerateOccupancyReportPDF, GeneratePaymentReceiptPDF,
+    ReportSelectionView, LeaseReportView, GenerateTenantStatementPDF, GenerateMonthlyPLReportPDF, GenerateAnnualPLReportPDF, GenerateOccupancyReportPDF, GeneratePaymentReceiptPDF,
     CompanyUpdateView, UpdateTenantRatingView,
     InvoiceListView, InvoiceDetailView, InvoiceCreateView, InvoiceUpdateView, InvoiceDeleteView,
     # Real Estate Office Management Views
@@ -23,6 +23,8 @@ from .views import (
     SecurityDepositListView, SecurityDepositCreateView, SecurityDepositUpdateView, SecurityDepositDeleteView,
     create_commission_distribution,
     finance_unlock, finance_lock,
+    backup_now, custom_logout, backup_restore_page, restore_backup,
+    media_diagnostics,
 )
 from .auth_views import (
     EnhancedLoginView, send_login_otp, verify_login_otp, user_profile,
@@ -42,9 +44,17 @@ from .export_views import (
 
 urlpatterns = [
     path('', DashboardHomeView.as_view(), name='dashboard_home'),
+    # Backup & Custom Logout
+    path('backup/', backup_now, name='dashboard_backup_now'),
+    path('backup/restore/', backup_restore_page, name='dashboard_backup_restore_page'),
+    path('backup/restore/apply/', restore_backup, name='dashboard_restore_backup'),
+    path('logout/', custom_logout, name='dashboard_custom_logout'),
     # Finance lock/unlock
     path('finance/unlock/', finance_unlock, name='finance_unlock'),
     path('finance/lock/', finance_lock, name='finance_lock'),
+    
+    # Media Diagnostics
+    path('diagnostics/media/', media_diagnostics, name='media_diagnostics'),
 
     # Company Settings
     path('settings/company/', CompanyUpdateView.as_view(), name='company_update'),
@@ -120,6 +130,7 @@ urlpatterns = [
 
     # Reports
     path('reports/', ReportSelectionView.as_view(), name='report_selection'),
+    path('reports/leases/', LeaseReportView.as_view(), name='report_leases'),
     path('reports/tenant/<int:lease_pk>/', GenerateTenantStatementPDF.as_view(), name='report_tenant_statement'),
     path('reports/payment/<int:pk>/receipt/', GeneratePaymentReceiptPDF.as_view(), name='report_payment_receipt'), # ADDED
     path('reports/monthly-pl/', GenerateMonthlyPLReportPDF.as_view(), name='report_monthly_pl'),

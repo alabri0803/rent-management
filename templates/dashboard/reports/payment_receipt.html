@@ -1,16 +1,18 @@
 {% load i18n %}
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        @font-face { 
-            font-family: 'Tajawal'; 
-            src: url(https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1nzSBC45I.woff2) format('woff2'); 
+        @font-face {
+            font-family: 'Amiri';
+            src: url("{% static 'fonts/Amiri-Regular.ttf' %}") format('truetype');
+            font-weight: normal; font-style: normal;
         }
         
         body { 
-            font-family: 'Tajawal', Arial, sans-serif; 
+            font-family: 'Amiri', Arial, sans-serif; 
             direction: rtl; 
             text-align: right; 
             font-size: 14px;

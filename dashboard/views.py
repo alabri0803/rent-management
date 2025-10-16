@@ -1,4 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
+import os
+import io
+import zipfile
+import shutil
+import tempfile
+from datetime import datetime
+from django.core.management import call_command
 
 def login_redirect(request):
     if request.user.is_staff:
@@ -19,13 +26,15 @@ from django.db.models import Sum, Count, Q
 from django.db import transaction
 from dateutil.relativedelta import relativedelta
 from io import BytesIO
+from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from django.template.loader import get_template
-from django.utils.translation import gettext as _
 from django.conf import settings
 from django import forms
 import json
 from django.views.decorators.http import require_POST
+import logging
+logger = logging.getLogger(__name__)
 
 from .models import (
     Tenant, Unit, Building, Lease, Document, MaintenanceRequest, 
@@ -39,7 +48,150 @@ from .forms import (
     RealEstateOfficeForm, BuildingOwnerForm, CommissionAgreementForm, 
     RentCollectionForm, CommissionDistributionForm, SecurityDepositForm
 )
-from .utils import render_to_pdf
+from .utils import render_to_pdf, generate_pdf_bytes
+
+# --- Backup Utilities ---
+def perform_backup() -> str:
+    """Create a timestamped zip backup containing DB JSON dump and media files.
+    Returns the absolute path to the created backup file.
+    """
+    backups_dir = os.path.join(str(settings.BASE_DIR), 'backups')
+    os.makedirs(backups_dir, exist_ok=True)
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_zip_path = os.path.join(backups_dir, f'backup_{timestamp}.zip')
+
+    # Create in-memory DB dump
+    db_io = io.StringIO()
+    call_command('dumpdata', '--natural-foreign', '--natural-primary', '--indent', '2', stdout=db_io)
+    db_data = db_io.getvalue().encode('utf-8')
+
+    with zipfile.ZipFile(backup_zip_path, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+        # Add DB dump
+        zf.writestr('db.json', db_data)
+
+        # Add media directory if exists
+        media_root = getattr(settings, 'MEDIA_ROOT', None)
+        if media_root and os.path.isdir(media_root):
+            for root, dirs, files in os.walk(media_root):
+                for file in files:
+                    abs_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(abs_path, media_root)
+                    zf.write(abs_path, arcname=os.path.join('media', rel_path))
+
+    return backup_zip_path
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def backup_now(request):
+    try:
+        path = perform_backup()
+        messages.success(request, _("تم إنشاء نسخة احتياطية بنجاح: ") + os.path.basename(path))
+    except Exception as e:
+        logger.exception("Backup failed")
+        messages.error(request, _("فشل إنشاء النسخة الاحتياطية."))
+    # Redirect back to dashboard or referrer
+    return redirect(request.META.get('HTTP_REFERER') or 'dashboard_home')
+
+from django.contrib.auth import logout as auth_logout
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def custom_logout(request):
+    """Trigger a backup, then log the user out and redirect to login page."""
+    try:
+        perform_backup()
+    except Exception:
+        logger.exception("Backup during logout failed")
+        # Proceed with logout even if backup fails
+    auth_logout(request)
+    messages.info(request, _("تم تسجيل الخروج."))
+    return redirect(settings.LOGOUT_REDIRECT_URL or 'login')
+
+# --- Restore Utilities & Views ---
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def backup_restore_page(request):
+    """Simple page to upload or select an existing backup to restore."""
+    backups_dir = os.path.join(str(settings.BASE_DIR), 'backups')
+    os.makedirs(backups_dir, exist_ok=True)
+    available = []
+    try:
+        for name in sorted(os.listdir(backups_dir), reverse=True):
+            if name.endswith('.zip'):
+                available.append(name)
+    except Exception:
+        logger.exception("Failed listing backups")
+    return render(request, 'dashboard/backup_restore.html', {
+        'available_backups': available
+    })
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def restore_backup(request):
+    """Restore database and media from a provided backup zip (upload or existing file name).
+    WARNING: Restoring may overwrite existing data and media files.
+    """
+    backups_dir = os.path.join(str(settings.BASE_DIR), 'backups')
+    os.makedirs(backups_dir, exist_ok=True)
+
+    uploaded = request.FILES.get('backup_file')
+    chosen_name = request.POST.get('backup_name', '').strip()
+
+    if uploaded:
+        # Save uploaded file to backups dir
+        target_path = os.path.join(backups_dir, uploaded.name)
+        with open(target_path, 'wb+') as dst:
+            for chunk in uploaded.chunks():
+                dst.write(chunk)
+        backup_zip_path = target_path
+    elif chosen_name:
+        backup_zip_path = os.path.join(backups_dir, chosen_name)
+        if not os.path.isfile(backup_zip_path):
+            messages.error(request, _("الملف المحدد غير موجود."))
+            return redirect('dashboard_backup_restore_page')
+    else:
+        messages.error(request, _("الرجاء اختيار أو رفع ملف النسخة الاحتياطية."))
+        return redirect('dashboard_backup_restore_page')
+
+    try:
+        temp_dir = tempfile.mkdtemp(prefix='restore_', dir=backups_dir)
+        with zipfile.ZipFile(backup_zip_path, 'r') as zf:
+            zf.extractall(temp_dir)
+
+        # Restore DB if db.json present
+        db_json_path = os.path.join(temp_dir, 'db.json')
+        if os.path.isfile(db_json_path):
+            # Consider flushing? We avoid destructive flush by default.
+            call_command('loaddata', db_json_path)
+
+        # Restore media if present
+        extracted_media = os.path.join(temp_dir, 'media')
+        media_root = getattr(settings, 'MEDIA_ROOT', None)
+        if media_root and os.path.isdir(extracted_media):
+            for root, dirs, files in os.walk(extracted_media):
+                rel = os.path.relpath(root, extracted_media)
+                dest_dir = os.path.join(media_root, rel) if rel != '.' else media_root
+                os.makedirs(dest_dir, exist_ok=True)
+                for f in files:
+                    src = os.path.join(root, f)
+                    dst = os.path.join(dest_dir, f)
+                    shutil.copy2(src, dst)
+
+        messages.success(request, _("تمت عملية الاسترجاع بنجاح."))
+    except Exception:
+        logger.exception("Restore failed")
+        messages.error(request, _("فشلت عملية الاسترجاع. الرجاء التحقق من الملف والصلاحيات."))
+    finally:
+        try:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        except Exception:
+            pass
+
+    return redirect('dashboard_backup_restore_page')
 
 class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
@@ -158,13 +310,14 @@ class UnitListView(StaffRequiredMixin, ListView):
     model = Unit
     template_name = 'dashboard/unit_list.html'
     context_object_name = 'units'
-    paginate_by = 20
+    paginate_by = 5
 
     def get_queryset(self):
         queryset = Unit.objects.all().select_related('building').order_by('building', 'unit_number')
         search_query = self.request.GET.get('q', '')
         building_filter = self.request.GET.get('building', '')
         status_filter = self.request.GET.get('status', '')
+        unit_type_filter = self.request.GET.get('unit_type', '')
         
         if search_query:
             queryset = queryset.filter(Q(unit_number__icontains=search_query) | Q(building__name__icontains=search_query))
@@ -174,12 +327,15 @@ class UnitListView(StaffRequiredMixin, ListView):
             queryset = queryset.filter(is_available=True)
         elif status_filter == 'occupied':
             queryset = queryset.filter(is_available=False)
+        if unit_type_filter:
+            queryset = queryset.filter(unit_type=unit_type_filter)
         
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['buildings'] = Building.objects.all()
+        context['unit_type_choices'] = Unit.UNIT_TYPE_CHOICES
         context['total_units'] = Unit.objects.count()
         context['available_units'] = Unit.objects.filter(is_available=True).count()
         context['occupied_units'] = Unit.objects.filter(is_available=False).count()
@@ -243,22 +399,26 @@ class TenantListView(StaffRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = Tenant.objects.all().order_by('name')
-        search_query = self.request.GET.get('q', '')
-        tenant_type = self.request.GET.get('type', '')
-        
-        if search_query:
-            queryset = queryset.filter(Q(name__icontains=search_query) | Q(phone__icontains=search_query) | Q(email__icontains=search_query))
-        if tenant_type:
-            queryset = queryset.filter(tenant_type=tenant_type)
-        
-        return queryset
+        from django.db.models import Q, Count, Sum
+        qs = Tenant.objects.all()
+        q = self.request.GET.get('q', '').strip()
+        ttype = self.request.GET.get('type', '').strip()
+        if q:
+            qs = qs.filter(Q(name__icontains=q) | Q(phone__icontains=q) | Q(email__icontains=q))
+        if ttype in ['individual', 'company']:
+            qs = qs.filter(tenant_type=ttype)
+        # Annotate active/expiring leases count and total monthly rent
+        qs = qs.annotate(
+            active_leases_count=Count('lease', filter=Q(lease__status__in=['active', 'expiring_soon'])),
+            total_monthly_rent=Sum('lease__monthly_rent', filter=Q(lease__status__in=['active', 'expiring_soon']))
+        ).order_by('name')
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['total_tenants'] = Tenant.objects.count()
-        context['individual_tenants'] = Tenant.objects.filter(tenant_type='individual').count()
-        context['company_tenants'] = Tenant.objects.filter(tenant_type='company').count()
+        context['total_tenants'] = context['paginator'].count if 'paginator' in context else len(context['tenants'])
+        context['individual_tenants'] = self.get_queryset().filter(tenant_type='individual').count()
+        context['company_tenants'] = self.get_queryset().filter(tenant_type='company').count()
         return context
 
 class TenantDetailView(StaffRequiredMixin, DetailView):
@@ -319,6 +479,9 @@ class BuildingListView(StaffRequiredMixin, ListView):
     context_object_name = 'buildings'
     paginate_by = 20
 
+    def get_queryset(self):
+        return Building.objects.all().order_by('name')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         for building in context['buildings']:
@@ -373,7 +536,16 @@ class LeaseListView(StaffRequiredMixin, ListView):
     context_object_name = 'leases'
     paginate_by = 10
     def get_queryset(self):
-        queryset = Lease.objects.all().order_by('-start_date')
+        # Support filtering by status via ?status=; default shows active+expiring_soon
+        status = self.request.GET.get('status', '').strip()
+        valid_statuses = {k for k, _ in Lease.STATUS_CHOICES}
+        if status == 'all':
+            queryset = Lease.objects.all()
+        elif status in valid_statuses:
+            queryset = Lease.objects.filter(status=status)
+        else:
+            queryset = Lease.objects.filter(status__in=['active', 'expiring_soon'])
+        queryset = queryset.order_by('-start_date')
         search_query = self.request.GET.get('q', '')
         if search_query:
             queryset = queryset.filter(Q(contract_number__icontains=search_query) | Q(tenant__name__icontains=search_query) | Q(unit__unit_number__icontains=search_query))
@@ -381,6 +553,8 @@ class LeaseListView(StaffRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['current_status'] = self.request.GET.get('status', '').strip()
+        context['status_choices'] = Lease.STATUS_CHOICES
         # This loop is inefficient, status should be updated by a scheduled task
         # for lease in Lease.objects.all(): lease.save() 
         active_leases = Lease.objects.filter(status='active')
@@ -468,6 +642,22 @@ class LeaseCancelView(StaffRequiredMixin, UpdateView):
         lease.unit.is_available = True
         lease.unit.save()
         lease.save()
+        # Generate and attach cancellation PDF to Documents
+        try:
+            context = {
+                'lease': lease,
+                'today': timezone.now().date(),
+                'company': Company.objects.first(),
+            }
+            pdf_bytes = generate_pdf_bytes('dashboard/reports/lease_cancellation_notice.html', context)
+
+            filename = f"lease_cancellation_{lease.contract_number}.pdf"
+            doc = Document(lease=lease, title=_('استمارة إلغاء عقد') + f" - {lease.contract_number}")
+            doc.file.save(filename, ContentFile(pdf_bytes))
+            doc.save()
+        except Exception as e:
+            logger.exception("Failed to generate/save cancellation PDF for lease %s", lease.id)
+            messages.warning(self.request, _("تم إلغاء العقد، لكن تعذر إرفاق استمارة الإلغاء تلقائياً."))
         messages.success(self.request, _("تم إلغاء العقد بنجاح."))
         return super().form_valid(form)
 
@@ -477,6 +667,10 @@ class LeaseCancelView(StaffRequiredMixin, UpdateView):
 @user_passes_test(lambda u: u.is_staff)
 def renew_lease(request, pk):
     original_lease = get_object_or_404(Lease, pk=pk)
+    # Block renewal if not within 3 months window
+    if not original_lease.can_renew():
+        messages.error(request, _("لا يمكن تجديد العقد إلا قبل 3 أشهر من تاريخ الانتهاء."))
+        return redirect('lease_detail', pk=pk)
     if request.method == 'POST':
         duration = request.POST.get('duration')
         new_start_date = original_lease.end_date + relativedelta(days=1)
@@ -491,17 +685,62 @@ def renew_lease(request, pk):
         # Create a new contract number to avoid unique constraint issues
         new_contract_number = f"{original_lease.contract_number}-R{Lease.objects.filter(contract_number__startswith=original_lease.contract_number).count()}"
 
+        # First, mark the original lease as renewed (لا يظهر ضمن المنتهية)
+        original_lease.status = 'renewed'; original_lease.save(update_fields=['status'])
+
+        # Then create the new lease (this will set unit as occupied again)
         new_lease = Lease.objects.create(unit=original_lease.unit, tenant=original_lease.tenant, contract_number=new_contract_number, monthly_rent=original_lease.monthly_rent, start_date=new_start_date, end_date=new_end_date, electricity_meter=original_lease.electricity_meter, water_meter=original_lease.water_meter)
-        original_lease.status = 'expired'; original_lease.save()
+
+        # Ensure unit remains occupied after renewal
+        new_lease.unit.is_available = False; new_lease.unit.save()
+
+        # Attach renewal PDF notice to new lease documents
+        try:
+            context = {
+                'old_lease': original_lease,
+                'lease': new_lease,
+                'today': timezone.now().date(),
+                'company': Company.objects.first(),
+            }
+            pdf_bytes = generate_pdf_bytes('dashboard/reports/lease_renewal_notice.html', context)
+
+            filename = f"lease_renewal_{new_lease.contract_number}.pdf"
+            doc = Document(lease=new_lease, title=_('استمارة تجديد عقد') + f" - {new_lease.contract_number}")
+            doc.file.save(filename, ContentFile(pdf_bytes))
+            doc.save()
+        except Exception as e:
+            logger.exception("Failed to generate/save renewal PDF for new lease %s (from old %s)", new_lease.id, original_lease.id)
+            messages.warning(request, _("تم التجديد، لكن تعذر إرفاق استمارة التجديد تلقائياً."))
         messages.success(request, _("تم تجديد العقد بنجاح!")); return redirect('lease_detail', pk=new_lease.pk)
     return render(request, 'dashboard/lease_renew.html', {'lease': original_lease})
 
 class DocumentUploadView(StaffRequiredMixin, CreateView):
-    model = Document; form_class = DocumentForm
+    model = Document
+    form_class = DocumentForm
+    
     def form_valid(self, form):
-        lease = get_object_or_404(Lease, pk=self.kwargs.get('lease_pk')); form.instance.lease = lease
-        messages.success(self.request, _("تم رفع المستند بنجاح!")); return super().form_valid(form)
-    def get_success_url(self): return reverse('lease_detail', kwargs={'pk': self.kwargs.get('lease_pk')})
+        try:
+            lease = get_object_or_404(Lease, pk=self.kwargs.get('lease_pk'))
+            form.instance.lease = lease
+            response = super().form_valid(form)
+            messages.success(self.request, _("تم رفع المستند بنجاح!"))
+            return response
+        except Exception as e:
+            logger.exception(f"Failed to upload document for lease {self.kwargs.get('lease_pk')}")
+            messages.error(self.request, _("فشل رفع المستند. الرجاء التحقق من صلاحيات الكتابة على السيرفر."))
+            return redirect('lease_detail', pk=self.kwargs.get('lease_pk'))
+    
+    def form_invalid(self, form):
+        logger.warning(f"Invalid document form: {form.errors}")
+        error_messages = []
+        for field, errors in form.errors.items():
+            for error in errors:
+                error_messages.append(f"{field}: {error}")
+        messages.error(self.request, _("خطأ في البيانات: ") + "; ".join(error_messages))
+        return redirect('lease_detail', pk=self.kwargs.get('lease_pk'))
+    
+    def get_success_url(self):
+        return reverse('lease_detail', kwargs={'pk': self.kwargs.get('lease_pk')})
 
 class DocumentDeleteView(StaffRequiredMixin, DeleteView):
     model = Document; template_name = 'dashboard/document_confirm_delete.html'
@@ -541,7 +780,31 @@ class ExpenseDeleteView(StaffRequiredMixin, DeleteView):
 
 
 class PaymentListView(StaffRequiredMixin, ListView):
-    model = Payment; template_name = 'dashboard/payment_list.html'; context_object_name = 'payments'; paginate_by = 20
+    model = Payment
+    template_name = 'dashboard/payment_list.html'
+    context_object_name = 'payments'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = Payment.objects.select_related('lease__tenant', 'lease__unit').all().order_by('-payment_date')
+        q = self.request.GET.get('q', '').strip()
+        method = self.request.GET.get('payment_method', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(lease__contract_number__icontains=q) |
+                Q(lease__tenant__name__icontains=q) |
+                Q(lease__unit__unit_number__icontains=q)
+            )
+        if method in dict(Payment.PAYMENT_METHOD_CHOICES):
+            qs = qs.filter(payment_method=method)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['payment_method_choices'] = Payment.PAYMENT_METHOD_CHOICES
+        context['current_payment_method'] = self.request.GET.get('payment_method', '')
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
 
 class PaymentCreateView(StaffRequiredMixin, CreateView):
     model = Payment; form_class = PaymentForm; template_name = 'dashboard/payment_form.html'; success_url = reverse_lazy('payment_list')
@@ -964,6 +1227,49 @@ class InvoiceDeleteView(StaffRequiredMixin, DeleteView):
 class ReportSelectionView(StaffRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         return render(request, 'dashboard/report_selection.html')
+
+# ADDED: Lease contracts report view
+class LeaseReportView(StaffRequiredMixin, ListView):
+    model = Lease
+    template_name = 'dashboard/reports/lease_report.html'
+    context_object_name = 'leases'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = Lease.objects.select_related('tenant', 'unit', 'unit__building').all()
+        # Filters: date range on start_date/end_date and simple q search
+        start = self.request.GET.get('start')
+        end = self.request.GET.get('end')
+        q = self.request.GET.get('q', '').strip()
+        if start:
+            qs = qs.filter(start_date__gte=start)
+        if end:
+            qs = qs.filter(end_date__lte=end)
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(contract_number__icontains=q) |
+                Q(tenant__name__icontains=q) |
+                Q(unit__unit_number__icontains=q) |
+                Q(unit__building__name__icontains=q)
+            )
+        return qs.order_by('-start_date')
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Sum
+        context = super().get_context_data(**kwargs)
+        # Totals for the current page
+        page_leases = context['leases']
+        context['totals'] = {
+            'count': page_leases.paginator.count if hasattr(page_leases, 'paginator') else len(page_leases),
+            'monthly_rent_sum': sum(l.monthly_rent for l in page_leases),
+        }
+        context['filters'] = {
+            'start': self.request.GET.get('start', ''),
+            'end': self.request.GET.get('end', ''),
+            'q': self.request.GET.get('q', ''),
+        }
+        return context
 
 class GenerateTenantStatementPDF(StaffRequiredMixin, View):
     def get(self, request, lease_pk, *args, **kwargs):
@@ -1524,3 +1830,73 @@ def create_commission_distribution(request, collection_pk):
     
     messages.success(request, _("تم إنشاء توزيع العمولة تلقائياً."))
     return redirect('commission_distribution_detail', pk=distribution.pk)
+
+
+# --- Media Diagnostics ---
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def media_diagnostics(request):
+    """صفحة تشخيص لفحص صلاحيات مجلد media"""
+    import os
+    import stat
+    
+    diagnostics = {
+        'media_root': settings.MEDIA_ROOT,
+        'media_url': settings.MEDIA_URL,
+        'exists': os.path.exists(settings.MEDIA_ROOT),
+        'is_dir': os.path.isdir(settings.MEDIA_ROOT) if os.path.exists(settings.MEDIA_ROOT) else False,
+        'writable': os.access(settings.MEDIA_ROOT, os.W_OK) if os.path.exists(settings.MEDIA_ROOT) else False,
+        'readable': os.access(settings.MEDIA_ROOT, os.R_OK) if os.path.exists(settings.MEDIA_ROOT) else False,
+    }
+    
+    if diagnostics['exists']:
+        try:
+            stat_info = os.stat(settings.MEDIA_ROOT)
+            diagnostics['permissions'] = oct(stat_info.st_mode)[-3:]
+            diagnostics['owner_uid'] = stat_info.st_uid
+            diagnostics['owner_gid'] = stat_info.st_gid
+        except Exception as e:
+            diagnostics['stat_error'] = str(e)
+    
+    # محاولة إنشاء ملف اختبار
+    test_file_path = os.path.join(settings.MEDIA_ROOT, 'test_write.txt')
+    try:
+        with open(test_file_path, 'w') as f:
+            f.write('test')
+        diagnostics['write_test'] = 'SUCCESS'
+        os.remove(test_file_path)
+    except Exception as e:
+        diagnostics['write_test'] = f'FAILED: {str(e)}'
+    
+    return HttpResponse(f"<pre>{json.dumps(diagnostics, indent=2)}</pre>")
+
+
+# --- Serve Media Files (for production) ---
+@login_required
+def serve_protected_media(request, path):
+    """
+    خدمة ملفات الميديا بشكل آمن ومحمي.
+    يتحقق من صلاحيات المستخدم قبل السماح بالوصول للملف.
+    """
+    import os
+    from django.http import FileResponse, Http404
+    
+    # التحقق من أن المستخدم موظف أو مالك الملف
+    if not request.user.is_staff:
+        # يمكن إضافة منطق إضافي للتحقق من أن المستخدم يملك حق الوصول للملف
+        return HttpResponse("Unauthorized", status=403)
+    
+    # بناء المسار الكامل للملف
+    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    
+    # التحقق من وجود الملف
+    if not os.path.exists(file_path):
+        logger.warning(f"Media file not found: {file_path}")
+        raise Http404("File not found")
+    
+    # إرجاع الملف
+    try:
+        return FileResponse(open(file_path, 'rb'))
+    except Exception as e:
+        logger.exception(f"Error serving media file {path}")
+        raise Http404("Error serving file")

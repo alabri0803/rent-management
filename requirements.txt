@@ -64,3 +64,4 @@ python-dotenv
 # Optional SMS dependencies (uncomment if using SMS services)
 # twilio
 # boto3
+pycairo
