@@ -636,9 +636,30 @@ class LeaseUpdateView(StaffRequiredMixin, UpdateView):
         messages.success(self.request, _("تم تحديث العقد بنجاح!")); return super().form_valid(form)
 
 class LeaseDeleteView(StaffRequiredMixin, DeleteView):
-    model = Lease; template_name = 'dashboard/lease_confirm_delete.html'; success_url = reverse_lazy('lease_list')
+    model = Lease
+    template_name = 'dashboard/lease_confirm_delete.html'
+    success_url = reverse_lazy('lease_list')
+    
     def form_valid(self, form):
-        messages.success(self.request, _("تم حذف العقد بنجاح.")); return super().form_valid(form)
+        # حفظ مرجع للوحدة قبل حذف العقد
+        unit = self.object.unit
+        contract_number = self.object.contract_number
+        
+        try:
+            # تحديث حالة الوحدة إلى متاحة عند حذف العقد
+            if unit:
+                unit.is_available = True
+                unit.save()
+                
+            # حذف العقد
+            result = super().form_valid(form)
+            
+            messages.success(self.request, _(f"تم حذف العقد {contract_number} بنجاح وتم تحرير الوحدة {unit}."))
+            return result
+            
+        except Exception as e:
+            messages.error(self.request, _(f"حدث خطأ أثناء حذف العقد: {str(e)}"))
+            return self.form_invalid(form)
 
 # ADDED: Lease Cancellation View
 class LeaseCancelView(StaffRequiredMixin, UpdateView):

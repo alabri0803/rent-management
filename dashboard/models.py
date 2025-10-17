@@ -13,6 +13,16 @@ import secrets
 import string
 from django.core.validators import RegexValidator
 
+class LeaseManager(models.Manager):
+    def delete(self):
+        """تحديث حالة الوحدات إلى متاحة عند الحذف المجمع للعقود"""
+        # تحديث حالة جميع الوحدات المرتبطة بالعقود المحددة للحذف
+        units_to_update = self.values_list('unit', flat=True)
+        Unit.objects.filter(id__in=units_to_update).update(is_available=True)
+        
+        # تنفيذ الحذف المجمع
+        return super().delete()
+
 class Company(models.Model):
     name = models.CharField(_("اسم الشركة"), max_length=200)
     logo = models.ImageField(_("الشعار"), upload_to='company_logos/', blank=True, null=True)
@@ -104,6 +114,9 @@ class Lease(models.Model):
     registration_fee = models.DecimalField(_("رسوم تسجيل العقد (3%)"), max_digits=10, decimal_places=2, blank=True)
     cancellation_date = models.DateField(_("تاريخ الإلغاء"), blank=True, null=True)
     cancellation_reason = models.TextField(_("سبب الإلغاء"), blank=True, null=True)
+    
+    # المدير المخصص
+    objects = LeaseManager()
     
     class Meta:
         verbose_name = _("عقد إيجار")
@@ -335,6 +348,16 @@ class Lease(models.Model):
 
     def __str__(self):
         return f"{self.contract_number} - {self.tenant.name}"
+    
+    def delete(self, *args, **kwargs):
+        """تحديث حالة الوحدة إلى متاحة عند حذف العقد"""
+        # تحديث حالة الوحدة إلى متاحة قبل حذف العقد
+        if self.unit:
+            self.unit.is_available = True
+            self.unit.save()
+        
+        # حذف العقد
+        super().delete(*args, **kwargs)
 
     def _generate_cancellation_notice(self):
         """إنشاء استمارة إلغاء تلقائياً وإرفاقها بالعقد"""
