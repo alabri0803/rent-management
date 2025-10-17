@@ -348,6 +348,16 @@ class Lease(models.Model):
             
             logger = logging.getLogger(__name__)
             
+            # التحقق من عدم وجود استمارة إلغاء مسبقة لتجنب التكرار
+            existing_cancellation_doc = Document.objects.filter(
+                lease=self,
+                title__icontains='استمارة إلغاء عقد'
+            ).first()
+            
+            if existing_cancellation_doc:
+                logger.info(f"Cancellation notice already exists for lease {self.id}")
+                return existing_cancellation_doc
+            
             template = get_template('dashboard/reports/lease_cancellation_notice.html')
             context = {
                 'lease': self,
@@ -371,10 +381,12 @@ class Lease(models.Model):
             doc.file.save(filename, ContentFile(pdf_bytes))
             doc.save()
             logger.info(f"Cancellation notice generated for lease {self.id}")
+            return doc
             
         except Exception as e:
             logger.exception(f"Failed to generate cancellation notice for lease {self.id}: {e}")
             # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
+            return None
     
     def _generate_initial_invoice(self):
         """إنشاء فاتورة أولية تلقائياً عند إنشاء عقد جديد"""

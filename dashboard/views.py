@@ -642,23 +642,8 @@ class LeaseCancelView(StaffRequiredMixin, UpdateView):
         lease.unit.is_available = True
         lease.unit.save()
         lease.save()
-        # Generate and attach cancellation PDF to Documents
-        try:
-            context = {
-                'lease': lease,
-                'today': timezone.now().date(),
-                'company': Company.objects.first(),
-            }
-            pdf_bytes = generate_pdf_bytes('dashboard/reports/lease_cancellation_notice.html', context)
-
-            filename = f"lease_cancellation_{lease.contract_number}.pdf"
-            doc = Document(lease=lease, title=_('استمارة إلغاء عقد') + f" - {lease.contract_number}")
-            doc.file.save(filename, ContentFile(pdf_bytes))
-            doc.save()
-        except Exception as e:
-            logger.exception("Failed to generate/save cancellation PDF for lease %s", lease.id)
-            messages.warning(self.request, _("تم إلغاء العقد، لكن تعذر إرفاق استمارة الإلغاء تلقائياً."))
-        messages.success(self.request, _("تم إلغاء العقد بنجاح."))
+        # استمارة الإلغاء ستُنشأ تلقائياً من خلال دالة save() في النموذج
+        messages.success(self.request, _("تم إلغاء العقد وإرفاق استمارة الإلغاء بنجاح."))
         return super().form_valid(form)
 
 # ... (renew_lease, Document views, Maintenance views, Expense views remain similar) ...
