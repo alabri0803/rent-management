@@ -2,73 +2,149 @@
 {% load i18n %}
 {% block title %}{% trans "إدارة المستأجرين" %}{% endblock %}
 
-{% block page_header_title %}{% trans "المستأجرين" %}{% endblock %}
-{% block page_header_actions %}
-<form method="get" class="flex items-center gap-2">
-    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'ابحث عن مستأجر...' %}"
-           class="p-2 md:p-2.5 border rounded-md text-sm md:text-base">
-    <select name="type" class="p-2 md:p-2.5 border rounded-md text-sm md:text-base">
-        <option value="">{% trans "كل الأنواع" %}</option>
-        <option value="individual" {% if request.GET.type == 'individual' %}selected{% endif %}>{% trans "فرد" %}</option>
-        <option value="company" {% if request.GET.type == 'company' %}selected{% endif %}>{% trans "شركة" %}</option>
-    </select>
-    <button type="submit" class="btn-primary px-3 py-2 rounded-md text-sm">{% trans "بحث" %}</button>
-    <a href="{% url 'export_tenants_excel' %}" class="hidden sm:inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm">📊 {% trans "تصدير" %}</a>
-    <a href="{% url 'tenant_create' %}" class="btn-primary px-3 py-2 rounded-md text-sm">{% trans "إضافة" %}</a>
-</form>
-{% endblock %}
-
 {% block content %}
+<div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+    <h2 class="text-2xl md:text-3xl font-bold text-gray-800">{% trans "المستأجرين" %}</h2>
+    <div class="flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'export_tenants_excel' %}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg font-semibold text-center text-sm md:text-base">
+            📊 {% trans "تصدير Excel" %}
+        </a>
+        <a href="{% url 'tenant_create' %}" class="btn-primary py-2 px-5 rounded-lg font-semibold text-center text-sm md:text-base">{% trans "إضافة مستأجر جديد" %}</a>
+    </div>
+</div>
 <div class="card overflow-hidden">
-    <div class="w-full overflow-x-auto">
-        <table class="w-full text-start min-w-[900px]">
+    <div class="p-4 space-y-3">
+        <!-- إحصائيات المستأجرين -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <a href="?type=individual" class="block rounded-lg border p-4 hover:bg-blue-50">
+                <div class="text-sm text-gray-600">{% trans "أفراد" %}</div>
+                <div class="text-2xl font-bold text-blue-700">{{ stats.individual_count|default:0 }}</div>
+            </a>
+            <a href="?type=company" class="block rounded-lg border p-4 hover:bg-green-50">
+                <div class="text-sm text-gray-600">{% trans "شركات" %}</div>
+                <div class="text-2xl font-bold text-green-700">{{ stats.company_count|default:0 }}</div>
+            </a>
+            <div class="block rounded-lg border p-4 bg-gray-50">
+                <div class="text-sm text-gray-600">{% trans "إجمالي المستأجرين" %}</div>
+                <div class="text-2xl font-bold text-gray-700">{{ stats.total_count|default:0 }}</div>
+            </div>
+        </div>
+        
+        <!-- تبويبات الفلترة -->
+        <div class="flex items-center gap-2 overflow-x-auto pt-1">
+            <a href="?" class="px-4 py-2 rounded-full border text-sm whitespace-nowrap {% if not request.GET.type %}bg-gray-600 text-white border-gray-600{% else %}hover:bg-gray-50{% endif %}">{% trans "الكل" %}</a>
+            <a href="?type=individual" class="px-4 py-2 rounded-full border text-sm whitespace-nowrap {% if request.GET.type == 'individual' %}bg-blue-600 text-white border-blue-600{% else %}hover:bg-blue-50{% endif %}">{% trans "أفراد" %}</a>
+            <a href="?type=company" class="px-4 py-2 rounded-full border text-sm whitespace-nowrap {% if request.GET.type == 'company' %}bg-green-600 text-white border-green-600{% else %}hover:bg-green-50{% endif %}">{% trans "شركات" %}</a>
+        </div>
+        
+        <!-- نموذج البحث -->
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'ابحث عن مستأجر...' %}" class="w-full p-3 border rounded-md text-base">
+            <select name="type" class="w-full p-3 border rounded-md text-base">
+                <option value="">{% trans "كل الأنواع" %}</option>
+                <option value="individual" {% if request.GET.type == 'individual' %}selected{% endif %}>{% trans "فرد" %}</option>
+                <option value="company" {% if request.GET.type == 'company' %}selected{% endif %}>{% trans "شركة" %}</option>
+            </select>
+            <button class="btn-primary px-4 py-3 rounded-md">{% trans 'بحث' %}</button>
+        </form>
+    </div>
+    
+    <div>
+        <table class="w-full table-fixed text-start">
             <thead class="bg-gray-50 border-b">
                 <tr>
-                    <th class="p-4">{% trans "الاسم" %}</th>
-                    <th class="p-4">{% trans "الهاتف" %}</th>
-                    <th class="p-4">{% trans "النوع" %}</th>
-                    <th class="p-4">{% trans "عدد العقود النشطة" %}</th>
-                    <th class="p-4">{% trans "إجمالي الإيجار الشهري" %}</th>
-                    <th class="p-4">{% trans "التقييم" %}</th>
-                    <th class="p-4">{% trans "إجراءات" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "الاسم" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "الهاتف" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "النوع" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "عدد العقود النشطة" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "إجمالي الإيجار الشهري" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "التقييم" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "إجراءات" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for tenant in tenants %}
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-4"><a href="{% url 'tenant_detail' tenant.pk %}" class="font-bold text-blue-600">{{ tenant.name }}</a></td>
-                    <td class="p-4">{{ tenant.phone }}</td>
-                    <td class="p-4">{{ tenant.get_tenant_type_display }}</td>
-                    <td class="p-4">{{ tenant.active_leases_count|default:0 }}</td>
-                    <td class="p-4 font-mono">{{ tenant.total_monthly_rent|default_if_none:"-" }}</td>
-                    <td class="p-4">
-                        <span class="text-yellow-500">
-                            {% for i in "12345" %}
-                                {% if forloop.counter <= tenant.rating %}★{% else %}☆{% endif %}
-                            {% endfor %}
+                <tr class="border-b hover:bg-gray-50 {% if tenant.tenant_type == 'company' %}bg-green-50{% endif %}">
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">
+                        <a href="{% url 'tenant_detail' tenant.pk %}" class="font-bold text-blue-600">{{ tenant.name }}</a>
+                    </td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">{{ tenant.phone }}</td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">
+                        <span class="px-2 py-1 rounded-full text-xs {% if tenant.tenant_type == 'individual' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ tenant.get_tenant_type_display }}
                         </span>
                     </td>
-                    <td class="p-4">
-                        <div class="flex flex-wrap gap-2">
-                            <a href="{% url 'tenant_detail' tenant.pk %}" class="text-blue-600 hover:underline">{% trans "تفاصيل" %}</a>
-                            <a href="{% url 'tenant_update' tenant.pk %}" class="text-green-600 hover:underline">{% trans "تعديل" %}</a>
-                            <a href="{% url 'tenant_delete' tenant.pk %}" class="text-red-600 hover:underline">{% trans "حذف" %}</a>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">
+                        <span class="font-semibold {% if tenant.active_leases_count > 0 %}text-green-600{% else %}text-gray-400{% endif %}">
+                            {{ tenant.active_leases_count|default:0 }}
+                        </span>
+                    </td>
+                    <td class="p-2 md:p-3 font-mono text-xs md:text-sm break-words">
+                        {% if tenant.total_monthly_rent %}
+                            <span class="font-semibold text-green-600">{{ tenant.total_monthly_rent|floatformat:2 }} ر.ع</span>
+                        {% else %}
+                            <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm">
+                        <div class="flex items-center">
+                            <span class="text-yellow-500 text-sm">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= tenant.rating %}★{% else %}☆{% endif %}
+                                {% endfor %}
+                            </span>
+                            <span class="ml-1 text-xs text-gray-500">({{ tenant.rating }}/5)</span>
+                        </div>
+                    </td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm">
+                        <div class="flex flex-wrap gap-1">
+                            <a href="{% url 'tenant_detail' tenant.pk %}" class="text-blue-600 hover:underline text-xs">{% trans "تفاصيل" %}</a>
+                            <a href="{% url 'tenant_update' tenant.pk %}" class="text-green-600 hover:underline text-xs">{% trans "تعديل" %}</a>
+                            <a href="{% url 'tenant_delete' tenant.pk %}" class="text-red-600 hover:underline text-xs">{% trans "حذف" %}</a>
                         </div>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" class="p-6 text-center text-gray-500">{% trans "لم يتم العثور على مستأجرين." %}</td></tr>
+                <tr><td colspan="7" class="p-6 text-center text-gray-500 text-sm">{% trans "لم يتم العثور على مستأجرين." %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {% if is_paginated %}
     <div class="p-4 flex justify-center">
-        <span class="text-sm text-gray-700">
-            {% blocktrans with page_obj.number as page and page_obj.paginator.num_pages as num_pages %}
-            الصفحة {{ page }} من {{ num_pages }}
-            {% endblocktrans %}
-        </span>
+        <nav class="inline-flex items-center gap-1" aria-label="Pagination">
+            <a class="px-3 py-1 rounded border text-sm {% if not page_obj.has_previous %}opacity-50 pointer-events-none{% endif %}"
+               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1">
+                {% trans "الأولى" %}
+            </a>
+            {% if page_obj.has_previous %}
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                    {% trans "السابق" %}
+                </a>
+            {% else %}
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "السابق" %}</span>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+                    <a class="px-3 py-1 rounded border text-sm {% if num == page_obj.number %}bg-blue-600 text-white border-blue-600{% endif %}"
+                       href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                    {% trans "التالي" %}
+                </a>
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                    {% trans "الأخيرة" %}
+                </a>
+            {% else %}
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "التالي" %}</span>
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "الأخيرة" %}</span>
+            {% endif %}
+        </nav>
     </div>
     {% endif %}
 </div>

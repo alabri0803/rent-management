@@ -416,9 +416,24 @@ class TenantListView(StaffRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['total_tenants'] = context['paginator'].count if 'paginator' in context else len(context['tenants'])
-        context['individual_tenants'] = self.get_queryset().filter(tenant_type='individual').count()
-        context['company_tenants'] = self.get_queryset().filter(tenant_type='company').count()
+        
+        # إحصائيات المستأجرين
+        all_tenants = Tenant.objects.all()
+        individual_count = all_tenants.filter(tenant_type='individual').count()
+        company_count = all_tenants.filter(tenant_type='company').count()
+        total_count = all_tenants.count()
+        
+        context['stats'] = {
+            'individual_count': individual_count,
+            'company_count': company_count,
+            'total_count': total_count,
+        }
+        
+        # للتوافق مع الكود القديم
+        context['total_tenants'] = total_count
+        context['individual_tenants'] = individual_count
+        context['company_tenants'] = company_count
+        
         return context
 
 class TenantDetailView(StaffRequiredMixin, DetailView):
