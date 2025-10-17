@@ -711,7 +711,22 @@ def renew_lease(request, pk):
         except Exception as e:
             logger.exception("Failed to generate/save renewal PDF for new lease %s (from old %s)", new_lease.id, original_lease.id)
             messages.warning(request, _("تم التجديد، لكن تعذر إرفاق استمارة التجديد تلقائياً."))
-        messages.success(request, _("تم تجديد العقد بنجاح!")); return redirect('lease_detail', pk=new_lease.pk)
+
+        # Generate renewal invoice automatically
+        try:
+            renewal_invoice = new_lease._generate_renewal_invoice()
+            if renewal_invoice:
+                messages.success(request, _("تم تجديد العقد وإنشاء فاتورة رسوم التجديد بنجاح!"))
+            else:
+                messages.warning(request, _("تم التجديد، لكن تعذر إنشاء فاتورة رسوم التجديد تلقائياً."))
+        except Exception as e:
+            logger.exception("Failed to generate renewal invoice for new lease %s", new_lease.id)
+            messages.warning(request, _("تم التجديد، لكن تعذر إنشاء فاتورة رسوم التجديد تلقائياً."))
+            
+        if 'renewal_invoice' not in locals() or not renewal_invoice:
+            messages.success(request, _("تم تجديد العقد بنجاح!"))
+        
+        return redirect('lease_detail', pk=new_lease.pk)
     return render(request, 'dashboard/lease_renew.html', {'lease': original_lease})
 
 class DocumentUploadView(StaffRequiredMixin, CreateView):

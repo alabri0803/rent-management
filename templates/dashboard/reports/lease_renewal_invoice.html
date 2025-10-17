@@ -72,6 +72,7 @@
     <div class="section">
       <div class="section-title">
         <span>{% trans "تفاصيل الرسوم" %}</span>
+        {% if invoice %}<span>{% trans "رقم الفاتورة" %}: {{ invoice.invoice_number }}</span>{% endif %}
       </div>
       <table class="table">
         <thead>
@@ -81,22 +82,31 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>{% trans "رسوم المكتب" %}</td>
-            <td>{{ lease.office_fee|default:0 }}</td>
-          </tr>
-          <tr>
-            <td>{% trans "الرسوم الإدارية" %}</td>
-            <td>{{ lease.admin_fee|default:0 }}</td>
-          </tr>
-          <tr>
-            <td>{% trans "رسوم تسجيل العقد (3%)" %}</td>
-            <td>{{ lease.registration_fee|default:0 }}</td>
-          </tr>
-          <tr style="background-color: #f0f0f0;">
-            <td><strong>{% trans "إجمالي الرسوم" %}</strong></td>
-            <td><strong>{% load mathfilters %}{{ lease.office_fee|add:lease.admin_fee|add:lease.registration_fee|default:0 }}</strong></td>
-          </tr>
+          {% if invoice %}
+            {% for item in invoice.items.all %}
+            <tr>
+              <td>{{ item.description }}</td>
+              <td>{{ item.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="background-color: #f0f0f0;">
+              <td><strong>{% trans "إجمالي الرسوم" %}</strong></td>
+              <td><strong>{{ invoice.total_amount }}</strong></td>
+            </tr>
+          {% else %}
+            <tr>
+              <td>{% trans "رسوم المكتب - تجديد العقد" %}</td>
+              <td>{{ lease.office_fee|default:0 }}</td>
+            </tr>
+            <tr>
+              <td>{% trans "الرسوم الإدارية - تجديد العقد" %}</td>
+              <td>{{ lease.admin_fee|default:0 }}</td>
+            </tr>
+            <tr style="background-color: #f0f0f0;">
+              <td><strong>{% trans "إجمالي الرسوم" %}</strong></td>
+              <td><strong>{{ total_fees|default:0 }}</strong></td>
+            </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>

@@ -485,6 +485,103 @@ class Lease(models.Model):
             logger.exception(f"Failed to generate renewal notice for lease {self.id}: {e}")
             # لا نحتاج إلى رسالة خطأ هنا لأنها عملية تلقائية
 
+    def _generate_renewal_invoice(self):
+        """إنشاء فاتورة رسوم تجديد العقد تلقائياً"""
+        try:
+            from django.template.loader import get_template
+            from django.conf import settings
+            from io import BytesIO
+            from django.core.files.base import ContentFile
+            from django.utils.translation import gettext as _
+            import logging
+            from dateutil.relativedelta import relativedelta
+
+            logger = logging.getLogger(__name__)
+
+            # التحقق من وجود شركة أو إنشاء واحدة افتراضية
+            company = Company.objects.first()
+            if not company:
+                company = Company.objects.create(
+                    name="شركة افتراضية",
+                    contact_email="default@company.com",
+                    contact_phone="1234567890"
+                )
+
+            # حساب رسوم التجديد (يمكن تخصيصها حسب الحاجة)
+            renewal_fee = self.office_fee or Decimal('5.00')  # رسوم المكتب
+            admin_fee = self.admin_fee or Decimal('1.00')     # رسوم إدارية
+            total_renewal_fees = renewal_fee + admin_fee
+
+            # إنشاء فاتورة التجديد
+            invoice_number = f"REN-{self.contract_number}-{timezone.now().strftime('%Y%m%d')}"
+            
+            # التحقق من عدم وجود فاتورة تجديد مسبقة لنفس العقد
+            existing_invoice = Invoice.objects.filter(
+                lease=self,
+                invoice_number__startswith=f"REN-{self.contract_number}"
+            ).first()
+            
+            if existing_invoice:
+                logger.info(f"Renewal invoice already exists for lease {self.id}")
+                return existing_invoice
+
+            # إنشاء الفاتورة
+            invoice = Invoice.objects.create(
+                tenant=self.tenant,
+                lease=self,
+                invoice_number=invoice_number,
+                issue_date=timezone.now().date(),
+                due_date=timezone.now().date() + relativedelta(days=30),  # استحقاق خلال 30 يوم
+                status='draft',
+                notes=_('فاتورة رسوم تجديد عقد الإيجار')
+            )
+
+            # إضافة بنود الفاتورة
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                description=_('رسوم المكتب - تجديد العقد'),
+                amount=renewal_fee
+            )
+            
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                description=_('رسوم إدارية - تجديد العقد'),
+                amount=admin_fee
+            )
+
+            # إنشاء PDF للفاتورة وإرفاقه كمستند
+            try:
+                from .utils import generate_pdf_bytes
+                context_invoice = {
+                    'lease': self,
+                    'invoice': invoice,
+                    'today': timezone.now().date(),
+                    'company': company,
+                    'total_fees': total_renewal_fees,
+                }
+                
+                pdf_bytes_invoice = generate_pdf_bytes('dashboard/reports/lease_renewal_invoice.html', context_invoice)
+                
+                filename_invoice = f"lease_renewal_invoice_{self.contract_number}.pdf"
+                doc_invoice = Document(
+                    lease=self, 
+                    title=_('فاتورة رسوم تجديد عقد') + f" - {self.contract_number}"
+                )
+                doc_invoice.file.save(filename_invoice, ContentFile(pdf_bytes_invoice))
+                doc_invoice.save()
+                
+                logger.info(f"Renewal invoice generated for lease {self.id} - Invoice ID: {invoice.id}")
+                return invoice
+                
+            except Exception as e:
+                logger.exception(f"Failed to generate renewal invoice PDF for lease {self.id}: {e}")
+                # الفاتورة تم إنشاؤها، فقط PDF فشل
+                return invoice
+
+        except Exception as e:
+            logger.exception(f"Failed to generate renewal invoice for lease {self.id}: {e}")
+            return None
+
 class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
         ('cash', _('نقداً')),
