@@ -1,62 +1,268 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{{ title }}{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-800">{{ title }}</h2>
-        <a href="{% url 'unit_list' %}" class="text-blue-600 hover:underline">{% trans "العودة إلى القائمة" %}</a>
-    </div>
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{{ title }}</h1>
+            <p class="text-gray-600">{% trans "أضف وحدة جديدة إلى النظام بسهولة" %}</p>
+        </div>
 
-    <div class="card p-6">
-        <form method="post" class="space-y-4">
-            {% csrf_token %}
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.building.label }}</label>
-                {{ form.building }}
-                {% if form.building.errors %}
-                <p class="text-red-500 text-sm mt-1">{{ form.building.errors.0 }}</p>
-                {% endif %}
+        <!-- Navigation Breadcrumb -->
+        <div class="flex items-center justify-center mb-8">
+            <nav class="flex items-center space-x-2 bg-white rounded-full px-6 py-3 shadow-lg">
+                <a href="{% url 'unit_list' %}" class="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    {% trans "العودة إلى القائمة" %}
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Card Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+                <h2 class="text-2xl font-bold text-white flex items-center">
+                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    {% trans "معلومات الوحدة الجديدة" %}
+                </h2>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.unit_number.label }}</label>
-                {{ form.unit_number }}
-                {% if form.unit_number.errors %}
-                <p class="text-red-500 text-sm mt-1">{{ form.unit_number.errors.0 }}</p>
-                {% endif %}
-            </div>
+            <!-- Form Content -->
+            <div class="p-8">
+                <form method="post" class="space-y-8">
+                    {% csrf_token %}
+                    
+                    <!-- Building Selection -->
+                    <div class="group">
+                        <label class="block text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4"></path>
+                            </svg>
+                            {{ form.building.label }}
+                        </label>
+                        <div class="relative">
+                            {{ form.building }}
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        {% if form.building.errors %}
+                        <p class="text-red-500 text-sm mt-2 flex items-center">
+                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            {{ form.building.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.unit_type.label }}</label>
-                {{ form.unit_type }}
-                {% if form.unit_type.errors %}
-                <p class="text-red-500 text-sm mt-1">{{ form.unit_type.errors.0 }}</p>
-                {% endif %}
-            </div>
+                    <!-- Grid Layout for Form Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Unit Number -->
+                        <div class="group">
+                            <label class="block text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-5 h-5 ml-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                </svg>
+                                {{ form.unit_number.label }}
+                            </label>
+                            <div class="relative">
+                                {{ form.unit_number }}
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 text-sm">#</span>
+                                </div>
+                            </div>
+                            {% if form.unit_number.errors %}
+                            <p class="text-red-500 text-sm mt-2 flex items-center">
+                                <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                {{ form.unit_number.errors.0 }}
+                            </p>
+                            {% endif %}
+                        </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.floor.label }}</label>
-                {{ form.floor }}
-                {% if form.floor.errors %}
-                <p class="text-red-500 text-sm mt-1">{{ form.floor.errors.0 }}</p>
-                {% endif %}
-            </div>
+                        <!-- Floor -->
+                        <div class="group">
+                            <label class="block text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-5 h-5 ml-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"></path>
+                                </svg>
+                                {{ form.floor.label }}
+                            </label>
+                            {{ form.floor }}
+                            {% if form.floor.errors %}
+                            <p class="text-red-500 text-sm mt-2 flex items-center">
+                                <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                {{ form.floor.errors.0 }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
 
-            <div class="flex items-center">
-                {{ form.is_available }}
-                <label class="mr-2 text-sm font-medium text-gray-700">{{ form.is_available.label }}</label>
-                {% if form.is_available.errors %}
-                <p class="text-red-500 text-sm mt-1">{{ form.is_available.errors.0 }}</p>
-                {% endif %}
-            </div>
+                    <!-- Unit Type -->
+                    <div class="group">
+                        <label class="block text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            {{ form.unit_type.label }}
+                        </label>
+                        
+                        <!-- Custom Radio Buttons -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {% for choice in form.unit_type %}
+                            <label class="relative flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group">
+                                {{ choice.tag }}
+                                <div class="flex items-center w-full">
+                                    <div class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br 
+                                        {% if choice.choice_label == 'مكتب' %}from-blue-400 to-blue-600
+                                        {% elif choice.choice_label == 'شقة' %}from-green-400 to-green-600
+                                        {% else %}from-orange-400 to-orange-600{% endif %} 
+                                        text-white ml-3">
+                                        {% if choice.choice_label == 'مكتب' %}
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v2a2 2 0 01-2 2H10a2 2 0 01-2-2V6"></path>
+                                        </svg>
+                                        {% elif choice.choice_label == 'شقة' %}
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                        </svg>
+                                        {% else %}
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                        </svg>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-gray-800 text-lg">{{ choice.choice_label }}</div>
+                                        <div class="text-sm text-gray-500">
+                                            {% if choice.choice_label == 'مكتب' %}{% trans "مساحة عمل مكتبية" %}
+                                            {% elif choice.choice_label == 'شقة' %}{% trans "وحدة سكنية" %}
+                                            {% else %}{% trans "محل تجاري" %}{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% if form.unit_type.errors %}
+                        <p class="text-red-500 text-sm mt-3 flex items-center">
+                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            {{ form.unit_type.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
 
-            <div class="flex gap-4 pt-4">
-                <button type="submit" class="btn-primary py-2 px-6 rounded-lg font-semibold">{% trans "حفظ" %}</button>
-                <a href="{% url 'unit_list' %}" class="bg-gray-300 text-gray-700 py-2 px-6 rounded-lg font-semibold hover:bg-gray-400">{% trans "إلغاء" %}</a>
+                    <!-- Availability Toggle -->
+                    <div class="group">
+                        <div class="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                            <label class="flex items-center cursor-pointer">
+                                <div class="relative">
+                                    {{ form.is_available }}
+                                    <div class="toggle-bg bg-gray-200 border-2 border-gray-200 w-12 h-6 rounded-full"></div>
+                                    <div class="toggle-dot absolute w-4 h-4 bg-white rounded-full shadow inset-y-0 right-0"></div>
+                                </div>
+                                <div class="mr-4">
+                                    <div class="text-lg font-semibold text-gray-800 flex items-center">
+                                        <svg class="w-5 h-5 ml-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        {{ form.is_available.label }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{% trans "هل الوحدة متاحة للإيجار حالياً؟" %}</div>
+                                </div>
+                            </label>
+                            {% if form.is_available.errors %}
+                            <p class="text-red-500 text-sm mt-2 flex items-center">
+                                <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                {{ form.is_available.errors.0 }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-200">
+                        <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-8 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            {% trans "حفظ الوحدة" %}
+                        </button>
+                        <a href="{% url 'unit_list' %}" class="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-xl font-bold text-lg hover:bg-gray-200 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            {% trans "إلغاء" %}
+                        </a>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
 </div>
+
+<style>
+/* Custom styles for form elements */
+.group input, .group select {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-lg;
+}
+
+.group input:focus, .group select:focus {
+    @apply outline-none shadow-lg;
+}
+
+/* Toggle Switch Styles */
+input[type="checkbox"]:checked + .toggle-bg {
+    @apply bg-green-500 border-green-500;
+}
+
+input[type="checkbox"]:checked + .toggle-bg .toggle-dot {
+    @apply transform translate-x-6;
+}
+
+input[type="checkbox"] {
+    @apply sr-only;
+}
+
+.toggle-dot {
+    @apply transition-transform duration-200 ease-in-out;
+}
+
+/* Radio button styles */
+input[type="radio"] {
+    @apply sr-only;
+}
+
+input[type="radio"]:checked + div {
+    @apply border-blue-500 bg-blue-50;
+}
+
+/* Hover effects */
+.group:hover input, .group:hover select {
+    @apply border-blue-300 shadow-md;
+}
+</style>
 {% endblock %}
