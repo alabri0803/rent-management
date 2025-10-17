@@ -6,37 +6,333 @@
   <meta charset="UTF-8">
   <title>{% trans "فاتورة رسوم تجديد عقد الإيجار" %}</title>
   <style>
-    @font-face {
-      font-family: 'Amiri';
-      src: url("{% static 'fonts/Amiri-Regular.ttf' %}") format('truetype');
-      font-weight: normal; font-style: normal;
+    /*
+      تم تصميم هذه الأنماط لمحاكاة التصميم الكلاسيكي الرسمي الموجود في قالب فاتورة تسجيل العقد.
+      التركيز على البساطة، الجداول، والخطوط القياسية.
+    */
+    :root {
+      --font-family-classic: Arial, Helvetica, sans-serif;
+      --text-color: #000000;
+      --border-color: #888888;
+      --header-bg-color: #f2f2f2;
+      --warning-bg-color: #fff9c4; /* لون أصفر فاتح للإقرار */
     }
-    html, body { height: 100%; }
-    body { font-family: 'Amiri', Arial, sans-serif; direction: rtl; text-align: right; margin: 0; }
-    .page { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 10mm; box-sizing: border-box; border: 2px solid #000; position: relative; }
-    .top-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .top-box { border: 2px solid #000; padding: 8px; min-height: 54px; }
-    .title-en { font-size: 18px; font-weight: 700; text-align: center; }
-    .title-ar { font-size: 16px; font-weight: 700; text-align: center; }
-    .logo-wrap { display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .circle { width: 54px; height: 54px; border: 2px solid #000; border-radius: 50%; }
-    .qr { width: 70px; height: 70px; border: 2px solid #000; margin: 0 auto; }
-    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; }
-    .pair div { border: 1px dashed #aaa; padding: 6px; min-height: 26px; }
-    .muted { color: #666; font-size: 11px; }
-    .section { border: 2px solid #000; margin-top: 8px; }
-    .section-title { background: #eaeaea; border-bottom: 2px solid #000; padding: 4px 8px; font-weight: 700; display: flex; justify-content: space-between; }
-    .fields { padding: 6px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
-    .field { border: 1px solid #000; padding: 6px; font-size: 12px; grid-column: span 3; min-height: 30px; }
-    .field .lbl { color: #444; font-size: 11px; display: block; }
-    .field .val { font-weight: 700; }
-    .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { border: 1px solid #000; padding: 6px; font-size: 12px; }
-    .dash { border: 2px dashed #333; min-height: 60px; padding: 6px; }
-    .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-    .tiny { font-size: 10px; color: #333; }
-    .footer { position: absolute; bottom: 6mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; font-size: 12px; }
-    .badge { background: #ffeaa7; border: 1px solid #d4b36c; padding: 4px 8px; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family-classic);
+      direction: rtl;
+      text-align: right;
+      font-size: 11px; /* حجم خط مناسب للنماذج الرسمية */
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #e9e9e9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10mm auto;
+      padding: 15mm;
+      background: #ffffff;
+      border: 1px solid #333;
+      position: relative;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+    }
+
+    /* Header Section */
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--text-color);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .header-info {
+      text-align: right;
+      flex: 1;
+    }
+    .header-info div {
+      margin-bottom: 8px;
+    }
+
+    .logo-placeholder {
+      width: 120px;
+      height: 60px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      color: #777;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 15px 0 30px 0;
+    }
+
+    /* Top Grid Styling */
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 15px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 10px;
+      border: 2px solid #dee2e6;
+    }
+    .top-box {
+      border: 2px solid var(--border-color);
+      padding: 12px;
+      min-height: 60px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    
+    .title-en { 
+      font-size: 18px; 
+      font-weight: 700; 
+      text-align: center; 
+      color: #1a73e8;
+      margin-bottom: 5px;
+    }
+    .title-ar { 
+      font-size: 16px; 
+      font-weight: 700; 
+      text-align: center; 
+      color: #333;
+    }
+    
+    .qr { 
+      width: 70px; 
+      height: 70px; 
+      border: 2px solid var(--border-color); 
+      margin: 0 auto; 
+      border-radius: 6px;
+      background: #f8f9fa;
+    }
+    
+    /* Section Styling */
+    .section {
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-weight: bold;
+        font-size: 13px;
+        margin-bottom: 8px;
+        color: #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 2px solid #1a73e8;
+    }
+
+    /* Generic Table for Data */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .table th {
+      background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .table td {
+      background: white;
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #333;
+      font-weight: 500;
+    }
+    .table tr:nth-child(even) td {
+      background: #f8f9fa;
+    }
+    .table tr:hover td {
+      background: #e3f2fd;
+    }
+
+    .fields {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .field {
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      font-size: 11px;
+      background: #fafafa;
+      border-radius: 4px;
+      min-height: 35px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .field .lbl {
+      color: #333;
+      font-size: 9px;
+      display: block;
+      margin-bottom: 2px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .field .val {
+      font-weight: bold;
+      color: #1a73e8;
+      font-size: 10px;
+    }
+
+    /* Signature Grid Styling */
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 8px;
+      border: 2px dashed #1a73e8;
+    }
+    .sig-grid > div {
+      text-align: center;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    /* Dash Lines for Signatures */
+    .dash {
+      border: none;
+      border-bottom: 2px solid #1a73e8;
+      background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+      min-height: 25px;
+      border-radius: 4px;
+      position: relative;
+      margin: 8px 0;
+    }
+    .dash::after {
+      content: '✍️';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #1a73e8;
+      font-size: 10px;
+    }
+
+    /* Text Styling */
+    .muted {
+      color: #666;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .tiny {
+      font-size: 9px;
+      color: #333;
+    }
+
+    .badge {
+      background: #ffeaa7;
+      border: 1px solid #d4b36c;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 8px;
+      font-weight: bold;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 15mm;
+      left: 15mm;
+      right: 15mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border-color);
+      margin-top: 20px;
+    }
+
+    @media print {
+      @page {
+        margin: 15mm;
+        size: A4;
+      }
+
+      body {
+        background-color: #fff;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        margin: 0;
+        padding: 15mm;
+        box-shadow: none;
+        border: 1px solid #ccc;
+        background: white;
+        width: 100%;
+        min-height: auto;
+        box-sizing: border-box;
+      }
+
+      .footer {
+        position: fixed;
+        bottom: 0;
+        left: 15mm;
+        right: 15mm;
+      }
+    }
+
+    @media screen and (max-width: 768px) {
+      .page {
+        margin: 5mm auto;
+        padding: 10mm;
+        width: 95%;
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      }
+
+      .main-title {
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -71,8 +367,8 @@
 
     <div class="section">
       <div class="section-title">
-        <span>{% trans "تفاصيل الرسوم" %}</span>
-        {% if invoice %}<span>{% trans "رقم الفاتورة" %}: {{ invoice.invoice_number }}</span>{% endif %}
+        <span>{% trans "تفاصيل رسوم التجديد" %}</span>
+        {% if invoice %}<span style="font-size: 10px; color: #1a73e8;">{% trans "رقم الفاتورة" %}: {{ invoice.invoice_number }}</span>{% endif %}
       </div>
       <table class="table">
         <thead>
@@ -86,41 +382,59 @@
             {% for item in invoice.items.all %}
             <tr>
               <td>{{ item.description }}</td>
-              <td>{{ item.amount }}</td>
+              <td>{{ item.amount|floatformat:2 }}</td>
             </tr>
             {% endfor %}
-            <tr style="background-color: #f0f0f0;">
-              <td><strong>{% trans "إجمالي الرسوم" %}</strong></td>
-              <td><strong>{{ invoice.total_amount }}</strong></td>
+            <tr style="background-color: #e8f4fd;">
+              <td><strong>{% trans "إجمالي رسوم التجديد" %}</strong></td>
+              <td><strong>{{ invoice.total_amount|floatformat:2 }}</strong></td>
             </tr>
           {% else %}
             <tr>
               <td>{% trans "رسوم المكتب - تجديد العقد" %}</td>
-              <td>{{ lease.office_fee|default:0 }}</td>
+              <td>{{ lease.office_fee|default:0|floatformat:2 }}</td>
             </tr>
             <tr>
               <td>{% trans "الرسوم الإدارية - تجديد العقد" %}</td>
-              <td>{{ lease.admin_fee|default:0 }}</td>
+              <td>{{ lease.admin_fee|default:0|floatformat:2 }}</td>
             </tr>
-            <tr style="background-color: #f0f0f0;">
-              <td><strong>{% trans "إجمالي الرسوم" %}</strong></td>
-              <td><strong>{{ total_fees|default:0 }}</strong></td>
+            <tr style="background-color: #e8f4fd;">
+              <td><strong>{% trans "إجمالي رسوم التجديد" %}</strong></td>
+              <td><strong>{{ total_fees|default:0|floatformat:2 }}</strong></td>
             </tr>
           {% endif %}
         </tbody>
       </table>
     </div>
 
+    {% if invoice %}
     <div class="section">
       <div class="section-title">
-        <span>{% trans "إشعار" %}</span>
+        <span>{% trans "معلومات الفاتورة" %}</span>
       </div>
-      <div style="padding:8px; font-size:12px; line-height:1.8;">
-        {% trans "هذه الفاتورة لرسوم تجديد عقد الإيجار. يرجى دفع المبلغ في أسرع وقت ممكن." %}
+      <div class="fields">
+        <div class="field"><span class="lbl">{% trans "تاريخ الإصدار" %}</span><span class="val">{{ invoice.issue_date|date:"d/m/Y" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "تاريخ الاستحقاق" %}</span><span class="val">{{ invoice.due_date|date:"d/m/Y" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "حالة الفاتورة" %}</span><span class="val">{{ invoice.get_status_display }}</span></div>
+        <div class="field"><span class="lbl">{% trans "المبلغ الإجمالي" %}</span><span class="val">{{ invoice.total_amount|floatformat:2 }} ر.ع</span></div>
       </div>
-      <div class="sig-grid" style="padding: 0 8px 8px;">
+    </div>
+    {% endif %}
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "إشعار مهم" %}</span>
+      </div>
+      <div style="padding:12px; font-size:11px; line-height:1.8; background: var(--warning-bg-color); border: 1px solid #d4b36c; border-radius: 6px; margin: 8px 0;">
+        {% trans "هذه الفاتورة خاصة برسوم تجديد عقد الإيجار. يرجى دفع المبلغ المستحق في الموعد المحدد لتجنب أي رسوم إضافية. في حالة وجود أي استفسارات، يرجى التواصل مع إدارة المكتب." %}
+      </div>
+      <div class="sig-grid">
         <div>
-          <div class="muted">{% trans "التوقيع" %}</div>
+          <div class="muted">{% trans "توقيع المستأجر" %}</div>
+          <div class="dash"></div>
+        </div>
+        <div>
+          <div class="muted">{% trans "توقيع المكتب" %}</div>
           <div class="dash"></div>
         </div>
         <div>
@@ -131,7 +445,7 @@
     </div>
 
     <div class="footer">
-      <div class="tiny">{% trans "فاتورة تلقائية عند تجديد العقد" %}</div>
+      <div class="tiny">{% trans "فاتورة تلقائية - نظام إدارة عقود الإيجار" %}</div>
       <div class="badge">{{ today|date:"d/m/Y" }}</div>
     </div>
   </div>
