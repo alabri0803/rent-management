@@ -1,0 +1,523 @@
+{% load i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>{% trans "استمارة إلغاء عقد الإيجار" %}</title>
+  <style>
+    /*
+      تم تصميم هذه الأنماط لمحاكاة التصميم الكلاسيكي الرسمي للاستمارات الحكومية.
+      التركيز على البساطة، الجداول، والخطوط القياسية.
+    */
+    :root {
+      --font-family-classic: Arial, Helvetica, sans-serif;
+      --text-color: #000000;
+      --border-color: #888888;
+      --header-bg-color: #f2f2f2;
+      --warning-bg-color: #ffebee; /* لون أحمر فاتح للتحذير */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family-classic);
+      direction: rtl;
+      text-align: right;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-color);
+      background-color: #e9e9e9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10mm auto;
+      padding: 15mm;
+      background: #ffffff;
+      border: 1px solid #333;
+      position: relative;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      box-sizing: border-box;
+    }
+
+    /* Header Section */
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--text-color);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .header-info {
+      text-align: right;
+      flex: 1;
+    }
+    .header-info div {
+      margin-bottom: 8px;
+    }
+
+    .logo-placeholder {
+      width: 120px;
+      height: 60px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      color: #777;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 15px 0 30px 0;
+      color: #d32f2f;
+    }
+
+    /* Top Grid Styling */
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 15px;
+      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      border-radius: 10px;
+      border: 2px solid #e57373;
+    }
+    .top-box {
+      border: 2px solid var(--border-color);
+      padding: 12px;
+      min-height: 60px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    
+    .title-en { 
+      font-size: 18px; 
+      font-weight: 700; 
+      text-align: center; 
+      color: #d32f2f;
+      margin-bottom: 5px;
+    }
+    .title-ar { 
+      font-size: 16px; 
+      font-weight: 700; 
+      text-align: center; 
+      color: #333;
+    }
+    
+    .qr { 
+      width: 70px; 
+      height: 70px; 
+      border: 2px solid var(--border-color); 
+      margin: 0 auto; 
+      border-radius: 6px;
+      background: #f8f9fa;
+    }
+    
+    /* Section Styling */
+    .section {
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-weight: bold;
+        font-size: 13px;
+        margin-bottom: 8px;
+        color: #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 2px solid #d32f2f;
+    }
+
+    /* Generic Table for Data */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .table th {
+      background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .table td {
+      background: white;
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      text-align: center;
+      font-size: 10px;
+      color: #333;
+      font-weight: 500;
+    }
+    .table tr:nth-child(even) td {
+      background: #f8f9fa;
+    }
+    .table tr:hover td {
+      background: #ffebee;
+    }
+
+    .fields {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .field {
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      font-size: 11px;
+      background: #fafafa;
+      border-radius: 4px;
+      min-height: 35px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .field .lbl {
+      color: #333;
+      font-size: 9px;
+      display: block;
+      margin-bottom: 2px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .field .val {
+      font-weight: bold;
+      color: #d32f2f;
+      font-size: 10px;
+    }
+
+    /* Reason Text Area */
+    .reason-area {
+      width: 100%;
+      min-height: 80px;
+      border: 2px solid var(--border-color);
+      padding: 12px;
+      font-size: 11px;
+      font-family: var(--font-family-classic);
+      border-radius: 6px;
+      background: #fafafa;
+      resize: vertical;
+    }
+
+    /* Signature Grid Styling */
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      border-radius: 8px;
+      border: 2px dashed #d32f2f;
+    }
+    .sig-grid > div {
+      text-align: center;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    /* Dash Lines for Signatures */
+    .dash {
+      border: none;
+      border-bottom: 2px solid #d32f2f;
+      background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+      min-height: 25px;
+      border-radius: 4px;
+      position: relative;
+      margin: 8px 0;
+    }
+    .dash::after {
+      content: '✍️';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #d32f2f;
+      font-size: 10px;
+    }
+
+    /* Text Styling */
+    .muted {
+      color: #666;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .tiny {
+      font-size: 9px;
+      color: #333;
+    }
+
+    .badge {
+      background: #ffcdd2;
+      border: 1px solid #d32f2f;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 8px;
+      font-weight: bold;
+      color: #d32f2f;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 15mm;
+      left: 15mm;
+      right: 15mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border-color);
+      margin-top: 20px;
+    }
+
+    /* Warning Box */
+    .warning-box {
+      background: var(--warning-bg-color);
+      border: 2px solid #d32f2f;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .warning-title {
+      font-weight: bold;
+      color: #d32f2f;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    @media print {
+      @page {
+        margin: 15mm;
+        size: A4;
+      }
+
+      body {
+        background-color: #fff;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        margin: 0;
+        padding: 15mm;
+        box-shadow: none;
+        border: 1px solid #ccc;
+        background: white;
+        width: 100%;
+        min-height: auto;
+        box-sizing: border-box;
+      }
+
+      .footer {
+        position: fixed;
+        bottom: 0;
+        left: 15mm;
+        right: 15mm;
+      }
+    }
+
+    @media screen and (max-width: 768px) {
+      .page {
+        margin: 5mm auto;
+        padding: 10mm;
+        width: 95%;
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      }
+
+      .main-title {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-grid">
+      <div>
+        <div class="top-box">
+          <div class="muted">{% trans "Agreement No." %}</div>
+          <div class="dash">{{ lease.contract_number|default:"" }}</div>
+        </div>
+      </div>
+      <div>
+        <div class="title-en">Lease Cancellation Form</div>
+        <div class="title-ar">استمارة إلغاء عقد الإيجار</div>
+      </div>
+      <div>
+        <div class="qr"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "بيانات العقد المراد إلغاؤه" %}</span>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="lbl">{% trans "رقم العقد" %}</span><span class="val">{{ lease.contract_number|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "المستأجر" %}</span><span class="val">{{ lease.tenant.name|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "الوحدة" %}</span><span class="val">{{ lease.unit|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "تاريخ بداية العقد" %}</span><span class="val">{{ lease.start_date|date:"d/m/Y"|default:"" }}</span></div>
+      </div>
+      <div class="fields">
+        <div class="field"><span class="lbl">{% trans "تاريخ انتهاء العقد" %}</span><span class="val">{{ lease.end_date|date:"d/m/Y"|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "قيمة الإيجار الشهري" %}</span><span class="val">{{ lease.monthly_rent|default:"" }} ر.ع</span></div>
+        <div class="field"><span class="lbl">{% trans "حالة العقد الحالية" %}</span><span class="val">{{ lease.get_status_display|default:"" }}</span></div>
+        <div class="field"><span class="lbl">{% trans "تاريخ طلب الإلغاء" %}</span><span class="val">{{ today|date:"d/m/Y" }}</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "أسباب الإلغاء" %}</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 10%;">{% trans "اختيار" %}</th>
+            <th>{% trans "السبب" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>☐</td>
+            <td>{% trans "انتهاء المدة المحددة في العقد" %}</td>
+          </tr>
+          <tr>
+            <td>☐</td>
+            <td>{% trans "عدم دفع الإيجار لأكثر من شهرين متتاليين" %}</td>
+          </tr>
+          <tr>
+            <td>☐</td>
+            <td>{% trans "مخالفة شروط العقد من قبل المستأجر" %}</td>
+          </tr>
+          <tr>
+            <td>☐</td>
+            <td>{% trans "رغبة المالك في استرداد العقار" %}</td>
+          </tr>
+          <tr>
+            <td>☐</td>
+            <td>{% trans "رغبة المستأجر في إنهاء العقد" %}</td>
+          </tr>
+          <tr>
+            <td>☐</td>
+            <td>{% trans "أسباب أخرى (يرجى التوضيح أدناه)" %}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "تفاصيل إضافية وأسباب أخرى" %}</span>
+      </div>
+      <textarea class="reason-area" placeholder="{% trans 'يرجى كتابة أي تفاصيل إضافية أو أسباب أخرى للإلغاء...' %}">{{ cancellation_reason|default:"" }}</textarea>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "الالتزامات المالية" %}</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% trans "البيان" %}</th>
+            <th>{% trans "المبلغ (ر.ع)" %}</th>
+            <th>{% trans "الحالة" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{% trans "الإيجار المستحق حتى تاريخ الإلغاء" %}</td>
+            <td>{{ outstanding_rent|default:"0.00" }}</td>
+            <td>{% if outstanding_rent %}{% trans "مستحق" %}{% else %}{% trans "مسدد" %}{% endif %}</td>
+          </tr>
+          <tr>
+            <td>{% trans "رسوم الخدمات المستحقة" %}</td>
+            <td>{{ outstanding_utilities|default:"0.00" }}</td>
+            <td>{% if outstanding_utilities %}{% trans "مستحق" %}{% else %}{% trans "مسدد" %}{% endif %}</td>
+          </tr>
+          <tr>
+            <td>{% trans "التأمين المسترد" %}</td>
+            <td>{{ security_deposit|default:"0.00" }}</td>
+            <td>{% trans "قابل للاسترداد" %}</td>
+          </tr>
+          <tr style="background-color: #ffebee;">
+            <td><strong>{% trans "صافي المبلغ المستحق/المسترد" %}</strong></td>
+            <td><strong>{{ net_amount|default:"0.00" }}</strong></td>
+            <td><strong>{% if net_amount > 0 %}{% trans "مستحق للمكتب" %}{% else %}{% trans "مسترد للمستأجر" %}{% endif %}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-title">{% trans "تنبيه مهم:" %}</div>
+      <p>{% trans "بتوقيع هذه الاستمارة، يقر الطرفان بالموافقة على إلغاء عقد الإيجار وفقاً للشروط المذكورة أعلاه. يجب تسوية جميع الالتزامات المالية قبل تسليم العقار. هذا الإلغاء نهائي ولا يمكن التراجع عنه بعد التوقيع." %}</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <span>{% trans "التوقيعات والاعتماد" %}</span>
+      </div>
+      <div class="sig-grid">
+        <div>
+          <div class="muted">{% trans "توقيع المستأجر" %}</div>
+          <div class="dash"></div>
+          <div class="tiny">{{ lease.tenant.name|default:"" }}</div>
+        </div>
+        <div>
+          <div class="muted">{% trans "توقيع المكتب" %}</div>
+          <div class="dash"></div>
+          <div class="tiny">{% trans "إدارة المكتب" %}</div>
+        </div>
+        <div>
+          <div class="muted">{% trans "التاريخ" %}</div>
+          <div class="dash">{{ today|date:"d/m/Y" }}</div>
+          <div class="tiny">{% trans "تاريخ الإلغاء" %}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="tiny">{% trans "استمارة رسمية - نظام إدارة عقود الإيجار" %}</div>
+      <div class="badge">{{ today|date:"d/m/Y" }}</div>
+    </div>
+  </div>
+</body>
+</html>

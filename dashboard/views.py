@@ -5,7 +5,7 @@ import io
 import zipfile
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.core.management import call_command
 
 def login_redirect(request):
@@ -2273,4 +2273,130 @@ def registration_invoice_view(request, lease_id):
         'company': company,
     }
     
-    return render(request, 'dashboard/registration_invoice.html', context)
+    return render(request, 'dashboard/reports/lease_initial_invoice.html', context)
+
+
+@login_required
+def renewal_invoice_view(request, lease_id):
+    """Generate and display renewal fee invoice for a lease"""
+    lease = get_object_or_404(Lease, id=lease_id)
+    
+    # Calculate renewal fees
+    renewal_fee = lease.office_fee or Decimal('5.0')
+    admin_fee = lease.admin_fee or Decimal('1.0')
+    total_fees = renewal_fee + admin_fee
+    
+    # Get company information from database
+    try:
+        company = Company.objects.first()
+    except Company.DoesNotExist:
+        company = None
+    
+    context = {
+        'lease': lease,
+        'renewal_fee': renewal_fee,
+        'office_fee': renewal_fee,
+        'admin_fee': admin_fee,
+        'total_fees': total_fees,
+        'company': company,
+        'today': timezone.now().date(),
+    }
+    
+    return render(request, 'dashboard/reports/lease_renewal_invoice.html', context)
+
+
+@login_required
+def cancellation_form_view(request, lease_id):
+    """Generate and display lease cancellation form"""
+    lease = get_object_or_404(Lease, id=lease_id)
+    
+    # Calculate outstanding amounts (example calculations)
+    outstanding_rent = Decimal('0.00')  # Should be calculated based on actual payments
+    outstanding_utilities = Decimal('0.00')  # Should be calculated based on actual utilities
+    
+    # Get security deposit from SecurityDeposit model
+    try:
+        security_deposit_obj = SecurityDeposit.objects.filter(lease=lease, status='held').first()
+        security_deposit = security_deposit_obj.amount if security_deposit_obj else Decimal('0.00')
+    except:
+        security_deposit = Decimal('0.00')
+    
+    # Net amount calculation (positive = owed to office, negative = refund to tenant)
+    net_amount = outstanding_rent + outstanding_utilities - security_deposit
+    
+    # Get company information from database
+    try:
+        company = Company.objects.first()
+    except Company.DoesNotExist:
+        company = None
+    
+    context = {
+        'lease': lease,
+        'outstanding_rent': outstanding_rent,
+        'outstanding_utilities': outstanding_utilities,
+        'security_deposit': security_deposit,
+        'net_amount': net_amount,
+        'company': company,
+        'today': timezone.now().date(),
+        'cancellation_reason': lease.cancellation_reason if hasattr(lease, 'cancellation_reason') else '',
+    }
+    
+    return render(request, 'dashboard/reports/lease_cancellation_form.html', context)
+
+
+@login_required
+def renewal_form_view(request, lease_id):
+    """Generate and display lease renewal form"""
+    lease = get_object_or_404(Lease, id=lease_id)
+    
+    # Calculate renewal fees
+    renewal_fee = lease.office_fee or Decimal('5.0')
+    office_fee = lease.office_fee or Decimal('5.0')
+    admin_fee = lease.admin_fee or Decimal('1.0')
+    security_difference = Decimal('0.00')  # Difference in security deposit if any
+    total_renewal_fees = renewal_fee + office_fee + admin_fee + security_difference
+    
+    # Get current security deposit from SecurityDeposit model
+    try:
+        security_deposit_obj = SecurityDeposit.objects.filter(lease=lease, status='held').first()
+        current_security_deposit = security_deposit_obj.amount if security_deposit_obj else Decimal('0.00')
+    except:
+        current_security_deposit = Decimal('0.00')
+    
+    # Calculate current lease duration in months
+    if lease.start_date and lease.end_date:
+        current_duration = (lease.end_date - lease.start_date).days // 30  # Approximate months
+    else:
+        current_duration = 12  # Default
+    
+    # Suggested new terms (can be customized)
+    new_start_date = lease.end_date if lease.end_date else timezone.now().date()
+    new_end_date = new_start_date + timedelta(days=365) if new_start_date else None
+    new_monthly_rent = lease.monthly_rent
+    new_duration = current_duration  # Use current duration as default
+    new_security_deposit = current_security_deposit
+    
+    # Get company information from database
+    try:
+        company = Company.objects.first()
+    except Company.DoesNotExist:
+        company = None
+    
+    context = {
+        'lease': lease,
+        'renewal_fee': renewal_fee,
+        'office_fee': office_fee,
+        'admin_fee': admin_fee,
+        'security_difference': security_difference,
+        'total_renewal_fees': total_renewal_fees,
+        'current_duration': current_duration,
+        'new_start_date': new_start_date,
+        'new_end_date': new_end_date,
+        'new_monthly_rent': new_monthly_rent,
+        'new_duration': new_duration,
+        'new_security_deposit': new_security_deposit,
+        'company': company,
+        'today': timezone.now().date(),
+    }
+    
+    return render(request, 'dashboard/reports/lease_renewal_form.html', context)

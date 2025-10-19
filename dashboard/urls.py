@@ -30,6 +30,8 @@ from .views import (
     generate_automatic_notices, notice_update_status, notice_print_view, notices_bulk_actions,
     # Registration Invoice
     registration_invoice_view,
+    # New Report Views
+    renewal_invoice_view, cancellation_form_view, renewal_form_view,
 )
 from .auth_views import (
     EnhancedLoginView, send_login_otp, verify_login_otp, user_profile,
@@ -93,6 +95,9 @@ urlpatterns = [
     path('lease/<int:pk>/renew/', renew_lease, name='lease_renew'),
     path('lease/<int:pk>/cancel/', LeaseCancelView.as_view(), name='lease_cancel'), # ADDED
     path('lease/<int:lease_id>/registration-invoice/', registration_invoice_view, name='registration_invoice'),
+    path('lease/<int:lease_id>/renewal-invoice/', renewal_invoice_view, name='renewal_invoice'),
+    path('lease/<int:lease_id>/cancellation-form/', cancellation_form_view, name='cancellation_form'),
+    path('lease/<int:lease_id>/renewal-form/', renewal_form_view, name='renewal_form'),
 
     # Tenant Rating - ADDED
     path('tenant/<int:pk>/rate/', UpdateTenantRatingView.as_view(), name='tenant_rate'),
