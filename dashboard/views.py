@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 from .models import (
     Tenant, Unit, Building, Lease, Document, MaintenanceRequest, 
     Expense, Payment, Company, Invoice, InvoiceItem,
-    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, SecurityDeposit
+    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, SecurityDeposit,
+    PaymentOverdueNotice, NoticeTemplate
 )
 from .forms import (
     TenantForm, UnitForm, BuildingForm, LeaseForm, DocumentForm, 
@@ -1936,3 +1937,255 @@ def serve_protected_media(request, path):
     except Exception as e:
         logger.exception(f"Error serving media file {path}")
         raise Http404("Error serving file")
+
+
+# ========== إدارة إنذارات عدم السداد ==========
+
+class PaymentOverdueNoticeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = PaymentOverdueNotice
+    template_name = 'dashboard/overdue_notices/list.html'
+    context_object_name = 'notices'
+    paginate_by = 20
+    
+    def test_func(self):
+        return self.request.user.is_staff
+    
+    def get_queryset(self):
+        queryset = PaymentOverdueNotice.objects.select_related(
+            'lease__tenant', 'lease__unit__building'
+        ).order_by('-notice_date')
+        
+        # فلترة حسب الحالة
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # فلترة حسب السنة
+        year = self.request.GET.get('year')
+        if year:
+            queryset = queryset.filter(overdue_year=year)
+        
+        # البحث
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(lease__contract_number__icontains=search) |
+                Q(lease__tenant__name__icontains=search) |
+                Q(lease__unit__unit_number__icontains=search)
+            )
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_choices'] = PaymentOverdueNotice.NOTICE_STATUS_CHOICES
+        context['current_status'] = self.request.GET.get('status', '')
+        context['current_year'] = self.request.GET.get('year', '')
+        context['search_query'] = self.request.GET.get('search', '')
+        
+        # إحصائيات سريعة
+        context['stats'] = {
+            'total': PaymentOverdueNotice.objects.count(),
+            'draft': PaymentOverdueNotice.objects.filter(status='draft').count(),
+            'sent': PaymentOverdueNotice.objects.filter(status='sent').count(),
+            'overdue_legal': PaymentOverdueNotice.objects.filter(
+                legal_deadline__lt=timezone.now().date(),
+                status__in=['sent', 'acknowledged']
+            ).count(),
+        }
+        
+        return context
+
+
+class PaymentOverdueNoticeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = PaymentOverdueNotice
+    template_name = 'dashboard/overdue_notices/detail.html'
+    context_object_name = 'notice'
+    
+    def test_func(self):
+        return self.request.user.is_staff
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        notice = self.get_object()
+        
+        # إضافة معلومات إضافية
+        context['days_since_due'] = notice.get_days_since_due()
+        context['days_until_deadline'] = notice.get_days_until_legal_deadline()
+        context['notice_content'] = notice.get_notice_content()
+        
+        # الدفعات المرتبطة بنفس الفترة
+        context['related_payments'] = Payment.objects.filter(
+            lease=notice.lease,
+            payment_for_month=notice.overdue_month,
+            payment_for_year=notice.overdue_year
+        ).order_by('-payment_date')
+        
+        return context
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def generate_automatic_notices(request):
+    """عرض وتنفيذ إنشاء الإنذارات التلقائية"""
+    if request.method == 'POST':
+        try:
+            # تنفيذ أمر إنشاء الإنذارات
+            from io import StringIO
+            import sys
+            
+            # التقاط مخرجات الأمر
+            old_stdout = sys.stdout
+            sys.stdout = buffer = StringIO()
+            
+            try:
+                call_command('generate_overdue_notices')
+                output = buffer.getvalue()
+                messages.success(request, 'تم إنشاء الإنذارات التلقائية بنجاح!')
+            finally:
+                sys.stdout = old_stdout
+            
+            # إعادة توجيه إلى قائمة الإنذارات
+            return redirect('overdue_notices_list')
+            
+        except Exception as e:
+            messages.error(request, f'حدث خطأ أثناء إنشاء الإنذارات: {str(e)}')
+    
+    # عرض معاينة الإنذارات التي سيتم إنشاؤها
+    context = {
+        'title': 'إنشاء إنذارات تلقائية',
+        'preview_notices': _get_preview_notices(),
+    }
+    
+    return render(request, 'dashboard/overdue_notices/generate_automatic.html', context)
+
+
+def _get_preview_notices():
+    """الحصول على معاينة الإنذارات التي سيتم إنشاؤها"""
+    from dateutil.relativedelta import relativedelta
+    import datetime
+    
+    today = timezone.now().date()
+    one_month_ago = today - relativedelta(months=1)
+    
+    preview_notices = []
+    active_leases = Lease.objects.filter(status='active')
+    
+    for lease in active_leases[:10]:  # معاينة أول 10 عقود فقط
+        try:
+            payment_summary = lease.get_payment_summary()
+            
+            for month_data in payment_summary:
+                if month_data['balance'] > 0:
+                    due_date = datetime.date(month_data['year'], month_data['month'], 1)
+                    
+                    if due_date <= one_month_ago:
+                        # فحص عدم وجود إنذار سابق
+                        existing_notice = PaymentOverdueNotice.objects.filter(
+                            lease=lease,
+                            overdue_month=month_data['month'],
+                            overdue_year=month_data['year']
+                        ).exists()
+                        
+                        if not existing_notice:
+                            preview_notices.append({
+                                'lease': lease,
+                                'month': month_data['month'],
+                                'year': month_data['year'],
+                                'amount': month_data['balance'],
+                                'due_date': due_date,
+                            })
+        except Exception:
+            continue
+    
+    return preview_notices
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def notice_update_status(request, pk):
+    """تحديث حالة الإنذار"""
+    notice = get_object_or_404(PaymentOverdueNotice, pk=pk)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        notes = request.POST.get('notes', '')
+        
+        if new_status in dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES):
+            old_status = notice.status
+            notice.status = new_status
+            
+            # تحديث التواريخ المناسبة
+            now = timezone.now()
+            if new_status == 'sent' and old_status == 'draft':
+                notice.sent_date = now
+            elif new_status == 'acknowledged' and old_status == 'sent':
+                notice.acknowledged_date = now
+            elif new_status == 'resolved':
+                notice.resolved_date = now
+            
+            # إضافة الملاحظات
+            if notes:
+                if notice.notes:
+                    notice.notes += f"\n\n{now.strftime('%Y-%m-%d %H:%M')}: {notes}"
+                else:
+                    notice.notes = f"{now.strftime('%Y-%m-%d %H:%M')}: {notes}"
+            
+            notice.save()
+            messages.success(request, f'تم تحديث حالة الإنذار إلى "{notice.get_status_display()}"')
+        else:
+            messages.error(request, 'حالة غير صحيحة')
+    
+    return redirect('overdue_notice_detail', pk=pk)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def notice_print_view(request, pk):
+    """طباعة الإنذار"""
+    notice = get_object_or_404(PaymentOverdueNotice, pk=pk)
+    
+    context = {
+        'notice': notice,
+        'notice_content': notice.get_notice_content(),
+        'company': Company.objects.first(),
+    }
+    
+    return render(request, 'dashboard/overdue_notices/print.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def notices_bulk_actions(request):
+    """إجراءات مجمعة على الإنذارات"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        notice_ids = request.POST.getlist('notice_ids')
+        
+        if not notice_ids:
+            messages.error(request, 'يرجى اختيار إنذار واحد على الأقل')
+            return redirect('overdue_notices_list')
+        
+        notices = PaymentOverdueNotice.objects.filter(id__in=notice_ids)
+        
+        if action == 'mark_sent':
+            notices.update(status='sent', sent_date=timezone.now())
+            messages.success(request, f'تم تحديث {notices.count()} إنذار إلى "مُرسل"')
+        
+        elif action == 'mark_acknowledged':
+            notices.update(status='acknowledged', acknowledged_date=timezone.now())
+            messages.success(request, f'تم تحديث {notices.count()} إنذار إلى "مُستلم"')
+        
+        elif action == 'mark_resolved':
+            notices.update(status='resolved', resolved_date=timezone.now())
+            messages.success(request, f'تم تحديث {notices.count()} إنذار إلى "محلول"')
+        
+        elif action == 'delete':
+            count = notices.count()
+            notices.delete()
+            messages.success(request, f'تم حذف {count} إنذار')
+        
+        else:
+            messages.error(request, 'إجراء غير صحيح')
+    
+    return redirect('overdue_notices_list')

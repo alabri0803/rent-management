@@ -25,6 +25,9 @@ from .views import (
     finance_unlock, finance_lock,
     backup_now, custom_logout, backup_restore_page, restore_backup,
     media_diagnostics,
+    # Payment Overdue Notice Views
+    PaymentOverdueNoticeListView, PaymentOverdueNoticeDetailView,
+    generate_automatic_notices, notice_update_status, notice_print_view, notices_bulk_actions,
 )
 from .auth_views import (
     EnhancedLoginView, send_login_otp, verify_login_otp, user_profile,
@@ -193,4 +196,12 @@ urlpatterns = [
     path('commission-distributions/new/', CommissionDistributionCreateView.as_view(), name='commission_distribution_create'),
     path('commission-distributions/<int:pk>/edit/', CommissionDistributionUpdateView.as_view(), name='commission_distribution_update'),
     path('commission-distributions/<int:pk>/delete/', CommissionDistributionDeleteView.as_view(), name='commission_distribution_delete'),
+    
+    # Payment Overdue Notices
+    path('overdue-notices/', PaymentOverdueNoticeListView.as_view(), name='overdue_notices_list'),
+    path('overdue-notices/<int:pk>/', PaymentOverdueNoticeDetailView.as_view(), name='overdue_notice_detail'),
+    path('overdue-notices/generate/', generate_automatic_notices, name='generate_automatic_notices'),
+    path('overdue-notices/<int:pk>/update-status/', notice_update_status, name='notice_update_status'),
+    path('overdue-notices/<int:pk>/print/', notice_print_view, name='notice_print_view'),
+    path('overdue-notices/bulk-actions/', notices_bulk_actions, name='notices_bulk_actions'),
 ]

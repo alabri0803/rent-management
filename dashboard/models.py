@@ -1023,3 +1023,220 @@ class CommissionDistribution(models.Model):
             self.owner_share = self.rent_collection.amount_collected - self.office_commission
             return self.office_commission, self.owner_share
         return Decimal('0.00'), self.rent_collection.amount_collected
+
+
+class PaymentOverdueNotice(models.Model):
+    """نموذج إنذار عدم سداد الإيجار - متوافق مع القوانين العمانية"""
+    
+    NOTICE_STATUS_CHOICES = [
+        ('draft', _('مسودة')),
+        ('sent', _('تم الإرسال')),
+        ('acknowledged', _('تم الاستلام')),
+        ('resolved', _('تم الحل')),
+        ('escalated', _('تم التصعيد')),
+    ]
+    
+    LEGAL_ACTION_CHOICES = [
+        ('none', _('لا يوجد')),
+        ('contract_termination', _('فسخ العقد')),
+        ('eviction', _('الإخلاء')),
+        ('legal_proceedings', _('إجراءات قانونية')),
+    ]
+    
+    lease = models.ForeignKey(Lease, on_delete=models.CASCADE, related_name='overdue_notices', verbose_name=_("العقد"))
+    notice_date = models.DateField(_("تاريخ الإنذار"), default=timezone.now)
+    overdue_month = models.IntegerField(_("الشهر المتأخر"), choices=[(i, _(str(i))) for i in range(1, 13)])
+    overdue_year = models.IntegerField(_("السنة المتأخرة"), default=timezone.now().year)
+    overdue_amount = models.DecimalField(_("المبلغ المتأخر"), max_digits=10, decimal_places=2)
+    due_date = models.DateField(_("تاريخ الاستحقاق الأصلي"))
+    legal_deadline = models.DateField(_("الموعد النهائي القانوني"))
+    status = models.CharField(_("حالة الإنذار"), max_length=20, choices=NOTICE_STATUS_CHOICES, default='draft')
+    potential_legal_action = models.CharField(_("الإجراء القانوني المحتمل"), max_length=30, choices=LEGAL_ACTION_CHOICES, default='contract_termination')
+    
+    # حقول إضافية للمتابعة
+    sent_date = models.DateTimeField(_("تاريخ الإرسال"), blank=True, null=True)
+    acknowledged_date = models.DateTimeField(_("تاريخ الاستلام"), blank=True, null=True)
+    resolved_date = models.DateTimeField(_("تاريخ الحل"), blank=True, null=True)
+    notes = models.TextField(_("ملاحظات"), blank=True, null=True)
+    
+    # معلومات الإرسال
+    delivery_method = models.CharField(_("طريقة التسليم"), max_length=50, blank=True, null=True)
+    recipient_signature = models.CharField(_("توقيع المستلم"), max_length=100, blank=True, null=True)
+    
+    class Meta:
+        verbose_name = _("إنذار عدم سداد")
+        verbose_name_plural = _("إنذارات عدم السداد")
+        ordering = ['-notice_date']
+        unique_together = ['lease', 'overdue_month', 'overdue_year']
+    
+    def __str__(self):
+        return f"إنذار {self.lease.contract_number} - {self.overdue_month}/{self.overdue_year}"
+    
+    def save(self, *args, **kwargs):
+        # حساب الموعد النهائي القانوني (30 يوم من تاريخ الإنذار حسب القانون العماني)
+        if not self.legal_deadline:
+            self.legal_deadline = self.notice_date + relativedelta(days=30)
+        super().save(*args, **kwargs)
+    
+    def get_notice_content(self):
+        """إنشاء محتوى الإنذار باللغة العربية متوافق مع القوانين العمانية"""
+        
+        month_names = {
+            1: 'يناير', 2: 'فبراير', 3: 'مارس', 4: 'أبريل',
+            5: 'مايو', 6: 'يونيو', 7: 'يوليو', 8: 'أغسطس',
+            9: 'سبتمبر', 10: 'أكتوبر', 11: 'نوفمبر', 12: 'ديسمبر'
+        }
+        
+        content = f"""
+        <div style="text-align: right; font-family: 'Traditional Arabic', Arial, sans-serif; direction: rtl;">
+            <h2 style="text-align: center; color: #d32f2f; font-weight: bold;">
+                إنذار رسمي بطلب السداد
+            </h2>
+            
+            <div style="margin: 20px 0; padding: 15px; border: 2px solid #d32f2f; background-color: #ffebee;">
+                <h3 style="color: #d32f2f; margin-bottom: 10px;">الموضوع: إنذار رسمي لعدم سداد إيجار الوحدة رقم {self.lease.unit.unit_number}</h3>
+            </div>
+            
+            <div style="margin: 20px 0; line-height: 1.8;">
+                <p><strong>إلى السيد/السيدة:</strong> {self.lease.tenant.name}</p>
+                <p><strong>رقم العقد:</strong> {self.lease.contract_number}</p>
+                <p><strong>الوحدة:</strong> {self.lease.unit.unit_number} - {self.lease.unit.building.name}</p>
+                <p><strong>تاريخ الإنذار:</strong> {self.notice_date.strftime('%d/%m/%Y')}</p>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background-color: #fff3e0; border-right: 4px solid #ff9800;">
+                <h4 style="color: #e65100; margin-bottom: 10px;">المحتوى:</h4>
+                <p>تنبيه رسمي بالتأخر عن سداد إيجار شهر <strong>{month_names[self.overdue_month]} {self.overdue_year}</strong> 
+                بقيمة <strong>{self.overdue_amount} ريال عماني</strong></p>
+                <p><strong>التاريخ المستحق:</strong> {self.due_date.strftime('%d/%m/%Y')}</p>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background-color: #e8f5e8; border-right: 4px solid #4caf50;">
+                <h4 style="color: #2e7d32; margin-bottom: 10px;">الإجراء المطلوب:</h4>
+                <p>يجب سداد المبلغ كاملاً خلال <strong>المدة القانونية المحددة في سلطنة عمان (30 يوماً)</strong> 
+                من تاريخ هذا الإنذار لتجنب فسخ العقد و/أو الإخلاء</p>
+                <p><strong>الموعد النهائي للسداد:</strong> {self.legal_deadline.strftime('%d/%m/%Y')}</p>
+            </div>
+            
+            <div style="margin: 20px 0; padding: 15px; background-color: #ffebee; border: 1px solid #f44336;">
+                <h4 style="color: #c62828; margin-bottom: 10px;">ملاحظات قانونية هامة:</h4>
+                <ul style="margin-right: 20px;">
+                    <li>هذا الإنذار صادر وفقاً لأحكام قانون الإيجار في سلطنة عمان</li>
+                    <li>عدم الاستجابة خلال المدة المحددة قد يؤدي إلى اتخاذ الإجراءات القانونية اللازمة</li>
+                    <li>يحق للمؤجر المطالبة بالتعويضات والأضرار الناتجة عن التأخير</li>
+                    <li>في حالة عدم السداد، سيتم اتخاذ إجراءات فسخ العقد والإخلاء وفقاً للقانون</li>
+                    <li>يمكن للمستأجر التواصل مع إدارة العقارات لمناقشة ترتيبات السداد</li>
+                </ul>
+            </div>
+            
+            <div style="margin: 30px 0; text-align: center;">
+                <p style="font-weight: bold;">إدارة العقارات</p>
+                <p>التاريخ: {timezone.now().strftime('%d/%m/%Y')}</p>
+            </div>
+            
+            <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; font-size: 12px; color: #666;">
+                <p><strong>للاستفسار:</strong> يرجى التواصل مع إدارة العقارات</p>
+                <p><strong>رقم المرجع:</strong> {self.id if self.id else 'سيتم إنشاؤه'}</p>
+            </div>
+        </div>
+        """
+        
+        return content
+    
+    def is_overdue_for_notice(self):
+        """فحص ما إذا كان الإيجار متأخر لمدة شهر كامل لإصدار الإنذار"""
+        today = timezone.now().date()
+        overdue_threshold = self.due_date + relativedelta(months=1)
+        return today >= overdue_threshold
+    
+    def get_days_since_due(self):
+        """حساب عدد الأيام منذ تاريخ الاستحقاق"""
+        today = timezone.now().date()
+        return (today - self.due_date).days
+    
+    def get_days_until_legal_deadline(self):
+        """حساب عدد الأيام المتبقية حتى الموعد النهائي القانوني"""
+        today = timezone.now().date()
+        return (self.legal_deadline - today).days
+    
+    @classmethod
+    def generate_automatic_notices(cls):
+        """إنشاء إنذارات تلقائية للإيجارات المتأخرة لمدة شهر"""
+        from django.db.models import Q
+        
+        today = timezone.now().date()
+        one_month_ago = today - relativedelta(months=1)
+        
+        # البحث عن العقود النشطة التي لديها دفعات متأخرة لأكثر من شهر
+        active_leases = Lease.objects.filter(status='active')
+        
+        notices_created = []
+        
+        for lease in active_leases:
+            payment_summary = lease.get_payment_summary()
+            
+            for month_data in payment_summary:
+                # فحص الدفعات المتأخرة لأكثر من شهر
+                if (month_data['status'] == 'overdue' and 
+                    month_data['balance'] > 0):
+                    
+                    # حساب تاريخ الاستحقاق للشهر
+                    due_date = datetime.date(month_data['year'], month_data['month'], 1)
+                    
+                    # فحص إذا كان متأخر لأكثر من شهر
+                    if due_date <= one_month_ago:
+                        # فحص عدم وجود إنذار سابق لنفس الشهر
+                        existing_notice = cls.objects.filter(
+                            lease=lease,
+                            overdue_month=month_data['month'],
+                            overdue_year=month_data['year']
+                        ).first()
+                        
+                        if not existing_notice:
+                            notice = cls.objects.create(
+                                lease=lease,
+                                overdue_month=month_data['month'],
+                                overdue_year=month_data['year'],
+                                overdue_amount=month_data['balance'],
+                                due_date=due_date,
+                                status='draft'
+                            )
+                            notices_created.append(notice)
+        
+        return notices_created
+
+
+class NoticeTemplate(models.Model):
+    """قوالب الإنذارات والرسائل القانونية"""
+    
+    TEMPLATE_TYPE_CHOICES = [
+        ('overdue_payment', _('إنذار عدم سداد')),
+        ('contract_termination', _('إنذار فسخ عقد')),
+        ('eviction_notice', _('إنذار إخلاء')),
+        ('lease_renewal', _('تذكير تجديد عقد')),
+        ('maintenance_notice', _('إشعار صيانة')),
+    ]
+    
+    name = models.CharField(_("اسم القالب"), max_length=200)
+    template_type = models.CharField(_("نوع القالب"), max_length=30, choices=TEMPLATE_TYPE_CHOICES)
+    subject = models.CharField(_("الموضوع"), max_length=300)
+    content = models.TextField(_("المحتوى"), help_text=_("استخدم المتغيرات مثل {tenant_name}, {unit_number}, {amount}, {due_date}"))
+    is_active = models.BooleanField(_("نشط"), default=True)
+    legal_compliance_notes = models.TextField(_("ملاحظات الامتثال القانوني"), blank=True, null=True)
+    created_date = models.DateTimeField(_("تاريخ الإنشاء"), auto_now_add=True)
+    updated_date = models.DateTimeField(_("تاريخ التحديث"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("قالب إنذار")
+        verbose_name_plural = _("قوالب الإنذارات")
+        ordering = ['template_type', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_template_type_display()})"
+    
+    def render_content(self, context):
+        """تطبيق المتغيرات على محتوى القالب"""
+        content = self.content
+        for key, value in context.items():
+            content = content.replace(f"{{{key}}}", str(value))
+        return content
