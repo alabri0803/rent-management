@@ -115,7 +115,7 @@ DATABASES = {
         'USER': 'root',
         'PASSWORD': '',  # كلمة المرور فارغة في XAMPP افتراضياً
         'HOST': 'localhost',
-        'PORT': '3307',
+        'PORT': '3306',
     }
 }
 

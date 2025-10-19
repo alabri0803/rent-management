@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponseRedirect
 import os
 import io
 import zipfile
@@ -461,8 +462,15 @@ class TenantCreateView(StaffRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        logger.info(f"Creating new tenant with data: {form.cleaned_data}")
         messages.success(self.request, _("تمت إضافة المستأجر بنجاح!"))
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        logger.error(f"Tenant form validation failed. Errors: {form.errors}")
+        logger.error(f"Form data: {form.data}")
+        messages.error(self.request, _("حدث خطأ في حفظ البيانات. يرجى التحقق من المعلومات المدخلة."))
+        return super().form_invalid(form)
 
 class TenantUpdateView(StaffRequiredMixin, UpdateView):
     model = Tenant
@@ -1187,6 +1195,34 @@ class InvoiceListView(StaffRequiredMixin, ListView):
             )
         return queryset.order_by('-issue_date')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        search_query = self.request.GET.get('q', '').strip()
+        filtered_qs = Invoice.objects.select_related('tenant', 'lease')
+        if search_query:
+            filtered_qs = filtered_qs.filter(
+                Q(invoice_number__icontains=search_query) |
+                Q(tenant__name__icontains=search_query) |
+                Q(lease__contract_number__icontains=search_query)
+            )
+
+        status_totals = {'draft': 0, 'sent': 0, 'paid': 0, 'overdue': 0, 'cancelled': 0}
+        for item in filtered_qs.values('status').annotate(total=Count('id')):
+            status = item['status']
+            if status in status_totals:
+                status_totals[status] = item['total']
+
+        context.update({
+            'total_invoices': filtered_qs.count(),
+            'draft_count': status_totals['draft'],
+            'sent_count': status_totals['sent'],
+            'paid_count': status_totals['paid'],
+            'overdue_count': status_totals['overdue'],
+            'cancelled_count': status_totals['cancelled'],
+            'search_query': search_query,
+        })
+        return context
+
 class InvoiceDetailView(StaffRequiredMixin, DetailView):
     model = Invoice
     template_name = 'dashboard/invoice_detail.html'
@@ -1219,15 +1255,18 @@ class InvoiceCreateView(StaffRequiredMixin, CreateView):
             else:
                 # If items are not valid, we prevent the form from being considered valid.
                 return self.form_invalid(form)
-        return super().form_valid(form)
+        # Always redirect to invoice list after successful save
+        print("DEBUG: Redirecting to invoice_list from InvoiceCreateView")
+        return HttpResponseRedirect(reverse('invoice_list'))
 
 class InvoiceUpdateView(StaffRequiredMixin, UpdateView):
     model = Invoice
     form_class = InvoiceForm
     template_name = 'dashboard/invoice_form.html'
+    success_url = reverse_lazy('invoice_list')
 
     def get_success_url(self):
-        return reverse('invoice_detail', kwargs={'pk': self.object.pk})
+        return reverse_lazy('invoice_list')
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -1249,7 +1288,9 @@ class InvoiceUpdateView(StaffRequiredMixin, UpdateView):
                 messages.success(self.request, _("تم تحديث الفاتورة بنجاح."))
             else:
                 return self.form_invalid(form)
-        return super().form_valid(form)
+        # Always redirect to invoice list after successful save
+        print("DEBUG: Redirecting to invoice_list from InvoiceUpdateView")
+        return HttpResponseRedirect(reverse('invoice_list'))
 
 class InvoiceDeleteView(StaffRequiredMixin, DeleteView):
     model = Invoice

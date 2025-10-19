@@ -40,12 +40,29 @@ class BuildingForm(forms.ModelForm):
 class TenantForm(forms.ModelForm):
     class Meta:
         model = Tenant
-        fields = ['name', 'tenant_type', 'phone', 'email', 'authorized_signatory', 'rating']
+        fields = ['name', 'tenant_type', 'phone', 'email', 'authorized_signatory']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#993333]'})
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        print(f"DEBUG: Form clean method called with data: {cleaned_data}")
+        return cleaned_data
+    
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if not name or not name.strip():
+            raise forms.ValidationError("اسم المستأجر مطلوب")
+        return name.strip()
+    
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        if not phone or not phone.strip():
+            raise forms.ValidationError("رقم الهاتف مطلوب")
+        return phone.strip()
 
 
 class LeaseForm(forms.ModelForm):
@@ -135,13 +152,20 @@ class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
         fields = ['building', 'category', 'description', 'amount', 'expense_date', 'receipt']
-        widgets = {'expense_date': forms.DateInput(attrs={'type': 'date'})}
+        widgets = {
+            'expense_date': forms.DateInput(attrs={'type': 'text', 'autocomplete': 'off', 'placeholder': _('اختر تاريخ المصروف')})
+        }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            common_class = 'w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#993333]'
+            common_class = 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 text-sm'
             if field_name == 'receipt':
                 field.widget.attrs.update({'class': 'w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100'})
+            elif field_name == 'expense_date':
+                field.widget.attrs.update({
+                    'class': f'{common_class} expense-date-input pr-12 pl-12 bg-white text-gray-700 placeholder-gray-400',
+                    'data-behavior': 'flatpickr'
+                })
             else:
                 field.widget.attrs.update({'class': common_class})
 

@@ -49,10 +49,19 @@ class Building(models.Model):
         return self.name
 
 class Unit(models.Model):
-    UNIT_TYPE_CHOICES = [('office', _('مكتب')), ('apartment', _('شقة')), ('shop', _('محل'))]
+    UNIT_TYPE_CHOICES = [
+        ('apartment', _('شقة')),
+        ('residential_unit', _('وحدة سكنية')),
+        ('office', _('مكتب')),
+        ('workspace', _('مساحة عمل مكتبية')),
+        ('shop', _('محل')),
+        ('commercial_shop', _('محل تجاري')),
+        ('warehouse', _('مستودع')),
+        ('showroom', _('معرض')),
+    ]
     building = models.ForeignKey(Building, on_delete=models.CASCADE, verbose_name=_("المبنى"))
     unit_number = models.CharField(_("رقم الوحدة"), max_length=20)
-    unit_type = models.CharField(_("نوع الوحدة"), max_length=20, choices=UNIT_TYPE_CHOICES)
+    unit_type = models.CharField(_("نوع الوحدة"), max_length=30, choices=UNIT_TYPE_CHOICES)
     floor = models.IntegerField(_("الطابق"))
     is_available = models.BooleanField(_("متاحة للإيجار"), default=True)
     
@@ -64,10 +73,17 @@ class Unit(models.Model):
         return f"{self.building.name} - {self.unit_number}"
 
 class Tenant(models.Model):
-    TENANT_TYPE_CHOICES = [('individual', _('فرد')), ('company', _('شركة'))]
+    TENANT_TYPE_CHOICES = [
+        ('individual', _('فرد')),
+        ('natural_person', _('شخص طبيعي')),
+        ('company', _('شركة')),
+        ('legal_entity', _('كيان قانوني')),
+        ('corporation', _('مؤسسة')),
+        ('partnership', _('شراكة')),
+    ]
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("حساب المستخدم"), help_text=_("اربط المستأجر بحساب مستخدم لتسجيل الدخول إلى البوابة."))
     name = models.CharField(_("اسم المستأجر"), max_length=150)
-    tenant_type = models.CharField(_("نوع المستأجر"), max_length=20, choices=TENANT_TYPE_CHOICES)
+    tenant_type = models.CharField(_("نوع المستأجر"), max_length=30, choices=TENANT_TYPE_CHOICES)
     phone = models.CharField(_("رقم الهاتف"), max_length=15)
     email = models.EmailField(_("البريد الإلكتروني"), blank=True, null=True)
     authorized_signatory = models.CharField(_("المفوض بالتوقيع"), max_length=150, blank=True, null=True, help_text=_("يُملأ فقط في حال كان المستأجر شركة"))

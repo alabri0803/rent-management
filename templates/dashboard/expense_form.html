@@ -3,6 +3,10 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+
 <div class="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 py-8">
     <div class="max-w-4xl mx-auto px-4">
         <!-- Header Section -->
@@ -75,11 +79,18 @@
                                     <svg class="w-4 h-4 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
-                                    {{ form.date.label }}
+                                    {{ form.expense_date.label }}
                                 </label>
-                                {{ form.date }}
-                                {% if form.date.errors %}
-                                <p class="text-red-500 text-xs mt-1">{{ form.date.errors.0 }}</p>
+                                <div class="relative date-field-wrapper">
+                                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </span>
+                                    {{ form.expense_date }}
+                                </div>
+                                {% if form.expense_date.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.expense_date.errors.0 }}</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -95,51 +106,75 @@
                         </h3>
                         
                         <!-- Custom Category Selection -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {% for choice in form.category %}
-                            <label class="relative flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 group">
-                                {{ choice.tag }}
-                                <div class="flex items-center w-full">
-                                    <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br 
-                                        {% if choice.choice_label == 'صيانة' %}from-blue-400 to-blue-600
-                                        {% elif choice.choice_label == 'خدمات (كهرباء، ماء)' %}from-yellow-400 to-yellow-600
-                                        {% elif choice.choice_label == 'رواتب' %}from-green-400 to-green-600
-                                        {% elif choice.choice_label == 'تسويق' %}from-pink-400 to-pink-600
-                                        {% elif choice.choice_label == 'رسوم إدارية/حكومية' %}from-red-400 to-red-600
-                                        {% else %}from-gray-400 to-gray-600{% endif %} 
-                                        text-white ml-3">
-                                        {% if choice.choice_label == 'صيانة' %}
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        </svg>
-                                        {% elif choice.choice_label == 'خدمات (كهرباء، ماء)' %}
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                        </svg>
-                                        {% elif choice.choice_label == 'رواتب' %}
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                        </svg>
-                                        {% elif choice.choice_label == 'تسويق' %}
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
-                                        </svg>
-                                        {% elif choice.choice_label == 'رسوم إدارية/حكومية' %}
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                        {% else %}
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                        </svg>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="font-semibold text-gray-800 text-sm">{{ choice.choice_label }}</div>
-                                    </div>
-                                </div>
+                        <div class="category-grid">
+                            {% for choice_value, choice_label in form.category.field.choices %}
+                            {% if choice_value %}
+                            {% with input_id="id_"|add:form.category.name|add:"_"|add:forloop.counter0 %}
+                            <div class="category-option">
+                                <input
+                                    id="{{ input_id }}"
+                                    type="radio"
+                                    name="{{ form.category.name }}"
+                                    value="{{ choice_value }}"
+                                    class="category-radio"
+                                    {% if choice_value == form.category.value %}checked{% endif %}
+                                >
+                                <label for="{{ input_id }}" class="category-card">
+                                    <span class="category-card__icon
+                                        {% if choice_value == 'maintenance' %} category-card__icon--blue
+                                        {% elif choice_value == 'utilities' %} category-card__icon--yellow
+                                        {% elif choice_value == 'salaries' %} category-card__icon--green
+                                        {% elif choice_value == 'marketing' %} category-card__icon--pink
+                                    {% elif choice_value == 'admin' %} category-card__icon--red
+                                    {% else %} category-card__icon--gray{% endif %}">
+                                    {% if choice_value == 'maintenance' %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+{{ ... }
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    {% elif choice_value == 'utilities' %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                    {% elif choice_value == 'salaries' %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                    {% elif choice_value == 'marketing' %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+                                    </svg>
+                                    {% elif choice_value == 'admin' %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    {% else %}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                    </svg>
+                                    {% endif %}
+                                </span>
+                                <span class="category-card__content">
+                                    <span class="category-card__title">{{ choice_label }}</span>
+                                    <span class="category-card__subtitle">
+                                        {% if choice_value == 'maintenance' %}{% trans "صيانة المباني والمعدات" %}
+                                        {% elif choice_value == 'utilities' %}{% trans "فواتير الكهرباء والماء" %}
+                                        {% elif choice_value == 'salaries' %}{% trans "رواتب الموظفين والعمال" %}
+                                        {% elif choice_value == 'marketing' %}{% trans "الإعلانات والتسويق" %}
+                                        {% elif choice_value == 'admin' %}{% trans "رسوم الجهات الرسمية" %}
+                                        {% else %}{% trans "مصروفات متنوعة أخرى" %}{% endif %}
+                                    </span>
+                                </span>
+                                <span class="category-card__check">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </span>
                             </label>
+                            </div>
+                            {% endwith %}
+                            {% endif %}
                             {% endfor %}
                         </div>
                         {% if form.category.errors %}
@@ -222,36 +257,264 @@
 </div>
 
 <style>
-/* Custom styles for form elements */
-.group select, .group input, .group textarea {
-    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 text-sm;
+.date-field-wrapper input[type="text"],
+.date-field-wrapper .flatpickr-input {
+    width: 100%;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.75rem 3rem 0.75rem 3rem;
+    font-size: 0.875rem;
+    color: #374151;
+    background-color: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.date-field-wrapper .flatpickr-input:focus,
+.date-field-wrapper input[type="text"]:focus {
+    outline: none;
+    border-color: #f87171;
+    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.2);
+}
+
+.group select,
+.group input:not(.expense-date-input),
 .group textarea {
-    @apply min-h-[100px] resize-none;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    color: #374151;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.group select:focus, .group input:focus, .group textarea:focus {
-    @apply outline-none shadow-lg;
+.group select:focus,
+.group input:not(.expense-date-input):focus,
+.group textarea:focus {
+    outline: none;
+    border-color: #f87171;
+    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.2);
 }
 
-/* Hover effects */
-.group:hover select, .group:hover input, .group:hover textarea {
-    @apply border-red-300 shadow-md;
+.group:hover select,
+.group:hover input:not(.expense-date-input),
+.group:hover textarea {
+    border-color: #fca5a5;
+    box-shadow: 0 8px 18px rgba(248, 113, 113, 0.15);
 }
 
-/* Radio button styles */
-input[type="radio"] {
-    @apply sr-only;
-}
-
-input[type="radio"]:checked + div {
-    @apply border-purple-500 bg-purple-50;
-}
-
-/* File input styling */
 input[type="file"] {
-    @apply w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100;
+    width: 100%;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+input[type="file"]::file-selector-button {
+    margin-right: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    border: none;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background-color: #bfdbfe;
+    transform: translateY(-1px);
+}
+
+.category-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.category-option {
+    position: relative;
+}
+
+.category-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.category-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 251, 0.96));
+    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.08);
+    transition: all 0.25s ease;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.category-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.1), rgba(236, 72, 153, 0.05));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.category-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 1rem;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.category-card__icon--blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.category-card__icon--yellow { background: linear-gradient(135deg, #facc15, #f59e0b); }
+.category-card__icon--green { background: linear-gradient(135deg, #34d399, #059669); }
+.category-card__icon--pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+.category-card__icon--red { background: linear-gradient(135deg, #f87171, #ef4444); }
+.category-card__icon--gray { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+
+.category-card__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.category-card__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.category-card__subtitle {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.category-card__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    border: 2px solid #d1d5db;
+    color: transparent;
+    background: rgba(255, 255, 255, 0.6);
+    transition: all 0.25s ease;
+}
+
+.category-radio:checked + .category-card {
+    border-color: #a855f7;
+    box-shadow: 0 18px 38px rgba(168, 85, 247, 0.25);
+}
+
+.category-radio:checked + .category-card::after {
+    opacity: 1;
+}
+
+.category-radio:checked + .category-card .category-card__check {
+    border-color: transparent;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: #fff;
+}
+
+.category-card:hover {
+    border-color: #c4b5fd;
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(129, 140, 248, 0.2);
+}
+
+.category-card:hover .category-card__check {
+    border-color: transparent;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: #fff;
+}
+
+@media (max-width: 640px) {
+    .category-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .category-card__check {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+    }
+
+    .category-card__icon {
+        margin-top: 0.5rem;
+    }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.flatpickr) {
+        try {
+            flatpickr('.expense-date-input', {
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'd/m/Y',
+                allowInput: true,
+                locale: window.flatpickr.l10ns.ar,
+                disableMobile: false,
+                altInputClass: 'flatpickr-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 text-sm'
+            });
+        } catch (error) {
+            console.error('Flatpickr initialization failed', error);
+        }
+    }
+
+    const categoryOptions = Array.from(document.querySelectorAll('.category-option'));
+    const refreshCategoryState = () => {
+        categoryOptions.forEach((option) => {
+            const input = option.querySelector('.category-radio');
+            const card = option.querySelector('.category-card');
+            if (!input || !card) {
+                return;
+            }
+            if (input.checked) {
+                card.classList.add('is-selected');
+            } else {
+                card.classList.remove('is-selected');
+            }
+        });
+    };
+
+    categoryOptions.forEach((option) => {
+        const input = option.querySelector('.category-radio');
+        const card = option.querySelector('.category-card');
+        if (!input || !card) {
+            return;
+        }
+
+        card.addEventListener('click', (event) => {
+            // Prevent double toggling when clicking on SVG elements
+            event.preventDefault();
+            input.checked = true;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            refreshCategoryState();
+        });
+
+        input.addEventListener('change', refreshCategoryState);
+    });
+
+    refreshCategoryState();
+});
+</script>
 {% endblock %}

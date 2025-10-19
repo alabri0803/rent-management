@@ -131,45 +131,57 @@
                         </h3>
                         
                         <!-- Custom Status Selection -->
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            {% for choice in form.status %}
-                            <label class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200 group">
-                                {{ choice.tag }}
-                                <div class="flex items-center w-full">
-                                    <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br 
-                                        {% if choice.choice_label == 'مسودة' %}from-gray-400 to-gray-600
-                                        {% elif choice.choice_label == 'مرسلة' %}from-blue-400 to-blue-600
-                                        {% elif choice.choice_label == 'مدفوعة' %}from-green-400 to-green-600
-                                        {% elif choice.choice_label == 'متأخرة' %}from-red-400 to-red-600
-                                        {% else %}from-orange-400 to-orange-600{% endif %} 
-                                        text-white ml-2">
-                                        {% if choice.choice_label == 'مسودة' %}
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        {% elif choice.choice_label == 'مرسلة' %}
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                        </svg>
-                                        {% elif choice.choice_label == 'مدفوعة' %}
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                        {% elif choice.choice_label == 'متأخرة' %}
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
+                        <div class="invoice-status-grid">
+                            {% for value,label in form.fields.status.choices %}
+                            {% if value %}
+                            {% with status_id="id_"|add:form.status.name|add:"_"|add:value %}
+                            <div class="invoice-status-option">
+                                <input
+                                    id="{{ status_id }}"
+                                    type="radio"
+                                    name="{{ form.status.name }}"
+                                    value="{{ value }}"
+                                    class="invoice-status-radio"
+                                    {% if form.status.value == value %}checked{% endif %}
+                                >
+                                <label for="{{ status_id }}" class="invoice-status-card">
+                                    <span class="invoice-status-card__icon
+                                        {% if value == 'draft' %}invoice-status-card__icon--gray
+                                        {% elif value == 'sent' %}invoice-status-card__icon--blue
+                                        {% elif value == 'paid' %}invoice-status-card__icon--green
+                                        {% elif value == 'overdue' %}invoice-status-card__icon--red
+                                        {% else %}invoice-status-card__icon--orange{% endif %}">
+                                        {% if value == 'draft' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        {% elif value == 'sent' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                        {% elif value == 'paid' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        {% elif value == 'overdue' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         {% else %}
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                         {% endif %}
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="font-semibold text-gray-800 text-xs">{{ choice.choice_label }}</div>
-                                    </div>
-                                </div>
-                            </label>
+                                    </span>
+                                    <span class="invoice-status-card__body">
+                                        <span class="invoice-status-card__title">{{ label }}</span>
+                                        <span class="invoice-status-card__subtitle">
+                                            {% if value == 'draft' %}{% trans "يمكن تعديلها قبل الإرسال" %}
+                                            {% elif value == 'sent' %}{% trans "تم إرسالها إلى المستأجر" %}
+                                            {% elif value == 'paid' %}{% trans "تم استلام المبلغ بالكامل" %}
+                                            {% elif value == 'overdue' %}{% trans "تحتاج متابعة عاجلة" %}
+                                            {% else %}{% trans "تم إلغاء الفاتورة" %}{% endif %}
+                                        </span>
+                                    </span>
+                                    <span class="invoice-status-card__indicator">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </span>
+                                </label>
+                            </div>
+                            {% endwith %}
+                            {% endif %}
                             {% endfor %}
                         </div>
                         {% if form.status.errors %}
@@ -264,7 +276,11 @@
                             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            {% trans "حفظ الفاتورة" %}
+                            {% if title == "تعديل الفاتورة" %}
+                                {% trans "حفظ التعديلات" %}
+                            {% else %}
+                                {% trans "حفظ الفاتورة" %}
+                            {% endif %}
                         </button>
                     </div>
                 </form>
@@ -274,50 +290,225 @@
 </div>
 
 <style>
-/* Custom styles for form elements */
 .group select, .group input, .group textarea {
-    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 text-sm;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: #fff;
 }
 
 .group textarea {
-    @apply min-h-[100px] resize-none;
+    min-height: 100px;
+    resize: none;
 }
 
 .group select:focus, .group input:focus, .group textarea:focus {
-    @apply outline-none shadow-lg;
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
 }
 
-/* Hover effects */
 .group:hover select, .group:hover input, .group:hover textarea {
-    @apply border-indigo-300 shadow-md;
+    border-color: #a5b4fc;
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
 }
 
-/* Radio button styles */
-input[type="radio"] {
-    @apply sr-only;
+.invoice-status-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
-input[type="radio"]:checked + div {
-    @apply border-yellow-500 bg-yellow-50;
+.invoice-status-option {
+    position: relative;
+}
+
+.invoice-status-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.invoice-status-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(254, 249, 195, 0.8));
+    box-shadow: 0 12px 30px rgba(251, 191, 36, 0.15);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    overflow: hidden;
+}
+
+.invoice-status-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(254, 240, 138, 0.25), rgba(253, 186, 116, 0.25));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.invoice-status-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.9rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.invoice-status-card__icon--gray { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+.invoice-status-card__icon--blue { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.invoice-status-card__icon--green { background: linear-gradient(135deg, #34d399, #059669); }
+.invoice-status-card__icon--red { background: linear-gradient(135deg, #fb7185, #ef4444); }
+.invoice-status-card__icon--orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+
+.invoice-status-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.invoice-status-card__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.invoice-status-card__subtitle {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.invoice-status-card__indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    border: 2px solid #fcd34d;
+    color: transparent;
+    background: rgba(255,255,255,0.65);
+    transition: all 0.25s ease;
+}
+
+.invoice-status-radio:checked + .invoice-status-card {
+    border-color: #f59e0b;
+    box-shadow: 0 18px 45px rgba(251, 191, 36, 0.35);
+}
+
+.invoice-status-radio:checked + .invoice-status-card::after {
+    opacity: 1;
+}
+
+.invoice-status-radio:checked + .invoice-status-card .invoice-status-card__indicator {
+    border-color: transparent;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #fff;
+}
+
+.invoice-status-card:hover {
+    transform: translateY(-4px);
+    border-color: #fbbf24;
+}
+
+.invoice-status-card:hover .invoice-status-card__indicator {
+    border-color: transparent;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #fff;
+}
+
+@media (max-width: 640px) {
+    .invoice-status-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .invoice-status-card__indicator {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+    }
 }
 </style>
 
 <script>
-document.getElementById('add-item-form').addEventListener('click', function() {
-    var formContainer = document.getElementById('item-forms-container');
-    var totalForms = document.getElementById('id_items-TOTAL_FORMS');
-    var formIdx = totalForms.value;
-    var newForm = formContainer.children[0].cloneNode(true);
+document.addEventListener('DOMContentLoaded', function() {
+    const addItemButton = document.getElementById('add-item-form');
+    if (addItemButton) {
+        addItemButton.addEventListener('click', function() {
+            const formContainer = document.getElementById('item-forms-container');
+            const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+            if (!formContainer || !totalForms) {
+                return;
+            }
+            const formIdx = totalForms.value;
+            const firstForm = formContainer.children[0];
+            if (!firstForm) {
+                return;
+            }
+            const newForm = firstForm.cloneNode(true);
+            newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
+                if (!input.name || !input.id) {
+                    return;
+                }
+                input.name = input.name.replace('-0-', '-' + formIdx + '-');
+                input.id = input.id.replace('-0-', '-' + formIdx + '-');
+                if (input.type !== 'hidden') {
+                    input.value = '';
+                }
+            });
+            formContainer.appendChild(newForm);
+            totalForms.value = parseInt(formIdx, 10) + 1;
+        });
+    }
 
-    // Clear input values and update names
-    newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
-        input.name = input.name.replace('-0-', '-' + formIdx + '-');
-        input.id = input.id.replace('-0-', '-' + formIdx + '-');
-        input.value = '';
+    const statusOptions = Array.from(document.querySelectorAll('.invoice-status-option'));
+    const refreshStatusCards = () => {
+        statusOptions.forEach((option) => {
+            const input = option.querySelector('.invoice-status-radio');
+            const card = option.querySelector('.invoice-status-card');
+            if (!input || !card) {
+                return;
+            }
+            if (input.checked) {
+                card.classList.add('is-selected');
+            } else {
+                card.classList.remove('is-selected');
+            }
+        });
+    };
+
+    statusOptions.forEach((option) => {
+        const input = option.querySelector('.invoice-status-radio');
+        const card = option.querySelector('.invoice-status-card');
+        if (!input || !card) {
+            return;
+        }
+        card.addEventListener('click', (event) => {
+            event.preventDefault();
+            input.checked = true;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            refreshStatusCards();
+        });
+        input.addEventListener('change', refreshStatusCards);
     });
 
-    formContainer.appendChild(newForm);
-    totalForms.value = parseInt(formIdx) + 1;
+    refreshStatusCards();
 });
 </script>
 {% endblock %}
