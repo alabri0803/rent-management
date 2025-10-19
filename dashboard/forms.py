@@ -10,7 +10,7 @@ from django.utils import timezone
 class CompanyForm(forms.ModelForm):
     class Meta:
         model = Company
-        fields = ['name', 'logo', 'contact_email', 'contact_phone', 'address']
+        fields = ['name', 'company_id', 'logo', 'contact_email', 'contact_phone', 'address']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

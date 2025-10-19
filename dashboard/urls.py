@@ -28,6 +28,8 @@ from .views import (
     # Payment Overdue Notice Views
     PaymentOverdueNoticeListView, PaymentOverdueNoticeDetailView,
     generate_automatic_notices, notice_update_status, notice_print_view, notices_bulk_actions,
+    # Registration Invoice
+    registration_invoice_view,
 )
 from .auth_views import (
     EnhancedLoginView, send_login_otp, verify_login_otp, user_profile,
@@ -90,6 +92,7 @@ urlpatterns = [
     path('lease/<int:pk>/delete/', LeaseDeleteView.as_view(), name='lease_delete'),
     path('lease/<int:pk>/renew/', renew_lease, name='lease_renew'),
     path('lease/<int:pk>/cancel/', LeaseCancelView.as_view(), name='lease_cancel'), # ADDED
+    path('lease/<int:lease_id>/registration-invoice/', registration_invoice_view, name='registration_invoice'),
 
     # Tenant Rating - ADDED
     path('tenant/<int:pk>/rate/', UpdateTenantRatingView.as_view(), name='tenant_rate'),

@@ -25,6 +25,7 @@ class LeaseManager(models.Manager):
 
 class Company(models.Model):
     name = models.CharField(_("اسم الشركة"), max_length=200)
+    company_id = models.CharField(_("هوية الشركة"), max_length=50, blank=True, null=True, help_text=_("رقم السجل التجاري أو الهوية الضريبية"))
     logo = models.ImageField(_("الشعار"), upload_to='company_logos/', blank=True, null=True)
     contact_email = models.EmailField(_("البريد الإلكتروني للتواصل"), blank=True, null=True)
     contact_phone = models.CharField(_(" الهاتف للتواصل"), max_length=20, blank=True, null=True)

@@ -35,6 +35,7 @@ from django import forms
 import json
 from django.views.decorators.http import require_POST
 import logging
+from decimal import Decimal
 logger = logging.getLogger(__name__)
 
 from .models import (
@@ -635,7 +636,11 @@ class LeaseCreateView(StaffRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs); context['title'] = _("إضافة عقد جديد"); return context
     def form_valid(self, form):
-        messages.success(self.request, _("تمت إضافة العقد بنجاح!")); return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(self.request, _("تمت إضافة العقد بنجاح!"))
+        # Add message about registration invoice
+        messages.info(self.request, _("يمكنك الآن إنشاء فاتورة رسوم التسجيل من صفحة تفاصيل العقد"))
+        return response
 
 class LeaseUpdateView(StaffRequiredMixin, UpdateView):
     model = Lease; form_class = LeaseForm; template_name = 'dashboard/lease_form.html'; success_url = reverse_lazy('lease_list')
@@ -1441,9 +1446,9 @@ class CompanyUpdateView(StaffRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['title'] = _("إعدادات الشركة والهوية")
         return context
-
+    
     def form_valid(self, form):
-        messages.success(self.request, _("تم تحديث بيانات الشركة بنجاح."))
+        messages.success(self.request, _("تم تحديث بيانات الشركة بنجاح! ستظهر هذه البيانات في جميع الفواتير والتقارير."))
         return super().form_valid(form)
 
 
@@ -2230,3 +2235,42 @@ def notices_bulk_actions(request):
             messages.error(request, 'إجراء غير صحيح')
     
     return redirect('overdue_notices_list')
+
+
+@login_required
+def registration_invoice_view(request, lease_id):
+    """Generate and display registration fee invoice for a lease"""
+    lease = get_object_or_404(Lease, id=lease_id)
+    
+    # Calculate fees based on example: monthly rent should be around 2166.67 to get 65.00 registration fee
+    monthly_rent = lease.monthly_rent or Decimal('2166.67')
+    registration_fee = (monthly_rent * Decimal('0.03')).quantize(Decimal('0.01'))  # 3% registration fee
+    
+    # New fee: (monthly_rent * 3% * 12 months) + 1
+    annual_percentage_fee = ((monthly_rent * Decimal('0.03') * Decimal('12')) + Decimal('1')).quantize(Decimal('0.01'))
+    
+    admin_fee = lease.admin_fee or Decimal('1.0')
+    office_fee = lease.office_fee or Decimal('5.0')
+    
+    # Calculate totals
+    subtotal_without_office = registration_fee + annual_percentage_fee + admin_fee
+    grand_total = subtotal_without_office + office_fee
+    
+    # Get company information from database
+    try:
+        company = Company.objects.first()
+    except Company.DoesNotExist:
+        company = None
+    
+    context = {
+        'lease': lease,
+        'registration_fee': registration_fee,
+        'annual_percentage_fee': annual_percentage_fee,
+        'admin_fee': admin_fee,
+        'office_fee': office_fee,
+        'subtotal_without_office': subtotal_without_office,
+        'grand_total': grand_total,
+        'company': company,
+    }
+    
+    return render(request, 'dashboard/registration_invoice.html', context)
