@@ -29,6 +29,159 @@ msgstr "Login"
 msgid "تسجيل الخروج"
 msgstr "Logout"
 
+msgid "أضف مبنى جديد إلى النظام بسهولة"
+msgstr "Add a new building to the system easily"
+
+msgid "العودة إلى القائمة"
+msgstr "Back to List"
+
+msgid "معلومات المبنى الجديد"
+msgstr "New Building Information"
+
+msgid "اسم واضح للمبنى"
+msgstr "Clear building name"
+
+msgid "أمثلة على أسماء المباني:"
+msgstr "Examples of building names:"
+
+msgid "مبنى الأعمال المركزي"
+msgstr "Central Business Building"
+
+msgid "برج الخليج التجاري"
+msgstr "Gulf Commercial Tower"
+
+msgid "مجمع الوادي السكني"
+msgstr "Valley Residential Complex"
+
+msgid "نصائح لكتابة العنوان:"
+msgstr "Tips for writing the address:"
+
+msgid "اذكر اسم الشارع والحي"
+msgstr "Mention the street and neighborhood name"
+
+msgid "أضف رقم المبنى إن وجد"
+msgstr "Add building number if available"
+
+msgid "حدد المدينة والمنطقة"
+msgstr "Specify the city and area"
+
+msgid "يمكن إضافة معالم قريبة للتوضيح"
+msgstr "You can add nearby landmarks for clarification"
+
+msgid "معاينة المبنى"
+msgstr "Building Preview"
+
+msgid "اسم المبنى سيظهر هنا"
+msgstr "Building name will appear here"
+
+msgid "عنوان المبنى سيظهر هنا"
+msgstr "Building address will appear here"
+
+msgid "حفظ التعديلات"
+msgstr "Save Changes"
+
+msgid "حفظ المبنى"
+msgstr "Save Building"
+
+msgid "إدارة المباني"
+msgstr "Building Management"
+
+msgid "إدارة وعرض جميع المباني ووحداتها ونسب الإشغال"
+msgstr "Manage and view all buildings, their units and occupancy rates"
+
+msgid "تصدير Excel"
+msgstr "Export Excel"
+
+msgid "إضافة مبنى جديد"
+msgstr "Add New Building"
+
+msgid "إجمالي الوحدات"
+msgstr "Total Units"
+
+msgid "الوحدات المشغولة"
+msgstr "Occupied Units"
+
+msgid "نسبة الإشغال"
+msgstr "Occupancy Rate"
+
+msgid "إشغال ممتاز"
+msgstr "Excellent Occupancy"
+
+msgid "إشغال متوسط"
+msgstr "Average Occupancy"
+
+msgid "إشغال منخفض"
+msgstr "Low Occupancy"
+
+msgid "لا توجد مباني"
+msgstr "No Buildings Found"
+
+msgid "لم يتم العثور على أي مباني. ابدأ بإضافة مبنى جديد."
+msgstr "No buildings found. Start by adding a new building."
+
+msgid "الأولى"
+msgstr "First"
+
+msgid "السابق"
+msgstr "Previous"
+
+msgid "صفحة"
+msgstr "Page"
+
+msgid "من"
+msgstr "of"
+
+msgid "التالي"
+msgstr "Next"
+
+msgid "الأخيرة"
+msgstr "Last"
+
+msgid "إدارة وعرض جميع الوحدات وحالاتها وأنواعها"
+msgstr "Manage and view all units, their status and types"
+
+msgid "الوحدات المتاحة"
+msgstr "Available Units"
+
+msgid "فلاتر البحث"
+msgstr "Search Filters"
+
+msgid "البحث"
+msgstr "Search"
+
+msgid "كل المباني"
+msgstr "All Buildings"
+
+msgid "كل الأنواع"
+msgstr "All Types"
+
+msgid "كل الحالات"
+msgstr "All Status"
+
+msgid "متاحة"
+msgstr "Available"
+
+msgid "مشغولة"
+msgstr "Occupied"
+
+msgid "إجراءات"
+msgstr "Actions"
+
+msgid "معلومات شاملة عن الوحدة وسجل العقود"
+msgstr "Comprehensive unit information and contract history"
+
+msgid "معلومات الوحدة"
+msgstr "Unit Information"
+
+msgid "العقد الحالي"
+msgstr "Current Contract"
+
+msgid "سجل العقود"
+msgstr "Contract History"
+
+msgid "نشط"
+msgstr "Active"
+
 msgid "إضافة"
 msgstr "Add"
 
@@ -41,8 +194,68 @@ msgstr "Delete"
 msgid "حفظ"
 msgstr "Save"
 
+msgid "إدارة وعرض جميع عقود الإيجار وحالاتها ومواعيد انتهائها"
+msgstr "Manage and view all lease contracts, their status and expiry dates"
+
+msgid "إضافة عقد جديد"
+msgstr "Add New Contract"
+
+msgid "منتهي"
+msgstr "Expired"
+
+msgid "قريب الانتهاء"
+msgstr "Expiring Soon"
+
+msgid "فترة العقد"
+msgstr "Contract Period"
+
+msgid "تاريخ الانتهاء"
+msgstr "End Date"
+
+msgid "أيام متبقية"
+msgstr "Days Remaining"
+
+msgid "الإيجار الشهري"
+msgstr "Monthly Rent"
+
+msgid "معلومات شاملة عن العقد والمدفوعات"
+msgstr "Comprehensive contract and payment information"
+
+msgid "العودة إلى قائمة العقود"
+msgstr "Back to Contracts List"
+
+msgid "فاتورة رسوم التسجيل"
+msgstr "Registration Fee Invoice"
+
+msgid "فاتورة رسوم التجديد"
+msgstr "Renewal Fee Invoice"
+
+msgid "استمارة إلغاء العقد"
+msgstr "Contract Cancellation Form"
+
+msgid "استمارة تجديد العقد"
+msgstr "Contract Renewal Form"
+
+msgid "تجديد"
+msgstr "Renew"
+
 msgid "إلغاء"
 msgstr "Cancel"
+
+msgid "تفاصيل العقد"
+msgstr "Contract Details"
+
+msgid "مدة العقد"
+msgstr "Contract Duration"
+
+msgid "تاريخ البدء"
+msgstr "Start Date"
+
+msgid "الإيجار السنوي"
+msgstr "Annual Rent"
+
+msgid "رسوم التسجيل"
+msgstr "Registration Fees"
 
 msgid "بحث"
 msgstr "Search"
@@ -110,6 +323,63 @@ msgstr "Warehouse"
 msgid "معرض"
 msgstr "Showroom"
 
+msgid "لوحة المعلومات"
+msgstr "Dashboard"
+
+msgid "ادارة الايجارات"
+msgstr "Rent Management"
+
+msgid "إدارة العقارات"
+msgstr "Property Management"
+
+msgid "العقود"
+msgstr "Contracts"
+
+msgid "المالية"
+msgstr "Finance"
+
+msgid "المدفوعات"
+msgstr "Payments"
+
+msgid "المصاريف"
+msgstr "Expenses"
+
+msgid "الفواتير"
+msgstr "Invoices"
+
+msgid "التأمينات"
+msgstr "Security Deposits"
+
+msgid "إدارة الشيكات"
+msgstr "Check Management"
+
+msgid "إنذارات عدم السداد"
+msgstr "Overdue Notices"
+
+msgid "العمليات"
+msgstr "Operations"
+
+msgid "الصيانة"
+msgstr "Maintenance"
+
+msgid "إدارة المستخدمين"
+msgstr "User Management"
+
+msgid "التقارير"
+msgstr "Reports"
+
+msgid "الربح والخسارة (شهري)"
+msgstr "Profit & Loss (Monthly)"
+
+msgid "الربح والخسارة (سنوي)"
+msgstr "Profit & Loss (Annual)"
+
+msgid "الاعدادات"
+msgstr "Settings"
+
+msgid "نسخة احتياطية الآن"
+msgstr "Backup Now"
+
 msgid "المستأجرين"
 msgstr "Tenants"
 
@@ -167,23 +437,11 @@ msgstr "Contract End Date"
 msgid "حالة العقد"
 msgstr "Contract Status"
 
-msgid "نشط"
-msgstr "Active"
-
-msgid "قريب الانتهاء"
-msgstr "Expiring Soon"
-
-msgid "منتهي"
-msgstr "Expired"
-
 msgid "تم تجديد"
 msgstr "Renewed"
 
 msgid "ملغي"
 msgstr "Cancelled"
-
-msgid "المدفوعات"
-msgstr "Payments"
 
 msgid "دفعة"
 msgstr "Payment"
@@ -272,17 +530,11 @@ msgstr "Add New Tenant"
 msgid "تعديل بيانات المستأجر"
 msgstr "Edit Tenant Data"
 
-msgid "إضافة مبنى جديد"
-msgstr "Add New Building"
-
 msgid "تعديل المبنى"
 msgstr "Edit Building"
 
 msgid "تفاصيل المستأجر"
 msgstr "Tenant Details"
-
-msgid "تفاصيل العقد"
-msgstr "Contract Details"
 
 msgid "تفاصيل الوحدة"
 msgstr "Unit Details"
