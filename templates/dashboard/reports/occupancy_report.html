@@ -1,56 +1,456 @@
 {% load i18n %}
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "تقرير إشغال الوحدات" %}</title>
     <style>
-        @font-face { font-family: 'Tajawal'; src: url(https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1nzSBC45I.woff2) format('woff2'); }
-        body { font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; }
-        h1, h2 { text-align: center; }
-        .summary-table, .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .summary-table td, .details-table td, .details-table th { border: 1px solid #ccc; padding: 8px; text-align: right; }
-        .details-table th { background-color: #f2f2f2; }
-        .building-header { font-size: 1.2em; font-weight: bold; margin-top: 20px; background-color: #e2e8f0; padding: 5px; }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Tajawal', sans-serif;
+            direction: rtl;
+            text-align: right;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="90" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .summary-section {
+            margin-bottom: 40px;
+        }
+        
+        .summary-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .summary-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            border-radius: 2px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .summary-card:nth-child(2) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .summary-card:nth-child(3) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .summary-card:nth-child(4) {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .summary-card:hover::before {
+            transform: scale(1.5);
+        }
+        
+        .summary-card h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .summary-card .number {
+            font-size: 3rem;
+            font-weight: 900;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .details-section {
+            margin-top: 50px;
+        }
+        
+        .details-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .details-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+        
+        .building-section {
+            margin-bottom: 40px;
+            background: #f8fafc;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .building-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            position: relative;
+        }
+        
+        .building-header::before {
+            content: '🏢';
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+        }
+        
+        .building-header span {
+            margin-right: 50px;
+        }
+        
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .details-table thead {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            color: white;
+        }
+        
+        .details-table th {
+            padding: 20px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 1.1rem;
+            position: relative;
+        }
+        
+        .details-table th::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+        
+        .details-table tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .details-table tbody tr:hover {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            transform: translateX(5px);
+        }
+        
+        .details-table td {
+            padding: 20px;
+            text-align: right;
+            font-size: 1rem;
+            position: relative;
+        }
+        
+        .status-available {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+            box-shadow: 0 2px 10px rgba(72, 187, 120, 0.3);
+        }
+        
+        .status-occupied {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+            box-shadow: 0 2px 10px rgba(245, 101, 101, 0.3);
+        }
+        
+        .unit-number {
+            font-weight: 700;
+            color: #4a5568;
+            font-size: 1.1rem;
+        }
+        
+        .unit-type {
+            color: #718096;
+            font-weight: 500;
+        }
+        
+        .tenant-name {
+            color: #2d3748;
+            font-weight: 600;
+        }
+        
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            
+            .summary-card, .building-header {
+                background: #f8fafc !important;
+                color: #2d3748 !important;
+                border: 2px solid #e2e8f0;
+            }
+            
+            .header {
+                background: #f8fafc !important;
+                color: #2d3748 !important;
+                border-bottom: 3px solid #4a5568;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .summary-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+            
+            .summary-card {
+                padding: 20px;
+            }
+            
+            .summary-card .number {
+                font-size: 2rem;
+            }
+            
+            .details-table th,
+            .details-table td {
+                padding: 15px 10px;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>{% trans "تقرير إشغال الوحدات" %}</h1>
-    <h2>{% trans "بتاريخ" %}: {{ today|date:"d / m / Y" }}</h2>
+    <div class="container">
+        <div class="header">
+            <h1>{% trans "تقرير إشغال الوحدات" %}</h1>
+            <h2>{% trans "بتاريخ" %}: {{ today|date:"d / m / Y" }}</h2>
+        </div>
+        
+        <div class="content">
+            <div class="summary-section">
+                <h3 class="summary-title">{% trans "ملخص الإشغال" %}</h3>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h3>{% trans "إجمالي الوحدات" %}</h3>
+                        <div class="number">{{ total_units }}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>{% trans "الوحدات المشغولة" %}</h3>
+                        <div class="number">{{ occupied_units }}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>{% trans "الوحدات المتاحة" %}</h3>
+                        <div class="number">{{ available_units }}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>{% trans "نسبة الإشغال" %}</h3>
+                        <div class="number">{{ occupancy_rate|floatformat:1 }}%</div>
+                    </div>
+                </div>
+            </div>
 
-    <h3>{% trans "ملخص الإشغال" %}</h3>
-    <table class="summary-table">
-        <tr>
-            <td><strong>{% trans "إجمالي الوحدات" %}:</strong></td>
-            <td>{{ total_units }}</td>
-            <td><strong>{% trans "الوحدات المشغولة" %}:</strong></td>
-            <td>{{ occupied_units }}</td>
-        </tr>
-        <tr>
-            <td><strong>{% trans "الوحدات المتاحة" %}:</strong></td>
-            <td>{{ available_units }}</td>
-            <td><strong>{% trans "نسبة الإشغال" %}:</strong></td>
-            <td>{{ occupancy_rate|floatformat:2 }}%</td>
-        </tr>
-    </table>
-
-    <h3>{% trans "تفاصيل الوحدات حسب المبنى" %}</h3>
-    {% for building in buildings %}
-        <div class="building-header">{{ building.name }}</div>
-        <table class="details-table">
-            <thead><tr><th>{% trans "رقم الوحدة" %}</th><th>{% trans "النوع" %}</th><th>{% trans "الحالة" %}</th><th>{% trans "المستأجر" %}</th></tr></thead>
-            <tbody>
-                {% for unit in building.unit_set.all %}
-                <tr>
-                    <td>{{ unit.unit_number }}</td>
-                    <td>{{ unit.get_unit_type_display }}</td>
-                    <td>{% if unit.is_available %}{% trans "متاحة" %}{% else %}{% trans "مشغولة" %}{% endif %}</td>
-                    <td>{% if not unit.is_available %}{{ unit.lease_set.first.tenant.name|default:"-" }}{% else %}-{% endif %}</td>
-                </tr>
+            <div class="details-section">
+                <h3 class="details-title">{% trans "تفاصيل الوحدات حسب المبنى" %}</h3>
+                {% for building in buildings %}
+                    <div class="building-section">
+                        <div class="building-header">
+                            <span>{{ building.name }}</span>
+                        </div>
+                        <table class="details-table">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "رقم الوحدة" %}</th>
+                                    <th>{% trans "النوع" %}</th>
+                                    <th>{% trans "الحالة" %}</th>
+                                    <th>{% trans "المستأجر" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for unit in building.unit_set.all %}
+                                <tr>
+                                    <td class="unit-number">{{ unit.unit_number }}</td>
+                                    <td class="unit-type">{{ unit.get_unit_type_display }}</td>
+                                    <td>
+                                        {% if unit.is_available %}
+                                            <span class="status-available">{% trans "متاحة" %}</span>
+                                        {% else %}
+                                            <span class="status-occupied">{% trans "مشغولة" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="tenant-name">
+                                        {% if not unit.is_available %}
+                                            {{ unit.lease_set.first.tenant.name|default:"-" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="empty-message">
+                                        {% trans "لا توجد وحدات في هذا المبنى." %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 {% empty %}
-                <tr><td colspan="4">{% trans "لا توجد وحدات في هذا المبنى." %}</td></tr>
+                <div class="empty-message">
+                    {% trans "لا توجد مباني مسجلة في النظام." %}
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
-    {% endfor %}
+            </div>
+        </div>
+    </div>
 </body>
 </html>
