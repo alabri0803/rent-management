@@ -1,100 +1,197 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "تفاصيل الوحدة" %} - {{ unit.unit_number }}{% endblock %}
+
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h2 class="text-3xl font-bold text-gray-800">{% trans "تفاصيل الوحدة" %}: {{ unit.unit_number }}</h2>
-    <div>
-        <a href="{% url 'unit_update' unit.pk %}" class="btn-primary py-2 px-4 rounded-lg font-semibold mr-2">{% trans "تعديل" %}</a>
-        <a href="{% url 'unit_list' %}" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-400">{% trans "العودة" %}</a>
-    </div>
+<div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-8 -mx-4 -mb-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m0 0h2M7 8h3m-3 4h3m-3 4h3m6-8h.01M17 12h.01M17 16h.01"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🏠 {% trans "تفاصيل الوحدة" %} {{ unit.unit_number }}</h1>
+            <p class="text-gray-600">{% trans "معلومات شاملة عن الوحدة وسجل العقود" %}</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-center gap-4 mb-8">
+            <a href="{% url 'unit_update' unit.pk %}" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                ✏️ {% trans "تعديل" %}
+            </a>
+            <a href="{% url 'unit_list' %}" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                ↩️ {% trans "العودة" %}
+            </a>
+        </div>
+
+        <!-- Unit Information Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- Unit Details Card -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6 transform hover:scale-105 transition-all duration-300">
+                <div class="flex items-center mb-6">
+                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full p-3 ml-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">📋 {% trans "معلومات الوحدة" %}</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "رقم الوحدة" %}:</span>
+                        <span class="font-bold text-blue-600 text-lg">{{ unit.unit_number }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "المبنى" %}:</span>
+                        <span class="font-bold text-gray-800">{{ unit.building.name }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "النوع" %}:</span>
+                        <span class="font-bold text-gray-800">{{ unit.get_unit_type_display }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "الطابق" %}:</span>
+                        <span class="font-bold text-gray-800">{{ unit.floor }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "الحالة" %}:</span>
+                        {% if unit.is_available %}
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">✅ {% trans "متاحة" %}</span>
+                        {% else %}
+                        <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold">🔒 {% trans "مشغولة" %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if current_lease %}
+            <!-- Current Lease Card -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6 transform hover:scale-105 transition-all duration-300">
+                <div class="flex items-center mb-6">
+                    <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-3 ml-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">📄 {% trans "العقد الحالي" %}</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "رقم العقد" %}:</span>
+                        <a href="{% url 'lease_detail' current_lease.pk %}" class="font-bold text-green-600 hover:text-green-800 hover:underline">{{ current_lease.contract_number }}</a>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "المستأجر" %}:</span>
+                        <span class="font-bold text-gray-800">{{ current_lease.tenant.name }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "الإيجار الشهري" %}:</span>
+                        <span class="font-bold text-green-600 text-lg">{{ current_lease.monthly_rent|floatformat:2 }} ر.ع</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "تاريخ البداية" %}:</span>
+                        <span class="font-bold text-gray-800">{{ current_lease.start_date|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
+                        <span class="text-gray-600 font-medium">{% trans "تاريخ الانتهاء" %}:</span>
+                        <span class="font-bold text-gray-800">{{ current_lease.end_date|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- No Current Lease Card -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6 transform hover:scale-105 transition-all duration-300">
+                <div class="flex items-center mb-6">
+                    <div class="bg-gradient-to-br from-gray-400 to-gray-600 rounded-full p-3 ml-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">📄 {% trans "العقد الحالي" %}</h3>
+                </div>
+                <div class="text-center py-8">
+                    <div class="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-600 text-lg">{% trans "لا يوجد عقد حالي لهذه الوحدة" %}</p>
+                    <p class="text-gray-500 text-sm mt-2">{% trans "الوحدة متاحة للإيجار" %}</p>
+                </div>
+            </div>
+            {% endif %}
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-    <div class="card p-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">{% trans "معلومات الوحدة" %}</h3>
-        <div class="space-y-3">
-            <div>
-                <span class="text-sm text-gray-600">{% trans "رقم الوحدة" %}:</span>
-                <span class="font-bold">{{ unit.unit_number }}</span>
+        <!-- Lease History Section -->
+        <div class="bg-white rounded-2xl shadow-2xl p-6">
+            <div class="flex items-center mb-6">
+                <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-full p-3 ml-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800">📚 {% trans "سجل العقود" %}</h3>
             </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "المبنى" %}:</span>
-                <span class="font-bold">{{ unit.building.name }}</span>
+            
+            {% if lease_history %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-purple-100 to-pink-100">
+                            <th class="p-4 text-right font-bold text-gray-700">{% trans "رقم العقد" %}</th>
+                            <th class="p-4 text-right font-bold text-gray-700">{% trans "المستأجر" %}</th>
+                            <th class="p-4 text-right font-bold text-gray-700">{% trans "الفترة" %}</th>
+                            <th class="p-4 text-right font-bold text-gray-700">{% trans "الحالة" %}</th>
+                            <th class="p-4 text-right font-bold text-gray-700">{% trans "إجراءات" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lease in lease_history %}
+                        <tr class="border-b hover:bg-purple-50 transition-colors duration-200">
+                            <td class="p-4">
+                                <a href="{% url 'lease_detail' lease.pk %}" class="font-bold text-purple-600 hover:text-purple-800 hover:underline">
+                                    {{ lease.contract_number }}
+                                </a>
+                            </td>
+                            <td class="p-4 font-medium text-gray-800">{{ lease.tenant.name }}</td>
+                            <td class="p-4 text-gray-600">{{ lease.start_date|date:"d/m/Y" }} - {{ lease.end_date|date:"d/m/Y" }}</td>
+                            <td class="p-4">
+                                {% if lease.status == 'active' %}
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">✅ نشط</span>
+                                {% elif lease.status == 'expired' %}
+                                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold">❌ منتهي</span>
+                                {% elif lease.status == 'cancelled' %}
+                                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-bold">🚫 ملغي</span>
+                                {% elif lease.status == 'renewed' %}
+                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">🔄 تم تجديد</span>
+                                {% else %}
+                                <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-bold">⏳ {{ lease.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-4">
+                                <a href="{% url 'lease_detail' lease.pk %}" class="bg-purple-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-purple-700 transition-colors duration-200">
+                                    👁️ {% trans "تفاصيل" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "النوع" %}:</span>
-                <span class="font-bold">{{ unit.get_unit_type_display }}</span>
+            {% else %}
+            <div class="text-center py-12">
+                <div class="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <h4 class="text-xl font-bold text-gray-600 mb-2">{% trans "لا يوجد سجل للعقود" %}</h4>
+                <p class="text-gray-500">{% trans "لم يتم إنشاء أي عقود لهذه الوحدة بعد" %}</p>
             </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "الطابق" %}:</span>
-                <span class="font-bold">{{ unit.floor }}</span>
-            </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "الحالة" %}:</span>
-                {% if unit.is_available %}
-                <span class="status-badge status-active">{% trans "متاحة" %}</span>
-                {% else %}
-                <span class="status-badge status-expired">{% trans "مشغولة" %}</span>
-                {% endif %}
-            </div>
+            {% endif %}
         </div>
     </div>
-
-    {% if current_lease %}
-    <div class="card p-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">{% trans "العقد الحالي" %}</h3>
-        <div class="space-y-3">
-            <div>
-                <span class="text-sm text-gray-600">{% trans "رقم العقد" %}:</span>
-                <a href="{% url 'lease_detail' current_lease.pk %}" class="font-bold text-blue-600">{{ current_lease.contract_number }}</a>
-            </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "المستأجر" %}:</span>
-                <span class="font-bold">{{ current_lease.tenant.name }}</span>
-            </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "الإيجار الشهري" %}:</span>
-                <span class="font-bold">{{ current_lease.monthly_rent|floatformat:2 }}</span>
-            </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "تاريخ البداية" %}:</span>
-                <span class="font-bold">{{ current_lease.start_date|date:"d/m/Y" }}</span>
-            </div>
-            <div>
-                <span class="text-sm text-gray-600">{% trans "تاريخ الانتهاء" %}:</span>
-                <span class="font-bold">{{ current_lease.end_date|date:"d/m/Y" }}</span>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<div class="card p-6">
-    <h3 class="text-xl font-bold text-gray-800 mb-4">{% trans "سجل العقود" %}</h3>
-    <table class="w-full text-start">
-        <thead class="bg-gray-50 border-b">
-            <tr>
-                <th class="p-4">{% trans "رقم العقد" %}</th>
-                <th class="p-4">{% trans "المستأجر" %}</th>
-                <th class="p-4">{% trans "الفترة" %}</th>
-                <th class="p-4">{% trans "الحالة" %}</th>
-                <th class="p-4">{% trans "إجراءات" %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for lease in lease_history %}
-            <tr class="border-b hover:bg-gray-50">
-                <td class="p-4"><a href="{% url 'lease_detail' lease.pk %}" class="font-bold text-blue-600">{{ lease.contract_number }}</a></td>
-                <td class="p-4">{{ lease.tenant.name }}</td>
-                <td class="p-4">{{ lease.start_date|date:"d/m/Y" }} - {{ lease.end_date|date:"d/m/Y" }}</td>
-                <td class="p-4"><span class="status-badge status-{{ lease.get_status_color }}">{{ lease.get_status_display }}</span></td>
-                <td class="p-4"><a href="{% url 'lease_detail' lease.pk %}" class="text-blue-600 hover:underline">{% trans "تفاصيل" %}</a></td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="p-6 text-center text-gray-500">{% trans "لا يوجد سجل للعقود." %}</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
 </div>
 {% endblock %}
