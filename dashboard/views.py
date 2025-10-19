@@ -2400,3 +2400,60 @@ def renewal_form_view(request, lease_id):
     }
     
     return render(request, 'dashboard/reports/lease_renewal_form.html', context)
+
+
+@login_required
+def tenant_comprehensive_report_view(request, tenant_id):
+    """Generate comprehensive report for a tenant"""
+    tenant = get_object_or_404(Tenant, id=tenant_id)
+    
+    # Get all leases for this tenant
+    current_leases = Lease.objects.filter(tenant=tenant, status='active')
+    lease_history = Lease.objects.filter(tenant=tenant).order_by('-start_date')
+    
+    # Calculate financial statistics
+    total_payments = Decimal('0.00')
+    outstanding_amount = Decimal('0.00')
+    total_expected_rent = Decimal('0.00')
+    
+    # Calculate totals from all leases
+    for lease in lease_history:
+        # Get payments for this lease
+        lease_payments = Payment.objects.filter(lease=lease).aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+        total_payments += lease_payments
+        
+        # Calculate expected rent for active leases
+        if lease.status == 'active' and lease.monthly_rent:
+            if lease.start_date and lease.end_date:
+                months_diff = (lease.end_date.year - lease.start_date.year) * 12 + \
+                             (lease.end_date.month - lease.start_date.month)
+                total_expected_rent += lease.monthly_rent * months_diff
+    
+    # Calculate outstanding amount (simplified calculation)
+    outstanding_amount = total_expected_rent - total_payments
+    
+    # Calculate average monthly rent
+    active_rents = [lease.monthly_rent for lease in current_leases if lease.monthly_rent]
+    average_monthly_rent = sum(active_rents) / len(active_rents) if active_rents else Decimal('0.00')
+    
+    # Get company information
+    try:
+        company = Company.objects.first()
+    except Company.DoesNotExist:
+        company = None
+    
+    context = {
+        'tenant': tenant,
+        'current_leases': current_leases,
+        'lease_history': lease_history,
+        'total_payments': total_payments,
+        'outstanding_amount': outstanding_amount,
+        'average_monthly_rent': average_monthly_rent,
+        'total_expected_rent': total_expected_rent,
+        'company': company,
+        'today': timezone.now().date(),
+    }
+    
+    return render(request, 'dashboard/reports/tenant_comprehensive_report.html', context)
