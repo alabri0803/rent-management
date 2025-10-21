@@ -1223,6 +1223,190 @@ class PaymentOverdueNotice(models.Model):
         return notices_created
 
 
+class LeaseRenewalReminder(models.Model):
+    """نموذج تذكير تجديد عقد الإيجار - يصدر قبل 30 يوم من انتهاء العقد"""
+
+    REMINDER_STATUS_CHOICES = [
+        ('pending', _('في الانتظار')),
+        ('sent', _('تم الإرسال')),
+        ('acknowledged', _('تم الاستلام')),
+        ('responded', _('تم الرد')),
+        ('expired', _('منتهي الصلاحية')),
+    ]
+
+    RESPONSE_CHOICES = [
+        ('no_response', _('لا رد')),
+        ('interested', _('مهتم بالتجديد')),
+        ('not_interested', _('غير مهتم بالتجديد')),
+        ('negotiating', _('قيد التفاوض')),
+    ]
+
+    lease = models.ForeignKey(Lease, on_delete=models.CASCADE, related_name='renewal_reminders', verbose_name=_("العقد"))
+    reminder_date = models.DateField(_("تاريخ التذكير"), default=timezone.now)
+    days_before_expiry = models.IntegerField(_("عدد الأيام قبل الانتهاء"), default=30)
+    status = models.CharField(_("حالة التذكير"), max_length=20, choices=REMINDER_STATUS_CHOICES, default='pending')
+    response = models.CharField(_("رد المستأجر"), max_length=20, choices=RESPONSE_CHOICES, default='no_response', blank=True, null=True)
+    response_date = models.DateTimeField(_("تاريخ الرد"), blank=True, null=True)
+    response_notes = models.TextField(_("ملاحظات الرد"), blank=True, null=True)
+
+    # معلومات الإرسال
+    sent_date = models.DateTimeField(_("تاريخ الإرسال"), blank=True, null=True)
+    delivery_method = models.CharField(_("طريقة التسليم"), max_length=50, blank=True, null=True)
+    recipient_signature = models.CharField(_("توقيع المستلم"), max_length=100, blank=True, null=True)
+
+    # معلومات التجديد المقترحة
+    proposed_renewal_date = models.DateField(_("تاريخ التجديد المقترح"), blank=True, null=True)
+    proposed_monthly_rent = models.DecimalField(_("إيجار شهري مقترح"), max_digits=10, decimal_places=2, blank=True, null=True)
+    proposed_terms = models.TextField(_("شروط التجديد المقترحة"), blank=True, null=True)
+
+    notes = models.TextField(_("ملاحظات إضافية"), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _("تذكير تجديد عقد")
+        verbose_name_plural = _("تذكيرات تجديد العقود")
+        ordering = ['-reminder_date']
+        unique_together = ['lease', 'reminder_date']
+
+    def __str__(self):
+        return f"تذكير تجديد {self.lease.contract_number} - {self.reminder_date}"
+
+    def save(self, *args, **kwargs):
+        # حساب تاريخ التذكير (30 يوم قبل انتهاء العقد)
+        if not self.reminder_date and self.days_before_expiry:
+            self.reminder_date = self.lease.end_date - relativedelta(days=self.days_before_expiry)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        """فحص ما إذا كان التذكير منتهي الصلاحية"""
+        today = timezone.now().date()
+        return today > self.lease.end_date
+
+    def can_send(self):
+        """فحص ما إذا كان يمكن إرسال التذكير"""
+        today = timezone.now().date()
+        return (self.status == 'pending' and
+                today >= self.reminder_date and
+                not self.is_expired())
+
+    def mark_as_sent(self, delivery_method='email'):
+        """تسجيل إرسال التذكير"""
+        self.status = 'sent'
+        self.sent_date = timezone.now()
+        self.delivery_method = delivery_method
+        self.save()
+
+    def mark_response(self, response, notes=None):
+        """تسجيل رد المستأجر"""
+        self.status = 'responded'
+        self.response = response
+        self.response_date = timezone.now()
+        if notes:
+            self.response_notes = notes
+        self.save()
+
+    def get_reminder_content(self):
+        """إنشاء محتوى رسالة التذكير باللغة العربية"""
+
+        month_names = {
+            1: 'يناير', 2: 'فبراير', 3: 'مارس', 4: 'أبريل',
+            5: 'مايو', 6: 'يونيو', 7: 'يوليو', 8: 'أغسطس',
+            9: 'سبتمبر', 10: 'أكتوبر', 11: 'نوفمبر', 12: 'ديسمبر'
+        }
+
+        content = f"""
+        <div style="text-align: right; font-family: 'Traditional Arabic', Arial, sans-serif; direction: rtl;">
+            <h2 style="text-align: center; color: #2e7d32; font-weight: bold;">
+                تذكير بتجديد عقد الإيجار
+            </h2>
+
+            <div style="margin: 20px 0; padding: 15px; border: 2px solid #2e7d32; background-color: #e8f5e8;">
+                <h3 style="color: #2e7d32; margin-bottom: 10px;">هل عندك رغبة في تجديد عقد الإيجار؟</h3>
+            </div>
+
+            <div style="margin: 20px 0; line-height: 1.8;">
+                <p><strong>إلى السيد/السيدة:</strong> {self.lease.tenant.name}</p>
+                <p><strong>رقم العقد:</strong> {self.lease.contract_number}</p>
+                <p><strong>الوحدة:</strong> {self.lease.unit.unit_number} - {self.lease.unit.building.name}</p>
+                <p><strong>تاريخ التذكير:</strong> {self.reminder_date.strftime('%d/%m/%Y')}</p>
+                <p><strong>تاريخ انتهاء العقد الحالي:</strong> {self.lease.end_date.strftime('%d/%m/%Y')}</p>
+            </div>
+
+            <div style="margin: 20px 0; padding: 15px; background-color: #fff3e0; border-right: 4px solid #ff9800;">
+                <h4 style="color: #e65100; margin-bottom: 10px;">معلومات العقد الحالي:</h4>
+                <p><strong>الإيجار الشهري:</strong> {self.lease.monthly_rent} ريال عماني</p>
+                <p><strong>تاريخ البداية:</strong> {self.lease.start_date.strftime('%d/%m/%Y')}</p>
+                <p><strong>تاريخ الانتهاء:</strong> {self.lease.end_date.strftime('%d/%m/%Y')}</p>
+                <p><strong>مدة العقد:</strong> {self.lease.duration_display()}</p>
+            </div>
+
+            <div style="margin: 20px 0; padding: 15px; background-color: #e8f5e8; border-right: 4px solid #4caf50;">
+                <h4 style="color: #2e7d32; margin-bottom: 10px;">الإجراء المطلوب:</h4>
+                <p>نأمل منكم إبلاغنا برغبتكم في تجديد عقد الإيجار قبل تاريخ الانتهاء بـ 30 يوماً على الأقل</p>
+                <p>في حالة الرغبة في التجديد، يرجى التواصل معنا لمناقشة شروط التجديد الجديدة</p>
+                <p><strong>تاريخ انتهاء العقد:</strong> {self.lease.end_date.strftime('%d/%m/%Y')}</p>
+            </div>
+
+            <div style="margin: 20px 0; padding: 15px; background-color: #ffebee; border: 1px solid #f44336;">
+                <h4 style="color: #c62828; margin-bottom: 10px;">ملاحظات هامة:</h4>
+                <ul style="margin-right: 20px;">
+                    <li>في حالة عدم الرغبة في التجديد، يرجى إخلاء الوحدة قبل تاريخ انتهاء العقد</li>
+                    <li>عدم التواصل معنا قد يؤدي إلى إنهاء العقد تلقائياً في تاريخ الانتهاء</li>
+                    <li>يمكنكم التواصل مع إدارة العقارات لمناقشة أي استفسارات أو مخاوف</li>
+                    <li>نحن نقدر ثقتكم بنا ونتطلع لاستمرار التعاون معكم</li>
+                </ul>
+            </div>
+
+            <div style="margin: 30px 0; text-align: center;">
+                <p style="font-weight: bold;">إدارة العقارات</p>
+                <p>هاتف: {Company.objects.first().contact_phone if Company.objects.exists() else '1234567890'}</p>
+                <p>بريد إلكتروني: {Company.objects.first().contact_email if Company.objects.exists() else 'info@company.com'}</p>
+            </div>
+
+            <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; font-size: 12px; color: #666;">
+                <p><strong>للاستفسار:</strong> يرجى التواصل مع إدارة العقارات</p>
+                <p><strong>رقم المرجع:</strong> {self.id if self.id else 'سيتم إنشاؤه'}</p>
+                <p><strong>تاريخ الإنشاء:</strong> {timezone.now().strftime('%d/%m/%Y %H:%M')}</p>
+            </div>
+        </div>
+        """
+
+        return content
+
+    @classmethod
+    def generate_automatic_reminders(cls):
+        """إنشاء تذكيرات تلقائية للعقود التي ستنتهي خلال 30 يوم"""
+        from django.db.models import Q
+
+        today = timezone.now().date()
+        thirty_days_from_now = today + relativedelta(days=30)
+
+        # البحث عن العقود النشطة التي ستنتهي خلال 30 يوم
+        expiring_leases = Lease.objects.filter(
+            status__in=['active', 'expiring_soon'],
+            end_date__lte=thirty_days_from_now,
+            end_date__gte=today
+        )
+
+        reminders_created = []
+
+        for lease in expiring_leases:
+            # فحص عدم وجود تذكير سابق لنفس العقد
+            existing_reminder = cls.objects.filter(
+                lease=lease,
+                reminder_date=lease.end_date - relativedelta(days=30)
+            ).first()
+
+            if not existing_reminder:
+                reminder = cls.objects.create(
+                    lease=lease,
+                    reminder_date=lease.end_date - relativedelta(days=30),
+                    status='pending'
+                )
+                reminders_created.append(reminder)
+
+        return reminders_created
+
+
 class NoticeTemplate(models.Model):
     """قوالب الإنذارات والرسائل القانونية"""
     

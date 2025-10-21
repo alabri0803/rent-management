@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Building, Unit, Tenant, Lease, Payment, MaintenanceRequest, Document, Expense, Notification, Company, ContractTemplate, Invoice, InvoiceItem,
-    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, PaymentOverdueNotice, NoticeTemplate
+    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, PaymentOverdueNotice, NoticeTemplate, LeaseRenewalReminder
 )
 
 @admin.register(Company)
@@ -198,7 +198,65 @@ class NoticeTemplateAdmin(admin.ModelAdmin):
         }),
     )
     
-    def get_readonly_fields(self, request, obj=None):
-        if obj:  # تحرير قالب موجود
-            return ('created_date', 'updated_date')
-        return ()
+@admin.register(LeaseRenewalReminder)
+class LeaseRenewalReminderAdmin(admin.ModelAdmin):
+    list_display = ('lease', 'reminder_date', 'days_before_expiry', 'status', 'response', 'sent_date')
+    list_filter = ('status', 'response', 'reminder_date', 'days_before_expiry')
+    search_fields = ('lease__contract_number', 'lease__tenant__name', 'lease__unit__unit_number')
+    date_hierarchy = 'reminder_date'
+    readonly_fields = ('reminder_date',)
+
+    fieldsets = (
+        ('معلومات التذكير', {
+            'fields': ('lease', 'reminder_date', 'days_before_expiry', 'status')
+        }),
+        ('رد المستأجر', {
+            'fields': ('response', 'response_date', 'response_notes')
+        }),
+        ('معلومات الإرسال', {
+            'fields': ('sent_date', 'delivery_method', 'recipient_signature')
+        }),
+        ('شروط التجديد المقترحة', {
+            'fields': ('proposed_renewal_date', 'proposed_monthly_rent', 'proposed_terms'),
+            'classes': ('collapse',)
+        }),
+        ('ملاحظات', {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    actions = ['mark_as_sent', 'mark_response_interested', 'mark_response_not_interested', 'generate_reminder_content']
+
+    def mark_as_sent(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(status='sent', sent_date=timezone.now())
+        self.message_user(request, f"تم تحديث حالة {queryset.count()} تذكير إلى 'تم الإرسال'")
+    mark_as_sent.short_description = "تحديد كـ مُرسل"
+
+    def mark_response_interested(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(
+            status='responded',
+            response='interested',
+            response_date=timezone.now()
+        )
+        self.message_user(request, f"تم تحديث رد {queryset.count()} تذكير إلى 'مهتم بالتجديد'")
+    mark_response_interested.short_description = "تحديد كـ مهتم بالتجديد"
+
+    def mark_response_not_interested(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(
+            status='responded',
+            response='not_interested',
+            response_date=timezone.now()
+        )
+        self.message_user(request, f"تم تحديث رد {queryset.count()} تذكير إلى 'غير مهتم بالتجديد'")
+    mark_response_not_interested.short_description = "تحديد كـ غير مهتم بالتجديد"
+
+    def generate_reminder_content(self, request, queryset):
+        for reminder in queryset:
+            content = reminder.get_reminder_content()
+            # يمكن إضافة منطق لحفظ المحتوى أو إرساله
+        self.message_user(request, f"تم إنشاء محتوى التذكير لـ {queryset.count()} تذكير")
+    generate_reminder_content.short_description = "إنشاء محتوى التذكير"

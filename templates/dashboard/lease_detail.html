@@ -56,6 +56,14 @@
                 </svg>
                 📋 {% trans "استمارة تجديد العقد" %}
             </a>
+
+            <!-- رسالة تذكير التجديد -->
+            <a href="{% url 'renewal_reminder' lease_id=lease.id %}" class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 inline-flex items-center" target="_blank">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                🔔 {% trans "رسالة تذكير التجديد" %}
+            </a>
         </div>
 
         <!-- Main Contract Info Card -->

@@ -32,7 +32,7 @@ from .views import (
     registration_invoice_view,
     # New Report Views
     renewal_invoice_view, cancellation_form_view, renewal_form_view,
-    tenant_comprehensive_report_view,
+    tenant_comprehensive_report_view, renewal_reminder_view,
 )
 from .auth_views import (
     EnhancedLoginView, send_login_otp, verify_login_otp, user_profile,
@@ -99,6 +99,7 @@ urlpatterns = [
     path('lease/<int:lease_id>/renewal-invoice/', renewal_invoice_view, name='renewal_invoice'),
     path('lease/<int:lease_id>/cancellation-form/', cancellation_form_view, name='cancellation_form'),
     path('lease/<int:lease_id>/renewal-form/', renewal_form_view, name='renewal_form'),
+    path('lease/<int:lease_id>/renewal-reminder/', renewal_reminder_view, name='renewal_reminder'),
 
     # Tenant Reports
     path('tenant/<int:tenant_id>/comprehensive-report/', tenant_comprehensive_report_view, name='tenant_comprehensive_report'),

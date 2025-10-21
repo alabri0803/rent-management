@@ -42,7 +42,7 @@ from .models import (
     Tenant, Unit, Building, Lease, Document, MaintenanceRequest, 
     Expense, Payment, Company, Invoice, InvoiceItem,
     RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, SecurityDeposit,
-    PaymentOverdueNotice, NoticeTemplate
+    PaymentOverdueNotice, NoticeTemplate, LeaseRenewalReminder
 )
 from .forms import (
     TenantForm, UnitForm, BuildingForm, LeaseForm, DocumentForm, 
@@ -2456,4 +2456,30 @@ def tenant_comprehensive_report_view(request, tenant_id):
         'today': timezone.now().date(),
     }
     
-    return render(request, 'dashboard/reports/tenant_comprehensive_report.html', context)
+@login_required
+def renewal_reminder_view(request, lease_id):
+    """Generate and display lease renewal reminder for a lease"""
+    lease = get_object_or_404(Lease, id=lease_id)
+
+    # Get or create renewal reminder for this lease
+    reminder_date = lease.end_date - relativedelta(days=30)
+    reminder, created = LeaseRenewalReminder.objects.get_or_create(
+        lease=lease,
+        reminder_date=reminder_date,
+        defaults={'status': 'pending'}
+    )
+
+    # Get company information from database
+    try:
+        company = Company.objects.first()
+    except Company.DoesNotExist:
+        company = None
+
+    context = {
+        'reminder': reminder,
+        'lease': lease,
+        'company': company,
+        'today': timezone.now().date(),
+    }
+
+    return render(request, 'dashboard/reports/lease_renewal_reminder.html', context)
