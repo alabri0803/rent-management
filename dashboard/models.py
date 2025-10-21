@@ -71,16 +71,18 @@ class Unit(models.Model):
 
 class Tenant(models.Model):
     TENANT_TYPE_CHOICES = [
-        ('individual', _('فرد')),
-        ('natural_person', _('شخص طبيعي')),
-        ('company', _('شركة')),
-        ('legal_entity', _('كيان قانوني')),
-        ('corporation', _('مؤسسة')),
-        ('partnership', _('شراكة')),
+        ('sole_proprietorship', _('شركة الشخص الواحد')),
+        ('limited_liability', _('الشركة ذات المسؤولية المحدودة')),
+        ('joint_stock', _('الشركة المساهمة')),
+        ('general_partnership', _('شركة التضامن')),
+        ('limited_partnership', _('شركة التوصية البسيطة')),
+        ('holding_company', _('الشركة القابضة')),
+        ('representative_office', _('مكتب تمثيل تجاري')),
+        ('foreign_branch', _('فرع شركة أجنبية')),
     ]
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("حساب المستخدم"), help_text=_("اربط المستأجر بحساب مستخدم لتسجيل الدخول إلى البوابة."))
     name = models.CharField(_("اسم المستأجر"), max_length=150)
-    tenant_type = models.CharField(_("نوع المستأجر"), max_length=30, choices=TENANT_TYPE_CHOICES)
+    tenant_type = models.CharField(_("نوع المستأجر"), max_length=50, choices=TENANT_TYPE_CHOICES)
     phone = models.CharField(_("رقم الهاتف"), max_length=15)
     email = models.EmailField(_("البريد الإلكتروني"), blank=True, null=True)
     authorized_signatory = models.CharField(_("المفوض بالتوقيع"), max_length=150, blank=True, null=True, help_text=_("يُملأ فقط في حال كان المستأجر شركة"))
@@ -821,6 +823,7 @@ class UserProfile(models.Model):
     """Extended user profile to add phone number for OTP authentication"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', verbose_name=_("المستخدم"))
     phone_number = models.CharField(_("رقم الهاتف"), max_length=15, blank=True, null=True, help_text=_("رقم الهاتف للتحقق عبر OTP"), validators=[RegexValidator(regex=r'^\+968\d{8}$', message=_("الرجاء إدخال رقم هاتف عماني صالح يبدأ بـ +968 (8 أرقام بعد المقدمة)"))])
+    first_name_english = models.CharField(_("الاسم الأول بالإنجليزية"), max_length=150, blank=True, null=True, help_text=_("ترجمة تلقائية للاسم الأول"))
     
     class Meta:
         verbose_name = _("ملف المستخدم")

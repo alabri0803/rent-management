@@ -3,6 +3,11 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
+<!-- Flatpickr date picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 py-8">
     <div class="max-w-4xl mx-auto px-4">
         <!-- Header Section -->
@@ -223,6 +228,26 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Date picker configuration with multi-language support
+    if (window.flatpickr) {
+        // تحديد اللغة بناءً على اللغة الحالية للصفحة
+        const currentLang = document.documentElement.lang || 'ar';
+        const isArabic = currentLang === 'ar';
+        
+        const dateOpts = {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: isArabic ? 'd/m/Y' : 'M d, Y',
+            allowInput: true,
+            locale: isArabic ? flatpickr.l10ns.ar : flatpickr.l10ns.default,
+            disableMobile: false
+        };
+        
+        try { flatpickr("input[name='received_date']", dateOpts); } catch(e){}
+        try { flatpickr("input[name='check_date']", dateOpts); } catch(e){}
+    }
+
+    // Payment method and check details logic
     const paymentMethodField = document.querySelector('select[name="payment_method"]');
     const checkDetails = document.getElementById('check-details');
     const checkStatusField = document.querySelector('select[name="check_status"]');

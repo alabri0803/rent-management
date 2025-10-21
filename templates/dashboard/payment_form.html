@@ -249,8 +249,33 @@
 }
 </style>
 
+<!-- Flatpickr date picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Date picker configuration
+    if (window.flatpickr) {
+        // تحديد اللغة بناءً على اللغة الحالية للصفحة
+        const currentLang = document.documentElement.lang || 'ar';
+        const isArabic = currentLang === 'ar';
+        
+        const dateOpts = {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: isArabic ? 'd/m/Y' : 'M d, Y',
+            allowInput: true,
+            locale: isArabic ? flatpickr.l10ns.ar : flatpickr.l10ns.default,
+            disableMobile: false
+        };
+        
+        try { flatpickr("input[name='payment_date']", dateOpts); } catch(e){}
+        try { flatpickr("input[name='check_date']", dateOpts); } catch(e){}
+    }
+
+    // Payment method and check fields logic
     const paymentMethodField = document.getElementById('id_payment_method');
     const checkFields = document.getElementById('check-fields');
     const checkStatusField = document.getElementById('id_check_status');

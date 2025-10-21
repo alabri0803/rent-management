@@ -1070,6 +1070,13 @@ class UserManagementForm(forms.ModelForm):
         help_text=_("رقم الهاتف العماني يبدأ بـ +968"),
         widget=forms.TextInput(attrs={'placeholder': '+968XXXXXXXX'})
     )
+    first_name_english = forms.CharField(
+        max_length=150,
+        required=False,
+        label=_("الاسم الأول بالإنجليزية"),
+        help_text=_("ترجمة تلقائية للاسم الأول"),
+        widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'bg-gray-100'})
+    )
     
     class Meta:
         model = User
@@ -1083,11 +1090,12 @@ class UserManagementForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Load phone number from UserProfile if editing
+        # Load phone number and English name from UserProfile if editing
         if self.instance and self.instance.pk:
             try:
                 profile = self.instance.profile
                 self.fields['phone_number'].initial = profile.phone_number
+                self.fields['first_name_english'].initial = profile.first_name_english
             except:
                 pass
         
@@ -1107,6 +1115,7 @@ class UserManagementForm(forms.ModelForm):
         user = super().save(commit=False)
         password = self.cleaned_data.get('password')
         phone_number = self.cleaned_data.get('phone_number')
+        first_name_english = self.cleaned_data.get('first_name_english')
         
         if password:
             user.set_password(password)
@@ -1117,10 +1126,11 @@ class UserManagementForm(forms.ModelForm):
             from .models import UserProfile
             profile, created = UserProfile.objects.get_or_create(
                 user=user,
-                defaults={'phone_number': phone_number}
+                defaults={'phone_number': phone_number, 'first_name_english': first_name_english}
             )
             if not created:
                 profile.phone_number = phone_number
+                profile.first_name_english = first_name_english
                 profile.save()
         
         return user

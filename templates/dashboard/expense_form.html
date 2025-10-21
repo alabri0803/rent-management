@@ -464,20 +464,83 @@ input[type="file"]::file-selector-button:hover {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Date picker configuration with multi-language support
     if (window.flatpickr) {
+        // تحديد اللغة بناءً على اللغة الحالية للصفحة
+        const currentLang = document.documentElement.lang || 'ar';
+        const isArabic = currentLang === 'ar';
+        
         try {
-            flatpickr('.expense-date-input', {
+            flatpickr("input[name='expense_date']", {
                 dateFormat: 'Y-m-d',
                 altInput: true,
-                altFormat: 'd/m/Y',
+                altFormat: isArabic ? 'd/m/Y' : 'M d, Y',
                 allowInput: true,
-                locale: window.flatpickr.l10ns.ar,
-                disableMobile: false,
-                altInputClass: 'flatpickr-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 text-sm'
+                locale: isArabic ? flatpickr.l10ns.ar : flatpickr.l10ns.default,
+                disableMobile: false
             });
         } catch (error) {
             console.error('Flatpickr initialization failed', error);
         }
+    }
+
+    // File input customization with multi-language support
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        // تحديد اللغة بناءً على اللغة الحالية للصفحة
+        const currentLang = document.documentElement.lang || 'ar';
+        const isArabic = currentLang === 'ar';
+        
+        // النصوص حسب اللغة
+        const fileTexts = {
+            ar: {
+                noFile: 'لم يتم تحديد أي ملف',
+                chooseFile: 'اختيار ملف'
+            },
+            en: {
+                noFile: 'No file chosen',
+                chooseFile: 'Choose file'
+            }
+        };
+        
+        const texts = isArabic ? fileTexts.ar : fileTexts.en;
+        
+        // إنشاء عنصر مخصص لعرض اسم الملف
+        const fileDisplay = document.createElement('span');
+        fileDisplay.className = 'file-display text-sm text-gray-500 mr-2';
+        fileDisplay.textContent = texts.noFile;
+        
+        // إخفاء input الأصلي وإنشاء زر مخصص
+        fileInput.style.display = 'none';
+        
+        const customButton = document.createElement('button');
+        customButton.type = 'button';
+        customButton.className = 'bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium';
+        customButton.textContent = texts.chooseFile;
+        
+        // إضافة العناصر المخصصة
+        const container = document.createElement('div');
+        container.className = 'flex items-center gap-3';
+        container.appendChild(customButton);
+        container.appendChild(fileDisplay);
+        
+        fileInput.parentNode.insertBefore(container, fileInput);
+        
+        // ربط النقر على الزر بفتح منتقي الملفات
+        customButton.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        // تحديث النص عند اختيار ملف
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                fileDisplay.textContent = this.files[0].name;
+                fileDisplay.className = 'file-display text-sm text-green-600 mr-2 font-medium';
+            } else {
+                fileDisplay.textContent = texts.noFile;
+                fileDisplay.className = 'file-display text-sm text-gray-500 mr-2';
+            }
+        });
     }
 
     const categoryOptions = Array.from(document.querySelectorAll('.category-option'));
