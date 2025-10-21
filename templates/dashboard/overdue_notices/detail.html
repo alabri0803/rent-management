@@ -83,12 +83,12 @@
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-red-50 rounded-lg border border-red-200">
                         <span class="text-red-700 font-medium">{% trans "المبلغ المتأخر" %}:</span>
-                        <span class="font-bold text-red-900 text-lg">{{ notice.total_overdue_amount|floatformat:2 }} ريال عماني</span>
+                        <span class="font-bold text-red-900 text-lg">{{ notice.total_overdue_amount|floatformat:2 }} {% trans "ريال عماني" %}</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-yellow-50 rounded-lg border border-yellow-200">
                         <span class="text-yellow-700 font-medium">{% trans "مبلغ مستحق بداية كل شهر" %}:</span>
-                        <span class="font-bold text-yellow-900">{{ notice.lease.monthly_rent|floatformat:2 }} ريال عماني</span>
+                        <span class="font-bold text-yellow-900">{{ notice.lease.monthly_rent|floatformat:2 }} {% trans "ريال عماني" %}</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-indigo-50 rounded-lg border border-indigo-200">
@@ -251,7 +251,7 @@
                         {% for payment in related_payments %}
                         <tr class="border-b hover:bg-yellow-50 transition-colors duration-200">
                             <td class="py-4 px-4 font-semibold text-gray-800">{{ payment.payment_date|date:"d/m/Y" }}</td>
-                            <td class="py-4 px-4 font-bold text-green-700">{{ payment.amount }} ر.ع</td>
+                            <td class="py-4 px-4 font-bold text-green-700">{{ payment.amount }} {% trans "ر.ع" %}</td>
                             <td class="py-4 px-4 text-gray-700">{{ payment.get_payment_method_display }}</td>
                             <td class="py-4 px-4 text-gray-700">{{ payment.check_number|default:"-" }}</td>
                             <td class="py-4 px-4">
