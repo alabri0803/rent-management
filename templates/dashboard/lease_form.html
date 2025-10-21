@@ -94,12 +94,16 @@
     <script>
         (function() {
             if (window.flatpickr) {
+                // تحديد اللغة بناءً على اللغة الحالية للصفحة
+                const currentLang = document.documentElement.lang || 'ar';
+                const isArabic = currentLang === 'ar';
+                
                 const opts = {
                     dateFormat: 'Y-m-d',
                     altInput: true,
-                    altFormat: 'd/m/Y',
+                    altFormat: isArabic ? 'd/m/Y' : 'M d, Y',
                     allowInput: true,
-                    locale: flatpickr.l10ns.ar,
+                    locale: isArabic ? flatpickr.l10ns.ar : flatpickr.l10ns.default,
                     disableMobile: false
                 };
                 try { flatpickr("input[name='start_date']", opts); } catch(e){}

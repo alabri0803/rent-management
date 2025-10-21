@@ -174,15 +174,11 @@
                                     <div class="unit-type-card__content">
                                         <h3 class="unit-type-card__title">{{ label }}</h3>
                                         <p class="unit-type-card__description">
-                                            {% if value == 'apartment' %}مناسبة للسكن العائلي
-                                            {% elif value == 'residential_unit' %}وحدة سكنية متكاملة
-                                            {% elif value == 'office' %}مكتب للأعمال الإدارية
-                                            {% elif value == 'workspace' %}مساحة عمل مشتركة
-                                            {% elif value == 'shop' %}محل للبيع بالتجزئة
-                                            {% elif value == 'commercial_shop' %}محل تجاري كبير
-                                            {% elif value == 'warehouse' %}مستودع للتخزين
-                                            {% elif value == 'showroom' %}معرض للعرض
-                                            {% else %}نوع آخر{% endif %}
+                                            {% if value == 'apartment' %}{% trans "مناسبة للسكن العائلي" %}
+                                            {% elif value == 'office' %}{% trans "مكتب للأعمال الإدارية" %}
+                                            {% elif value == 'shop' %}{% trans "محل للبيع بالتجزئة" %}
+                                            {% elif value == 'warehouse' %}{% trans "مستودع للتخزين" %}
+                                            {% else %}{% trans "نوع آخر" %}{% endif %}
                                         </p>
                                     </div>
                                     <div class="unit-type-card__check">

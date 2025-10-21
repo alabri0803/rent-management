@@ -52,13 +52,9 @@ class Building(models.Model):
 class Unit(models.Model):
     UNIT_TYPE_CHOICES = [
         ('apartment', _('شقة')),
-        ('residential_unit', _('وحدة سكنية')),
-        ('office', _('مكتب')),
-        ('workspace', _('مساحة عمل مكتبية')),
-        ('shop', _('محل')),
-        ('commercial_shop', _('محل تجاري')),
-        ('warehouse', _('مستودع')),
-        ('showroom', _('معرض')),
+        ('office', _('مكتب تجاري')),
+        ('shop', _('محل تجاري')),
+        ('warehouse', _('مستودع للتخزين')),
     ]
     building = models.ForeignKey(Building, on_delete=models.CASCADE, verbose_name=_("المبنى"))
     unit_number = models.CharField(_("رقم الوحدة"), max_length=20)
@@ -1089,74 +1085,356 @@ class PaymentOverdueNotice(models.Model):
     def generate_formal_payment_request(self):
         """إنشاء إنذار رسمي بطلب السداد"""
         from django.utils import timezone
+        from datetime import datetime
         
         # تحديث محتوى الإنذار ليعكس الحالة الحالية
         overdue_months = []
         total_amount = 0
         
         for detail in self.details.all():
+            # حساب أيام التأخير
+            due_date = detail.due_date
+            days_overdue = (timezone.now().date() - due_date).days
+            
             overdue_months.append({
                 'month': detail.overdue_month,
                 'year': detail.overdue_year,
-                'amount': detail.overdue_amount
+                'amount': detail.overdue_amount,
+                'due_date': due_date,
+                'days_overdue': days_overdue
             })
             total_amount += detail.overdue_amount
         
-        # إنشاء محتوى الإنذار الرسمي
+        # معلومات الشركة (يمكن تخصيصها لاحقاً)
+        company_name = "شركة افتراضية"
+        company_phone = "1234567890"
+        company_email = "default@company.com"
+        
+        # إنشاء محتوى الإنذار الرسمي بتصميم كلاسيكي جميل
         content = f"""
-        <div style="text-align: center; font-family: Arial, sans-serif; direction: rtl;">
-            <h2 style="color: #d32f2f; font-weight: bold;">إنذار رسمي بطلب السداد</h2>
-            <hr style="border: 2px solid #d32f2f; margin: 20px 0;">
-            
-            <div style="text-align: right; margin: 20px 0;">
-                <p><strong>رقم العقد:</strong> {self.lease.contract_number}</p>
-                <p><strong>المستأجر:</strong> {self.lease.tenant.name}</p>
-                <p><strong>الوحدة:</strong> {self.lease.unit.unit_number} - {self.lease.unit.building.name}</p>
-                <p><strong>تاريخ الإنذار:</strong> {self.notice_date.strftime('%d/%m/%Y')}</p>
-                <p><strong>الموعد النهائي للسداد:</strong> {self.legal_deadline.strftime('%d/%m/%Y')}</p>
-            </div>
-            
-            <div style="background-color: #ffebee; padding: 15px; border-right: 4px solid #d32f2f; margin: 20px 0;">
-                <h3 style="color: #d32f2f;">المبالغ المستحقة:</h3>
-                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
-                    <thead>
-                        <tr style="background-color: #f5f5f5;">
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">الشهر</th>
-                            <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">المبلغ المستحق</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+                body {{
+                    font-family: 'Amiri', 'Times New Roman', serif;
+                    line-height: 1.6;
+                    color: #2c3e50;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                }}
+                .document {{
+                    background: white;
+                    border: 3px solid #2c3e50;
+                    border-radius: 15px;
+                    padding: 40px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    position: relative;
+                }}
+                .document::before {{
+                    content: '';
+                    position: absolute;
+                    top: 10px;
+                    left: 10px;
+                    right: 10px;
+                    bottom: 10px;
+                    border: 1px solid #bdc3c7;
+                    border-radius: 10px;
+                    pointer-events: none;
+                }}
+                .header {{
+                    text-align: center;
+                    border-bottom: 3px double #2c3e50;
+                    padding-bottom: 20px;
+                    margin-bottom: 30px;
+                }}
+                .company-info {{
+                    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+                    color: white;
+                    padding: 15px;
+                    border-radius: 10px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                }}
+                .title {{
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #c0392b;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+                    margin: 20px 0;
+                    text-decoration: underline;
+                    text-decoration-color: #e74c3c;
+                }}
+                .info-section {{
+                    background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                    border-left: 5px solid #3498db;
+                }}
+                .info-grid {{
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    margin: 15px 0;
+                }}
+                .info-item {{
+                    background: white;
+                    padding: 10px 15px;
+                    border-radius: 8px;
+                    border-left: 3px solid #3498db;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                }}
+                .subject {{
+                    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+                    color: white;
+                    padding: 15px;
+                    border-radius: 10px;
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 18px;
+                    margin: 20px 0;
+                    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+                }}
+                .content-section {{
+                    background: #fdfefe;
+                    padding: 25px;
+                    border-radius: 10px;
+                    border: 2px solid #ecf0f1;
+                    margin: 20px 0;
+                }}
+                .amounts-table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                    background: white;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                }}
+                .amounts-table th {{
+                    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+                    color: white;
+                    padding: 15px;
+                    text-align: center;
+                    font-weight: bold;
+                }}
+                .amounts-table td {{
+                    padding: 12px 15px;
+                    text-align: center;
+                    border-bottom: 1px solid #ecf0f1;
+                }}
+                .amounts-table tr:nth-child(even) {{
+                    background: #f8f9fa;
+                }}
+                .amounts-table tr:hover {{
+                    background: #e3f2fd;
+                }}
+                .total-row {{
+                    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+                    color: white !important;
+                    font-weight: bold;
+                    font-size: 16px;
+                }}
+                .action-required {{
+                    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                    box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+                }}
+                .legal-notes {{
+                    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                    font-size: 14px;
+                }}
+                .signatures {{
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 30px;
+                    margin-top: 40px;
+                }}
+                .signature-box {{
+                    border: 2px solid #2c3e50;
+                    border-radius: 10px;
+                    padding: 20px;
+                    text-align: center;
+                    background: #f8f9fa;
+                }}
+                .footer {{
+                    text-align: center;
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 2px solid #ecf0f1;
+                    font-size: 12px;
+                    color: #7f8c8d;
+                }}
+                .highlight {{
+                    color: #e74c3c;
+                    font-weight: bold;
+                }}
+                .month-name {{
+                    font-weight: bold;
+                    color: #2c3e50;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="document">
+                <div class="company-info">
+                    <h2 style="margin: 0; font-size: 24px;">🏢 {company_name}</h2>
+                    <p style="margin: 5px 0;">📞 هاتف: {company_phone} | 📧 بريد إلكتروني: {company_email}</p>
+                </div>
+                
+                <div class="header">
+                    <div class="title">⚖️ إنذار رسمي بطلب السداد</div>
+                </div>
+                
+                <div class="info-section">
+                    <h3 style="color: #2c3e50; margin-top: 0;">📋 معلومات الإنذار</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>🔢 رقم المرجع:</strong> {self.id}
+                        </div>
+                        <div class="info-item">
+                            <strong>📅 تاريخ الإنذار:</strong> {self.notice_date.strftime('%d/%m/%Y')}
+                        </div>
+                        <div class="info-item">
+                            <strong>👤 إلى السيد/السيدة:</strong> {self.lease.tenant.name}
+                        </div>
+                        <div class="info-item">
+                            <strong>📄 رقم العقد:</strong> {self.lease.contract_number}
+                        </div>
+                        <div class="info-item">
+                            <strong>🏠 الوحدة المؤجرة:</strong> {self.lease.unit.unit_number} - {self.lease.unit.building.name}
+                        </div>
+                        <div class="info-item">
+                            <strong>📍 العنوان:</strong> {self.lease.unit.building.address or 'محافظة مسقط ولاية بوشر منطقة الخوير الجنوبية'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="subject">
+                    📢 الموضوع: إنذار رسمي لعدم سداد إيجار الوحدة رقم {self.lease.unit.unit_number}
+                </div>
+                
+                <div class="content-section">
+                    <h3 style="color: #2c3e50;">📝 المحتوى:</h3>
+                    <p style="font-size: 16px; line-height: 1.8;">
+                        نتشرف بإحاطتكم علماً بأنه قد تأخر سداد إيجار الوحدة المؤجرة لكم لعدة شهور كما هو موضح في الجدول أدناه.
+                    </p>
+                    
+                    <table class="amounts-table">
+                        <thead>
+                            <tr>
+                                <th>🗓️ الشهر والسنة</th>
+                                <th>💰 المبلغ المستحق (ر.ع)</th>
+                                <th>📅 تاريخ الاستحقاق</th>
+                                <th>⏰ عدد أيام التأخير</th>
+                            </tr>
+                        </thead>
+                        <tbody>
         """
         
+        # إضافة صفوف الشهور المتأخرة
+        month_names = {
+            1: 'يناير', 2: 'فبراير', 3: 'مارس', 4: 'أبريل', 5: 'مايو', 6: 'يونيو',
+            7: 'يوليو', 8: 'أغسطس', 9: 'سبتمبر', 10: 'أكتوبر', 11: 'نوفمبر', 12: 'ديسمبر'
+        }
+        
         for month_data in overdue_months:
+            month_name = month_names.get(month_data['month'], str(month_data['month']))
             content += f"""
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{month_data['month']}/{month_data['year']}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{month_data['amount']} ر.ع</td>
-                        </tr>
+                            <tr>
+                                <td class="month-name">{month_name} {month_data['year']}</td>
+                                <td><strong>{month_data['amount']:,.2f}</strong></td>
+                                <td>{month_data['due_date'].strftime('%d/%m/%Y')}</td>
+                                <td class="highlight">{month_data['days_overdue']} يوم</td>
+                            </tr>
             """
         
         content += f"""
-                    </tbody>
-                    <tfoot>
-                        <tr style="background-color: #ffcdd2; font-weight: bold;">
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">الإجمالي</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{total_amount} ر.ع</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td><strong>📊 إجمالي المبالغ المتأخرة:</strong></td>
+                                <td colspan="3"><strong>{total_amount:,.2f} ريال عماني</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="action-required">
+                    <h3 style="margin-top: 0; color: white;">⚡ الإجراء المطلوب:</h3>
+                    <p style="font-size: 16px; line-height: 1.8;">
+                        يجب عليكم سداد جميع المبالغ المتأخرة المذكورة أعلاه كاملة خلال المدة القانونية المحددة في سلطنة عمان 
+                        <strong>(30 يوماً)</strong> من تاريخ هذا الإنذار وذلك لتجنب اتخاذ الإجراءات القانونية اللازمة بما في ذلك فسخ العقد و/أو الإخلاء.
+                    </p>
+                    <div style="text-align: center; margin: 15px 0;">
+                        <div style="background: white; color: #e67e22; padding: 10px; border-radius: 8px; display: inline-block;">
+                            <strong>⏰ الموعد النهائي للسداد: {self.legal_deadline.strftime('%d/%m/%Y')}</strong>
+                        </div>
+                    </div>
+                    <p><strong>🚨 الإجراء في حالة عدم السداد:</strong> {self.get_potential_legal_action_display()}</p>
+                    <p><strong>📊 عدد شهور التأخير:</strong> {len(overdue_months)} شهر</p>
+                </div>
+                
+                <div class="legal-notes">
+                    <h3 style="margin-top: 0; color: white;">⚖️ ملاحظات قانونية هامة:</h3>
+                    <ul style="text-align: right; padding-right: 20px;">
+                        <li>هذا الإنذار صادر وفقاً لأحكام قانون الإيجار في سلطنة عمان</li>
+                        <li>عدم الاستجابة خلال المدة المحددة قد يؤدي إلى اتخاذ الإجراءات القانونية اللازمة</li>
+                        <li>يحق للمؤجر المطالبة بالتعويضات والأضرار الناتجة عن التأخير في السداد</li>
+                        <li>في حالة عدم السداد خلال المدة المحددة، سيتم اتخاذ إجراءات فسخ العقد والإخلاء وفقاً للقانون</li>
+                        <li>يمكن للمستأجر التواصل مع إدارة العقارات لمناقشة ترتيبات السداد قبل انتهاء المدة المحددة</li>
+                        <li>هذا الإنذار يعتبر سارياً من تاريخ تسليمه أو إعلانه وفقاً للأصول القانونية</li>
+                    </ul>
+                    
+                    <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 8px;">
+                        <strong>📞 للاستفسار والتواصل:</strong><br>
+                        الهاتف: {company_phone} | البريد الإلكتروني: {company_email}
+                    </div>
+                </div>
+                
+                <div class="signatures">
+                    <div class="signature-box">
+                        <h4 style="color: #2c3e50; margin-top: 0;">🏢 إدارة العقارات</h4>
+                        <div style="height: 60px; border-bottom: 2px solid #2c3e50; margin: 15px 0;"></div>
+                        <p><strong>التوقيع:</strong> ________________________</p>
+                        <p><strong>الاسم:</strong> ________________________</p>
+                        <p><strong>التاريخ:</strong> {self.notice_date.strftime('%d/%m/%Y')}</p>
+                    </div>
+                    
+                    <div class="signature-box">
+                        <h4 style="color: #2c3e50; margin-top: 0;">👤 استلام المستأجر</h4>
+                        <div style="height: 60px; border-bottom: 2px solid #2c3e50; margin: 15px 0;"></div>
+                        <p><strong>التوقيع:</strong> ________________________</p>
+                        <p><strong>الاسم:</strong> {self.lease.tenant.name}</p>
+                        <p><strong>التاريخ:</strong> ________________________</p>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>
+                        <strong>رقم المرجع:</strong> {self.id} | 
+                        <strong>تاريخ الطباعة:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')} | 
+                        هذا المستند مُنشأ إلكترونياً
+                    </p>
+                    <p style="margin-top: 10px; font-weight: bold; color: #2c3e50;">
+                        🏢 {company_name} - نظام إدارة العقارات
+                    </p>
+                </div>
             </div>
-            
-            <div style="background-color: #fff3e0; padding: 15px; border-right: 4px solid #ff9800; margin: 20px 0;">
-                <h3 style="color: #e65100;">المطلوب:</h3>
-                <p>يُطلب منكم سداد المبالغ المستحقة أعلاه في موعد أقصاه <strong>{self.legal_deadline.strftime('%d/%m/%Y')}</strong></p>
-                <p>في حالة عدم السداد في الموعد المحدد، سيتم اتخاذ الإجراءات القانونية اللازمة.</p>
-            </div>
-            
-            <div style="margin-top: 30px; text-align: center;">
-                <p style="font-size: 12px; color: #666;">هذا إنذار رسمي وفقاً للقوانين المعمول بها في سلطنة عمان</p>
-            </div>
-        </div>
+        </body>
+        </html>
         """
         
         return content
