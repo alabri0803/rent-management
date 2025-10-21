@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-21 22:58+0400\n"
+"POT-Creation-Date: 2025-10-21 23:09+0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1622,6 +1622,42 @@ msgstr "'Maintenance request {} status updated to {}'"
 #, python-brace-format
 msgid "'عقد الإيجار الخاص بك رقم {} سينتهي قريب في تاريخ {}'"
 msgstr "'Your lease contract number {} will expire soon on date {}'"
+
+#: dashboard/signals.py:107
+#, python-brace-format
+msgid "" 
+"\n"
+"✅ Full payment of {amount} OMR for month {month}/{year} on {date}"
+msgstr "" 
+"\n"
+"✅ Full payment of {amount} OMR for month {month}/{year} on {date}"
+
+#: dashboard/signals.py:142
+#, python-brace-format
+msgid "" 
+"\n"
+"💰 Partial payment for month {month}/{year}: {paid_amount} OMR paid, {remaining_amount} OMR remaining on {date}"
+msgstr "" 
+"\n"
+"💰 Partial payment for month {month}/{year}: {paid_amount} OMR paid, {remaining_amount} OMR remaining on {date}"
+
+#: dashboard/signals.py:168
+#, python-brace-format
+msgid "" 
+"✅ Full payment of {amount} OMR for month {month}/{year} from contract "
+"{contract_number}"
+msgstr "" 
+"✅ Full payment of {amount} OMR for month {month}/{year} from contract "
+"{contract_number}"
+
+#: dashboard/signals.py:170
+#, python-brace-format
+msgid "" 
+"💰 Partial payment: {amount} OMR for month {month}/{year} from contract "
+"{contract_number}. Remaining: {remaining_amount} OMR"
+msgstr "" 
+"💰 Partial payment: {amount} OMR for month {month}/{year} from contract "
+"{contract_number}. Remaining: {remaining_amount} OMR"
 
 #: dashboard/views.py:93
 msgid "تم إنشاء نسخة احتياطية بنجاح: "
@@ -3816,6 +3852,19 @@ msgstr "Not received yet"
 msgid "لم يتم الحل بعد"
 msgstr "Not resolved yet"
 
+#: templates/dashboard/overdue_notices/detail.html:178
+#: templates/dashboard/reports/lease_cancellation_notice.html:58
+#: templates/dashboard/tenant_detail.html:262
+#: templates/dashboard/tenant_detail.html:332
+msgid "غير محدد"
+msgstr "Not Specified"
+
+#: templates/dashboard/overdue_notices/detail.html:183
+#, fuzzy
+#| msgid "غير محدد"
+msgid "غير متوفر"
+msgstr "Not Specified"
+
 #: templates/dashboard/overdue_notices/detail.html:187
 #: templates/dashboard/overdue_notices/generate_automatic.html:130
 msgid "أيام التأخير"
@@ -4551,12 +4600,6 @@ msgstr "Official Form - Lease Contracts Management System"
 #: templates/dashboard/reports/payment_receipt.html:343
 msgid "تاريخ"
 msgstr "Date"
-
-#: templates/dashboard/reports/lease_cancellation_notice.html:58
-#: templates/dashboard/tenant_detail.html:262
-#: templates/dashboard/tenant_detail.html:332
-msgid "غير محدد"
-msgstr "Not Specified"
 
 #: templates/dashboard/reports/lease_cancellation_notice.html:63
 msgid "تم إنشاء هذه الاستمارة تلقائياً بواسطة النظام عند إلغاء العقد."

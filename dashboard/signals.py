@@ -104,7 +104,12 @@ def update_overdue_notices_on_payment(sender, instance, created, **kwargs):
                 
                 # إضافة ملاحظة للإنذار
                 current_notes = notice.notes or ""
-                new_note = f"\n✅ تم دفع مبلغ {monthly_rent} ر.ع كاملاً لشهر {instance.payment_for_month}/{instance.payment_for_year} بتاريخ {instance.payment_date.strftime('%d/%m/%Y')}"
+                new_note = _("\n✅ Full payment of {amount} OMR for month {month}/{year} on {date}").format(
+                    amount=monthly_rent,
+                    month=instance.payment_for_month,
+                    year=instance.payment_for_year,
+                    date=instance.payment_date.strftime('%d/%m/%Y')
+                )
                 notice.notes = current_notes + new_note
                 
                 # فحص إذا لم تعد هناك تفاصيل متأخرة - تحديث حالة الإنذار إلى محلول
@@ -134,7 +139,13 @@ def update_overdue_notices_on_payment(sender, instance, created, **kwargs):
                 
                 # إضافة ملاحظة للدفع الجزئي
                 current_notes = notice.notes or ""
-                new_note = f"\n💰 دفع جزئي لشهر {instance.payment_for_month}/{instance.payment_for_year}: دفع {instance.amount} ر.ع، المتبقي {remaining_amount} ر.ع بتاريخ {instance.payment_date.strftime('%d/%m/%Y')}"
+                new_note = _("\n💰 Partial payment for month {month}/{year}: {paid_amount} OMR paid, {remaining_amount} OMR remaining on {date}").format(
+                    month=instance.payment_for_month,
+                    year=instance.payment_for_year,
+                    paid_amount=instance.amount,
+                    remaining_amount=remaining_amount,
+                    date=instance.payment_date.strftime('%d/%m/%Y')
+                )
                 notice.notes = current_notes + new_note
                 
                 # تحديث محتوى الإنذار الرسمي ليعكس المبالغ الجديدة
@@ -154,9 +165,9 @@ def update_overdue_notices_on_payment(sender, instance, created, **kwargs):
             staff_users = User.objects.filter(is_staff=True)
             for user in staff_users:
                 if remaining_amount <= 0:
-                    message = f"✅ تم دفع مبلغ {monthly_rent} ر.ع كاملاً لشهر {instance.payment_for_month}/{instance.payment_for_year} من العقد {instance.lease.contract_number}"
+                    message = _("✅ Full payment of {amount} OMR for month {month}/{year} from contract {contract_number}").format(amount=monthly_rent, month=instance.payment_for_month, year=instance.payment_for_year, contract_number=instance.lease.contract_number)
                 else:
-                    message = f"💰 دفعة جزئية: {instance.amount} ر.ع لشهر {instance.payment_for_month}/{instance.payment_for_year} من العقد {instance.lease.contract_number}. المتبقي: {remaining_amount} ر.ع"
+                    message = _("💰 Partial payment: {amount} OMR for month {month}/{year} from contract {contract_number}. Remaining: {remaining_amount} OMR").format(amount=instance.amount, month=instance.payment_for_month, year=instance.payment_for_year, contract_number=instance.lease.contract_number, remaining_amount=remaining_amount)
                 
                 Notification.objects.create(
                     user=user,

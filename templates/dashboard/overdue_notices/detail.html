@@ -175,12 +175,12 @@
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-purple-50 rounded-lg border border-purple-200">
                         <span class="text-purple-700 font-medium">{% trans "طريقة التسليم" %}:</span>
-                        <span class="font-bold text-purple-900">{{ notice.delivery_method|default:"{% trans 'غير محدد' %}" }}</span>
+                        <span class="font-bold text-purple-900">{% if notice.delivery_method %}{{ notice.delivery_method }}{% else %}{% trans 'غير محدد' %}{% endif %}</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-indigo-50 rounded-lg border border-indigo-200">
                         <span class="text-indigo-700 font-medium">{% trans "توقيع المستلم" %}:</span>
-                        <span class="font-bold text-indigo-900">{{ notice.recipient_signature|default:"{% trans 'غير متوفر' %}" }}</span>
+                        <span class="font-bold text-indigo-900">{% if notice.recipient_signature %}{{ notice.recipient_signature }}{% else %}{% trans 'غير متوفر' %}{% endif %}</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-red-50 rounded-lg border border-red-200">
