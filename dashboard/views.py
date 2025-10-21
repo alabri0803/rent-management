@@ -2001,6 +2001,11 @@ class PaymentOverdueNoticeListView(LoginRequiredMixin, UserPassesTestMixin, List
             'lease__tenant', 'lease__unit__building'
         ).order_by('-notice_date')
         
+        # فلترة حسب العقد
+        lease_id = self.request.GET.get('lease')
+        if lease_id:
+            queryset = queryset.filter(lease_id=lease_id)
+        
         # فلترة حسب الحالة
         status = self.request.GET.get('status')
         if status:
@@ -2039,6 +2044,41 @@ class PaymentOverdueNoticeListView(LoginRequiredMixin, UserPassesTestMixin, List
                 status__in=['sent', 'acknowledged']
             ).count(),
         }
+        
+        return context
+
+
+class LeaseOverdueNoticesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """عرض إنذارات عقد معين أو إنشاء إنذار جديد"""
+    model = PaymentOverdueNotice
+    template_name = 'dashboard/overdue_notices/lease_notices.html'
+    context_object_name = 'notices'
+    paginate_by = 10
+    
+    def test_func(self):
+        return self.request.user.is_staff
+    
+    def get_queryset(self):
+        self.lease = get_object_or_404(Lease, pk=self.kwargs['lease_id'])
+        return PaymentOverdueNotice.objects.filter(lease=self.lease).order_by('-notice_date')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['lease'] = self.lease
+        
+        # فحص إمكانية إنشاء إنذار جديد
+        can_create_notice = self.lease.has_overdue_payments
+        context['can_create_notice'] = can_create_notice
+        
+        # معاينة الإنذار الجديد إذا كان ممكناً
+        if can_create_notice:
+            preview_notice = PaymentOverdueNotice.generate_automatic_notice(self.lease)
+            if preview_notice:
+                # حذف الإنذار المؤقت (كان للمعاينة فقط)
+                preview_notice.delete()
+                context['preview_available'] = True
+            else:
+                context['preview_available'] = False
         
         return context
 

@@ -208,11 +208,13 @@ class Lease(models.Model):
     @property
     def has_overdue_payments(self):
         """التحقق من وجود دفعات متأخرة لمدة 30 يوماً أو أكثر"""
-        today = timezone.now().date()
-        overdue_payments = self.payments.filter(
-            payment_date__lt=today - relativedelta(days=30)
+        payment_summary = self.get_payment_summary()
+        return any(
+            month_data['status'] == 'overdue' and 
+            month_data['balance'] > 0 and 
+            month_data['days_overdue'] >= 30
+            for month_data in payment_summary
         )
-        return overdue_payments.exists()
     
     def duration_display(self):
         """مدة العقد بصيغة (سنة، شهر، يوم) باستخدام start_date و end_date (حساب شامل ليوم الانتهاء)"""
