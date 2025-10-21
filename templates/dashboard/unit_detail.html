@@ -88,7 +88,7 @@
                     </div>
                     <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
                         <span class="text-gray-600 font-medium">{% trans "الإيجار الشهري" %}:</span>
-                        <span class="font-bold text-green-600 text-lg">{{ current_lease.monthly_rent|floatformat:2 }} ر.ع</span>
+                        <span class="font-bold text-green-600 text-lg">{{ current_lease.monthly_rent|floatformat:2 }} {% trans "ر.ع" %}</span>
                     </div>
                     <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
                         <span class="text-gray-600 font-medium">{% trans "تاريخ البداية" %}:</span>
@@ -159,13 +159,13 @@
                             <td class="p-4 text-gray-600">{{ lease.start_date|date:"d/m/Y" }} - {{ lease.end_date|date:"d/m/Y" }}</td>
                             <td class="p-4">
                                 {% if lease.status == 'active' %}
-                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">✅ نشط</span>
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">✅ {% trans "نشط" %}</span>
                                 {% elif lease.status == 'expired' %}
-                                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold">❌ منتهي</span>
+                                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold">❌ {% trans "منتهي" %}</span>
                                 {% elif lease.status == 'cancelled' %}
-                                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-bold">🚫 ملغي</span>
+                                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-bold">🚫 {% trans "ملغي" %}</span>
                                 {% elif lease.status == 'renewed' %}
-                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">🔄 تم تجديد</span>
+                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">🔄 {% trans "تم تجديد" %}</span>
                                 {% else %}
                                 <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-bold">⏳ {{ lease.get_status_display }}</span>
                                 {% endif %}

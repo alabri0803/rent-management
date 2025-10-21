@@ -56,73 +56,73 @@
                 
                 <div class="space-y-4">
                     <div class="flex justify-between items-center py-3 px-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <span class="text-blue-700 font-medium">رقم العقد:</span>
+                        <span class="text-blue-700 font-medium">{% trans "رقم العقد" %}:</span>
                         <a href="{% url 'lease_detail' notice.lease.pk %}" class="font-bold text-blue-900 hover:text-blue-700 transition-colors">
                             {{ notice.lease.contract_number }}
                         </a>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg border border-green-200">
-                        <span class="text-green-700 font-medium">المستأجر:</span>
+                        <span class="text-green-700 font-medium">{% trans "المستأجر" %}:</span>
                         <a href="{% url 'tenant_detail' notice.lease.tenant.pk %}" class="font-bold text-green-900 hover:text-green-700 transition-colors">
                             {{ notice.lease.tenant.name }}
                         </a>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-purple-50 rounded-lg border border-purple-200">
-                        <span class="text-purple-700 font-medium">الوحدة:</span>
+                        <span class="text-purple-700 font-medium">{% trans "الوحدة" %}:</span>
                         <span class="font-bold text-purple-900">{{ notice.lease.unit.unit_number }} - {{ notice.lease.unit.building.name }}</span>
                     </div>
                     
                     {% for detail in notice.details.all %}
                     <div class="flex justify-between items-center py-3 px-4 bg-orange-50 rounded-lg border border-orange-200">
-                        <span class="text-orange-700 font-medium">الشهر المتأخر:</span>
+                        <span class="text-orange-700 font-medium">{% trans "الشهر المتأخر" %}:</span>
                         <span class="font-bold text-orange-900">{{ detail.get_month_name }} {{ detail.overdue_year }}</span>
                     </div>
                     {% endfor %}
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-red-50 rounded-lg border border-red-200">
-                        <span class="text-red-700 font-medium">المبلغ المتأخر:</span>
+                        <span class="text-red-700 font-medium">{% trans "المبلغ المتأخر" %}:</span>
                         <span class="font-bold text-red-900 text-lg">{{ notice.total_overdue_amount|floatformat:2 }} ريال عماني</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                        <span class="text-yellow-700 font-medium">مبلغ مستحق بداية كل شهر:</span>
+                        <span class="text-yellow-700 font-medium">{% trans "مبلغ مستحق بداية كل شهر" %}:</span>
                         <span class="font-bold text-yellow-900">{{ notice.lease.monthly_rent|floatformat:2 }} ريال عماني</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <span class="text-indigo-700 font-medium">تاريخ الإنذار:</span>
+                        <span class="text-indigo-700 font-medium">{% trans "تاريخ الإنذار" %}:</span>
                         <span class="font-bold text-indigo-900">{{ notice.notice_date|date:"d/m/Y" }}</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 {% if days_until_deadline < 0 %}bg-red-100 border-red-300{% elif days_until_deadline < 7 %}bg-yellow-100 border-yellow-300{% else %}bg-green-100 border-green-300{% endif %} rounded-lg border">
-                        <span class="{% if days_until_deadline < 0 %}text-red-700{% elif days_until_deadline < 7 %}text-yellow-700{% else %}text-green-700{% endif %} font-medium">الموعد النهائي القانوني:</span>
+                        <span class="{% if days_until_deadline < 0 %}text-red-700{% elif days_until_deadline < 7 %}text-yellow-700{% else %}text-green-700{% endif %} font-medium">{% trans "الموعد النهائي القانوني" %}:</span>
                         <div class="text-right">
                             <span class="font-bold {% if days_until_deadline < 0 %}text-red-900{% elif days_until_deadline < 7 %}text-yellow-900{% else %}text-green-900{% endif %}">
                                 {{ notice.legal_deadline|date:"d/m/Y" }}
                             </span>
                             <div class="text-sm {% if days_until_deadline < 0 %}text-red-600{% elif days_until_deadline < 7 %}text-yellow-600{% else %}text-green-600{% endif %}">
                                 {% if days_until_deadline < 0 %}
-                                    (تجاوز الموعد بـ {{ days_until_deadline|add:"-1" }} يوم)
+                                    ({% trans "تجاوز الموعد بـ" %} {{ days_until_deadline|add:"-1" }} {% trans "يوم" %})
                                 {% elif days_until_deadline == 0 %}
-                                    (ينتهي اليوم)
+                                    ({% trans "ينتهي اليوم" %})
                                 {% else %}
-                                    (باقي {{ days_until_deadline }} يوم)
+                                    ({% trans "باقي" %} {{ days_until_deadline }} {% trans "يوم" %})
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <span class="text-gray-700 font-medium">الحالة:</span>
+                        <span class="text-gray-700 font-medium">{% trans "الحالة" %}:</span>
                         <span class="px-3 py-1 rounded-full text-sm font-bold {% if notice.status == 'draft' %}bg-gray-100 text-gray-800{% elif notice.status == 'sent' %}bg-blue-100 text-blue-800{% elif notice.status == 'acknowledged' %}bg-yellow-100 text-yellow-800{% elif notice.status == 'resolved' %}bg-green-100 text-green-800{% else %}bg-orange-100 text-orange-800{% endif %}">
                             {{ notice.get_status_display }}
                         </span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-pink-50 rounded-lg border border-pink-200">
-                        <span class="text-pink-700 font-medium">الإجراء القانوني المحتمل:</span>
+                        <span class="text-pink-700 font-medium">{% trans "الإجراء القانوني المحتمل" %}:</span>
                         <span class="font-bold text-pink-900">{{ notice.get_potential_legal_action_display }}</span>
                     </div>
                 </div>
@@ -141,51 +141,51 @@
                 
                 <div class="space-y-4 mb-8">
                     <div class="flex justify-between items-center py-3 px-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <span class="text-blue-700 font-medium">تاريخ الإرسال:</span>
+                        <span class="text-blue-700 font-medium">{% trans "تاريخ الإرسال" %}:</span>
                         <span class="font-bold text-blue-900">
                             {% if notice.sent_date %}
                                 {{ notice.sent_date|date:"d/m/Y H:i" }}
                             {% else %}
-                                <span class="text-gray-500">لم يتم الإرسال بعد</span>
+                                <span class="text-gray-500">{% trans "لم يتم الإرسال بعد" %}</span>
                             {% endif %}
                         </span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                        <span class="text-yellow-700 font-medium">تاريخ الاستلام:</span>
+                        <span class="text-yellow-700 font-medium">{% trans "تاريخ الاستلام" %}:</span>
                         <span class="font-bold text-yellow-900">
                             {% if notice.acknowledged_date %}
                                 {{ notice.acknowledged_date|date:"d/m/Y H:i" }}
                             {% else %}
-                                <span class="text-gray-500">لم يتم الاستلام بعد</span>
+                                <span class="text-gray-500">{% trans "لم يتم الاستلام بعد" %}</span>
                             {% endif %}
                         </span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg border border-green-200">
-                        <span class="text-green-700 font-medium">تاريخ الحل:</span>
+                        <span class="text-green-700 font-medium">{% trans "تاريخ الحل" %}:</span>
                         <span class="font-bold text-green-900">
                             {% if notice.resolved_date %}
                                 {{ notice.resolved_date|date:"d/m/Y H:i" }}
                             {% else %}
-                                <span class="text-gray-500">لم يتم الحل بعد</span>
+                                <span class="text-gray-500">{% trans "لم يتم الحل بعد" %}</span>
                             {% endif %}
                         </span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-purple-50 rounded-lg border border-purple-200">
-                        <span class="text-purple-700 font-medium">طريقة التسليم:</span>
-                        <span class="font-bold text-purple-900">{{ notice.delivery_method|default:"غير محدد" }}</span>
+                        <span class="text-purple-700 font-medium">{% trans "طريقة التسليم" %}:</span>
+                        <span class="font-bold text-purple-900">{{ notice.delivery_method|default:"{% trans 'غير محدد' %}" }}</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <span class="text-indigo-700 font-medium">توقيع المستلم:</span>
-                        <span class="font-bold text-indigo-900">{{ notice.recipient_signature|default:"غير متوفر" }}</span>
+                        <span class="text-indigo-700 font-medium">{% trans "توقيع المستلم" %}:</span>
+                        <span class="font-bold text-indigo-900">{{ notice.recipient_signature|default:"{% trans 'غير متوفر' %}" }}</span>
                     </div>
                     
                     <div class="flex justify-between items-center py-3 px-4 bg-red-50 rounded-lg border border-red-200">
-                        <span class="text-red-700 font-medium">أيام التأخير:</span>
-                        <span class="font-bold text-red-900 text-lg">{{ days_since_due }} يوم منذ تاريخ الاستحقاق</span>
+                        <span class="text-red-700 font-medium">{% trans "أيام التأخير" %}:</span>
+                        <span class="font-bold text-red-900 text-lg">{{ days_since_due }} {% trans "يوم منذ تاريخ الاستحقاق" %}</span>
                     </div>
                 </div>
 
@@ -195,12 +195,12 @@
                         <svg class="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
-                        🔄 تحديث الحالة
+                        🔄 {% trans "تحديث الحالة" %}
                     </h4>
                     <form method="post" action="{% url 'notice_update_status' notice.pk %}" class="space-y-4">
                         {% csrf_token %}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">الحالة الجديدة:</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{% trans "الحالة الجديدة" %}:</label>
                             <select name="status" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
                                 {% for value, label in notice.NOTICE_STATUS_CHOICES %}
                                     <option value="{{ value }}" {% if notice.status == value %}selected{% endif %}>
@@ -210,14 +210,14 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">ملاحظات إضافية:</label>
-                            <textarea name="notes" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" rows="3" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{% trans "ملاحظات إضافية" %}:</label>
+                            <textarea name="notes" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" rows="3" placeholder="{% trans 'ملاحظات إضافية (اختياري)' %}"></textarea>
                         </div>
                         <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 inline-flex items-center justify-center">
                             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
                             </svg>
-                            💾 تحديث الحالة
+                            💾 {% trans "تحديث الحالة" %}
                         </button>
                     </form>
                 </div>
@@ -240,11 +240,11 @@
                 <table class="w-full">
                     <thead>
                         <tr class="bg-gradient-to-r from-yellow-100 to-orange-100">
-                            <th class="text-right py-4 px-4 font-bold text-gray-700">تاريخ الدفع</th>
-                            <th class="text-right py-4 px-4 font-bold text-gray-700">المبلغ</th>
-                            <th class="text-right py-4 px-4 font-bold text-gray-700">طريقة الدفع</th>
-                            <th class="text-right py-4 px-4 font-bold text-gray-700">رقم الشيك</th>
-                            <th class="text-right py-4 px-4 font-bold text-gray-700">حالة الشيك</th>
+                            <th class="text-right py-4 px-4 font-bold text-gray-700">{% trans "تاريخ الدفع" %}</th>
+                            <th class="text-right py-4 px-4 font-bold text-gray-700">{% trans "المبلغ" %}</th>
+                            <th class="text-right py-4 px-4 font-bold text-gray-700">{% trans "طريقة الدفع" %}</th>
+                            <th class="text-right py-4 px-4 font-bold text-gray-700">{% trans "رقم الشيك" %}</th>
+                            <th class="text-right py-4 px-4 font-bold text-gray-700">{% trans "حالة الشيك" %}</th>
                         </tr>
                     </thead>
                     <tbody>
