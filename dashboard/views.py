@@ -2131,36 +2131,48 @@ def _get_preview_notices():
     import datetime
     
     today = timezone.now().date()
-    one_month_ago = today - relativedelta(months=1)
     
     preview_notices = []
     active_leases = Lease.objects.filter(status='active')
     
-    for lease in active_leases[:10]:  # معاينة أول 10 عقود فقط
+    for lease in active_leases[:20]:  # معاينة أول 20 عقد
         try:
             payment_summary = lease.get_payment_summary()
+            overdue_months = []
             
             for month_data in payment_summary:
-                if month_data['balance'] > 0:
-                    due_date = datetime.date(month_data['year'], month_data['month'], 1)
+                # فحص الدفعات المتأخرة لأكثر من شهر
+                if (month_data['status'] == 'overdue' and
+                    month_data['balance'] > 0 and
+                    month_data['days_overdue'] >= 30):
                     
-                    if due_date <= one_month_ago:
-                        # فحص عدم وجود إنذار سابق
-                        existing_notice = PaymentOverdueNotice.objects.filter(
-                            lease=lease,
-                            overdue_month=month_data['month'],
-                            overdue_year=month_data['year']
-                        ).exists()
-                        
-                        if not existing_notice:
-                            preview_notices.append({
-                                'lease': lease,
-                                'month': month_data['month'],
-                                'year': month_data['year'],
-                                'amount': month_data['balance'],
-                                'due_date': due_date,
-                            })
-        except Exception:
+                    # فحص عدم وجود إنذار سابق لنفس الشهر والسنة
+                    existing_detail = PaymentOverdueDetail.objects.filter(
+                        notice__lease=lease,
+                        overdue_month=month_data['month'],
+                        overdue_year=month_data['year']
+                    ).exists()
+                    
+                    if not existing_detail:
+                        overdue_months.append({
+                            'month': month_data['month'],
+                            'year': month_data['year'],
+                            'amount': month_data['balance'],
+                            'due_date': month_data['due_date'],
+                            'days_overdue': month_data['days_overdue']
+                        })
+            
+            if overdue_months:
+                total_amount = sum(month['amount'] for month in overdue_months)
+                preview_notices.append({
+                    'lease': lease,
+                    'overdue_months': overdue_months,
+                    'total_amount': total_amount,
+                    'months_count': len(overdue_months)
+                })
+                
+        except Exception as e:
+            print(f"Error in preview for lease {lease.contract_number}: {e}")
             continue
     
     return preview_notices

@@ -44,68 +44,70 @@ class Command(BaseCommand):
 
         for lease in active_leases:
             try:
-                # الحصول على ملخص الدفعات للعقد
-                payment_summary = lease.get_payment_summary()
-                
-                for month_data in payment_summary:
-                    # فحص الدفعات المتأخرة
-                    if month_data['balance'] > 0:
-                        # حساب تاريخ الاستحقاق للشهر
-                        due_date = datetime.date(month_data['year'], month_data['month'], 1)
+                if not dry_run:
+                    # استخدام المنطق الجديد لإنشاء الإنذارات
+                    notice = PaymentOverdueNotice.generate_automatic_notice(lease)
+                    if notice:
+                        notices_created += 1
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'تم إنشاء إنذار: {lease.contract_number} - '
+                                f'المستأجر: {lease.tenant.name} - '
+                                f'الوحدة: {lease.unit.unit_number} - '
+                                f'عدد الشهور المتأخرة: {notice.overdue_months_count} - '
+                                f'إجمالي المبلغ: {notice.total_overdue_amount} ر.ع'
+                            )
+                        )
+                    else:
+                        # فحص إذا كان هناك دفعات متأخرة ولكن لديها إنذارات موجودة
+                        payment_summary = lease.get_payment_summary()
+                        has_overdue = any(
+                            month_data['status'] == 'overdue' and 
+                            month_data['balance'] > 0 and 
+                            month_data['days_overdue'] >= 30
+                            for month_data in payment_summary
+                        )
                         
-                        # فحص إذا كان متأخر لأكثر من شهر
-                        if due_date <= one_month_ago:
-                            # فحص وجود إنذار سابق
-                            existing_notice = PaymentOverdueNotice.objects.filter(
-                                lease=lease,
-                                overdue_month=month_data['month'],
-                                overdue_year=month_data['year']
-                            ).first()
-                            
-                            if existing_notice and not force:
-                                self.stdout.write(
-                                    self.style.WARNING(
-                                        f'تم تخطي إنذار موجود: {lease.contract_number} - '
-                                        f'{month_data["month"]}/{month_data["year"]}'
-                                    )
-                                )
-                                notices_skipped += 1
-                                continue
-                            
-                            if not dry_run:
-                                if existing_notice and force:
-                                    # تحديث الإنذار الموجود
-                                    existing_notice.overdue_amount = month_data['balance']
-                                    existing_notice.notice_date = today
-                                    existing_notice.status = 'draft'
-                                    existing_notice.save()
-                                    action = 'تم تحديث'
-                                else:
-                                    # إنشاء إنذار جديد
-                                    PaymentOverdueNotice.objects.create(
-                                        lease=lease,
-                                        overdue_month=month_data['month'],
-                                        overdue_year=month_data['year'],
-                                        overdue_amount=month_data['balance'],
-                                        due_date=due_date,
-                                        status='draft'
-                                    )
-                                    action = 'تم إنشاء'
-                                
-                                notices_created += 1
-                            else:
-                                action = 'سيتم إنشاء'
-                                notices_created += 1
-                            
+                        if has_overdue:
+                            notices_skipped += 1
                             self.stdout.write(
-                                self.style.SUCCESS(
-                                    f'{action} إنذار: {lease.contract_number} - '
-                                    f'المستأجر: {lease.tenant.name} - '
-                                    f'الوحدة: {lease.unit.unit_number} - '
-                                    f'الشهر: {month_data["month"]}/{month_data["year"]} - '
-                                    f'المبلغ: {month_data["balance"]} ر.ع'
+                                self.style.WARNING(
+                                    f'تم تخطي العقد (إنذارات موجودة): {lease.contract_number} - {lease.tenant.name}'
                                 )
                             )
+                else:
+                    # في حالة التشغيل التجريبي
+                    payment_summary = lease.get_payment_summary()
+                    overdue_months = []
+                    
+                    for month_data in payment_summary:
+                        if (month_data['status'] == 'overdue' and
+                            month_data['balance'] > 0 and
+                            month_data['days_overdue'] >= 30):
+                            
+                            # فحص عدم وجود إنذار سابق
+                            from dashboard.models import PaymentOverdueDetail
+                            existing_detail = PaymentOverdueDetail.objects.filter(
+                                notice__lease=lease,
+                                overdue_month=month_data['month'],
+                                overdue_year=month_data['year']
+                            ).exists()
+                            
+                            if not existing_detail:
+                                overdue_months.append(month_data)
+                    
+                    if overdue_months:
+                        notices_created += 1
+                        total_amount = sum(month['balance'] for month in overdue_months)
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'سيتم إنشاء إنذار: {lease.contract_number} - '
+                                f'المستأجر: {lease.tenant.name} - '
+                                f'الوحدة: {lease.unit.unit_number} - '
+                                f'عدد الشهور المتأخرة: {len(overdue_months)} - '
+                                f'إجمالي المبلغ: {total_amount} ر.ع'
+                            )
+                        )
                             
             except Exception as e:
                 self.stdout.write(

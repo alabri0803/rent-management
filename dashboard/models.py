@@ -282,32 +282,43 @@ class Lease(models.Model):
         return reverse('lease_detail', kwargs={'pk': self.pk})
 
     def get_payment_summary(self):
+        """الحصول على ملخص الدفعات مع حالات صحيحة للتأخير"""
         summary = []
         payments = self.payments.all().order_by('payment_for_year', 'payment_for_month')
         current_date = self.start_date
+        today = timezone.now().date()
+        
         while current_date <= self.end_date:
             year, month = current_date.year, current_date.month
             month_payments = payments.filter(payment_for_year=year, payment_for_month=month)
             paid_for_month = month_payments.aggregate(total=Sum('amount'))['total'] or 0
             balance = self.monthly_rent - paid_for_month
-            status = 'due'
             payment_method = None
             payment_date = None
             
+            # الحصول على معلومات الدفعة
             if month_payments.exists():
                 latest_payment = month_payments.first()
                 payment_method = latest_payment.get_payment_method_display()
                 payment_date = latest_payment.payment_date
             
+            # حساب تاريخ الاستحقاق (أول يوم من الشهر)
+            due_date = datetime.date(year, month, 1)
+            
+            # تحديد حالة الدفعة
             if paid_for_month >= self.monthly_rent:
                 status = 'paid'
             elif paid_for_month > 0:
                 status = 'partial'
-                
-            today = timezone.now().date()
-            due_date = datetime.date(year, month, 1)
-            if due_date < today and status != 'due':
-                status = 'upcoming'
+            elif due_date > today:
+                status = 'upcoming'  # لم يحن موعدها بعد
+            elif due_date <= today:
+                if balance > 0:
+                    status = 'overdue'  # متأخرة
+                else:
+                    status = 'due'  # مستحقة
+            else:
+                status = 'due'
             
             next_payment_date = datetime.date(year, month, 1) + relativedelta(months=1)
 
@@ -321,55 +332,9 @@ class Lease(models.Model):
                 'status': status,
                 'payment_method': payment_method,
                 'payment_date': payment_date,
-                'next_payment_date': next_payment_date
-            })
-            current_date += relativedelta(months=1)
-        return summary
-
-    def get_absolute_url(self):
-        return reverse('lease_detail', kwargs={'pk': self.pk})
-
-    def get_payment_summary(self):
-        summary = []
-        payments = self.payments.all().order_by('payment_for_year', 'payment_for_month')
-        current_date = self.start_date
-        while current_date <= self.end_date:
-            year, month = current_date.year, current_date.month
-            month_payments = payments.filter(payment_for_year=year, payment_for_month=month)
-            paid_for_month = month_payments.aggregate(total=Sum('amount'))['total'] or 0
-            balance = self.monthly_rent - paid_for_month
-            status = 'due'
-            payment_method = None
-            payment_date = None
-            
-            if month_payments.exists():
-                latest_payment = month_payments.first()
-                payment_method = latest_payment.get_payment_method_display()
-                payment_date = latest_payment.payment_date
-            
-            if paid_for_month >= self.monthly_rent:
-                status = 'paid'
-            elif paid_for_month > 0:
-                status = 'partial'
-                
-            today = timezone.now().date()
-            due_date = datetime.date(year, month, 1)
-            if due_date < today and status != 'due':
-                status = 'upcoming'
-            
-            next_payment_date = datetime.date(year, month, 1) + relativedelta(months=1)
-
-            summary.append({
-                'month': month,
-                'year': year,
-                'month_name': _(current_date.strftime('%B')),
-                'rent_due': self.monthly_rent,
-                'amount_paid': paid_for_month,
-                'balance': balance,
-                'status': status,
-                'payment_method': payment_method,
-                'payment_date': payment_date,
-                'next_payment_date': next_payment_date
+                'due_date': due_date,
+                'next_payment_date': next_payment_date,
+                'days_overdue': (today - due_date).days if due_date <= today and balance > 0 else 0
             })
             current_date += relativedelta(months=1)
         return summary
@@ -1105,14 +1070,19 @@ class PaymentOverdueNotice(models.Model):
         if not self.legal_deadline:
             self.legal_deadline = self.notice_date + relativedelta(days=30)
 
-        # حساب due_date من أقدم تاريخ استحقاق في التفاصيل
-        if self.details.exists():
+        # حفظ الكائن أولاً
+        super().save(*args, **kwargs)
+
+        # حساب due_date من أقدم تاريخ استحقاق في التفاصيل (بعد الحفظ)
+        if self.pk and self.details.exists():
             try:
-                self.due_date = self.details.order_by('due_date').first().due_date
+                earliest_due_date = self.details.order_by('due_date').first().due_date
+                if self.due_date != earliest_due_date:
+                    self.due_date = earliest_due_date
+                    # حفظ مرة أخرى فقط إذا تغير التاريخ
+                    super().save(update_fields=['due_date'])
             except:
                 pass
-
-        super().save(*args, **kwargs)
 
     @property
     def overdue_month(self):
@@ -1168,15 +1138,7 @@ class PaymentOverdueNotice(models.Model):
         from django.db.models import Q
 
         today = timezone.now().date()
-
-        # فحص عدم وجود إنذار سابق لنفس العقد في نفس اليوم
-        existing_notice = cls.objects.filter(
-            lease=lease,
-            notice_date=today
-        ).first()
-
-        if existing_notice:
-            return existing_notice
+        one_month_ago = today - relativedelta(months=1)
 
         # البحث عن شهور التأخير للعقد
         payment_summary = lease.get_payment_summary()
@@ -1185,18 +1147,23 @@ class PaymentOverdueNotice(models.Model):
         for month_data in payment_summary:
             # فحص الدفعات المتأخرة لأكثر من شهر
             if (month_data['status'] == 'overdue' and
-                month_data['balance'] > 0):
+                month_data['balance'] > 0 and
+                month_data['days_overdue'] >= 30):  # متأخرة لأكثر من شهر
 
-                # حساب تاريخ الاستحقاق للشهر
-                due_date = datetime.date(month_data['year'], month_data['month'], 1)
+                # فحص عدم وجود إنذار سابق لنفس الشهر والسنة
+                existing_detail = PaymentOverdueDetail.objects.filter(
+                    notice__lease=lease,
+                    overdue_month=month_data['month'],
+                    overdue_year=month_data['year']
+                ).exists()
 
-                # فحص إذا كان متأخر لأكثر من شهر
-                if due_date <= today - relativedelta(months=1):
+                if not existing_detail:
                     overdue_months.append({
                         'month': month_data['month'],
                         'year': month_data['year'],
                         'amount': month_data['balance'],
-                        'due_date': due_date
+                        'due_date': month_data['due_date'],
+                        'days_overdue': month_data['days_overdue']
                     })
 
         if overdue_months:
@@ -1210,7 +1177,7 @@ class PaymentOverdueNotice(models.Model):
             # إضافة تفاصيل كل شهر تأخير
             for overdue_month in overdue_months:
                 try:
-                    detail = PaymentOverdueDetail.objects.create(
+                    PaymentOverdueDetail.objects.create(
                         notice=notice,
                         overdue_month=overdue_month['month'],
                         overdue_year=overdue_month['year'],
@@ -1218,15 +1185,11 @@ class PaymentOverdueNotice(models.Model):
                         due_date=overdue_month['due_date']
                     )
                 except Exception as e:
-                    print(f"Error creating detail for {overdue_month}: {e}")
+                    print(f"خطأ في إنشاء تفاصيل الإنذار للشهر {overdue_month}: {e}")
                     continue
 
             # حفظ الإنذار مرة أخرى لحساب due_date من التفاصيل
-            try:
-                notice.save()
-            except:
-                pass
-
+            notice.save()
             return notice
 
         return None

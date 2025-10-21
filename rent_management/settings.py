@@ -1,14 +1,14 @@
 """
 Django settings for rent_management project.
-Optimized for Render deployment
 """
 
 import os
 from django.utils.translation import gettext_lazy as _
 from pathlib import Path
-import dj_database_url
 from dotenv import load_dotenv
 import pymysql
+
+# تثبيت PyMySQL كبديل لـ MySQLdb
 pymysql.install_as_MySQLdb()
 load_dotenv()
 
@@ -90,32 +90,19 @@ TEMPLATES = [
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Use environment variable for DATABASE_URL if available, otherwise use SQLite for development
-database_url = os.environ.get('DATABASE_URL')
-
-if database_url:
-    # Parse DATABASE_URL - respect SSL mode from URL
-    # If sslmode=disable is in URL, don't force SSL
-    ssl_required = 'sslmode=disable' not in database_url.lower()
-    DATABASES = {
-        'default': dj_database_url.parse(database_url, conn_max_age=600, ssl_require=ssl_required)
-    }
-else:
-    # SQLite for local development
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+# إعدادات قاعدة بيانات MySQL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rent-management',
-        'USER': 'root',
-        'PASSWORD': '',  # كلمة المرور فارغة في XAMPP افتراضياً
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'rent-management'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),  # كلمة المرور فارغة في XAMPP افتراضياً
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
@@ -236,30 +223,17 @@ SMS_PROVIDER = 'console'  # Options: 'console', 'twilio', 'aws_sns'
 # AWS_SECRET_ACCESS_KEY = 'your_aws_secret_access_key'
 # AWS_SNS_REGION = 'us-east-1'
 
-# ✅ إعدادات الأمان للإنتاج
-# Only enable SSL redirect in production environments, not in Replit development
-if not DEBUG and os.environ.get('REPLIT_DEPLOYMENT') == '1':
-    # HTTPS settings
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+# ✅ إعدادات الأمان
+if not DEBUG:
+    # إعدادات HTTPS للإنتاج
+    SECURE_SSL_REDIRECT = False  # تعيين True عند استخدام HTTPS
+    SESSION_COOKIE_SECURE = False  # تعيين True عند استخدام HTTPS
+    CSRF_COOKIE_SECURE = False  # تعيين True عند استخدام HTTPS
     
-    # HSTS settings
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    
-    # Other security settings
+    # إعدادات أمان أخرى
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    
-    # Referrer policy
-    SECURE_REFERRER_POLICY = 'same-origin'
-elif not DEBUG:
-    # For Replit development with DEBUG=False
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_REFERRER_POLICY = 'same-origin'
 
 # ✅ إعدادات البريد الإلكتروني (للتطوير)
