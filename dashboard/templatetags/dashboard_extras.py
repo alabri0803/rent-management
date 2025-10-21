@@ -27,7 +27,8 @@ def leaselist_tenants_count(units):
     return Lease.objects.filter(unit__in=units, status='active').values('tenant').distinct().count()
 
 @register.filter
-def leaselist_maintenance_count(units):
-    """Return number of maintenance requests for all units."""
-    from dashboard.models import MaintenanceRequest
-    return MaintenanceRequest.objects.filter(lease__unit__in=units).count()
+def split(value, separator):
+    """Split a string by separator and return a list."""
+    if not value:
+        return []
+    return str(value).split(separator)

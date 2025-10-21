@@ -200,6 +200,20 @@ class Lease(models.Model):
         delta = self.end_date - today
         return delta.days
     
+    @property
+    def is_renewed(self):
+        """معرفة ما إذا كان العقد تم تجديده أم لا"""
+        return self.status == 'renewed'
+    
+    @property
+    def has_overdue_payments(self):
+        """التحقق من وجود دفعات متأخرة لمدة 30 يوماً أو أكثر"""
+        today = timezone.now().date()
+        overdue_payments = self.payments.filter(
+            payment_date__lt=today - relativedelta(days=30)
+        )
+        return overdue_payments.exists()
+    
     def duration_display(self):
         """مدة العقد بصيغة (سنة، شهر، يوم) باستخدام start_date و end_date (حساب شامل ليوم الانتهاء)"""
         # اجعل الحساب شامل ليوم الانتهاء لتفادي نتائج مثل 11 شهر و 30 يوم لعقد سنة كاملة
@@ -1044,7 +1058,7 @@ class CommissionDistribution(models.Model):
 
 class PaymentOverdueNotice(models.Model):
     """نموذج إنذار عدم سداد الإيجار - متوافق مع القوانين العمانية"""
-    
+
     NOTICE_STATUS_CHOICES = [
         ('draft', _('مسودة')),
         ('sent', _('تم الإرسال')),
@@ -1052,175 +1066,221 @@ class PaymentOverdueNotice(models.Model):
         ('resolved', _('تم الحل')),
         ('escalated', _('تم التصعيد')),
     ]
-    
+
     LEGAL_ACTION_CHOICES = [
         ('none', _('لا يوجد')),
         ('contract_termination', _('فسخ العقد')),
         ('eviction', _('الإخلاء')),
         ('legal_proceedings', _('إجراءات قانونية')),
     ]
-    
+
     lease = models.ForeignKey(Lease, on_delete=models.CASCADE, related_name='overdue_notices', verbose_name=_("العقد"))
     notice_date = models.DateField(_("تاريخ الإنذار"), default=timezone.now)
-    overdue_month = models.IntegerField(_("الشهر المتأخر"), choices=[(i, _(str(i))) for i in range(1, 13)])
-    overdue_year = models.IntegerField(_("السنة المتأخرة"), default=timezone.now().year)
-    overdue_amount = models.DecimalField(_("المبلغ المتأخر"), max_digits=10, decimal_places=2)
-    due_date = models.DateField(_("تاريخ الاستحقاق الأصلي"))
+    due_date = models.DateField(_("تاريخ الاستحقاق الأصلي"), blank=True, null=True, help_text=_("أقدم تاريخ استحقاق من التفاصيل"))
     legal_deadline = models.DateField(_("الموعد النهائي القانوني"))
     status = models.CharField(_("حالة الإنذار"), max_length=20, choices=NOTICE_STATUS_CHOICES, default='draft')
     potential_legal_action = models.CharField(_("الإجراء القانوني المحتمل"), max_length=30, choices=LEGAL_ACTION_CHOICES, default='contract_termination')
-    
+
     # حقول إضافية للمتابعة
     sent_date = models.DateTimeField(_("تاريخ الإرسال"), blank=True, null=True)
     acknowledged_date = models.DateTimeField(_("تاريخ الاستلام"), blank=True, null=True)
     resolved_date = models.DateTimeField(_("تاريخ الحل"), blank=True, null=True)
     notes = models.TextField(_("ملاحظات"), blank=True, null=True)
-    
+
     # معلومات الإرسال
     delivery_method = models.CharField(_("طريقة التسليم"), max_length=50, blank=True, null=True)
     recipient_signature = models.CharField(_("توقيع المستلم"), max_length=100, blank=True, null=True)
-    
+
     class Meta:
         verbose_name = _("إنذار عدم سداد")
         verbose_name_plural = _("إنذارات عدم السداد")
         ordering = ['-notice_date']
-        unique_together = ['lease', 'overdue_month', 'overdue_year']
-    
+        unique_together = ['lease', 'notice_date']
+
     def __str__(self):
-        return f"إنذار {self.lease.contract_number} - {self.overdue_month}/{self.overdue_year}"
-    
+        return f"إنذار {self.lease.contract_number} - {self.notice_date.strftime('%d/%m/%Y')}"
+
     def save(self, *args, **kwargs):
         # حساب الموعد النهائي القانوني (30 يوم من تاريخ الإنذار حسب القانون العماني)
         if not self.legal_deadline:
             self.legal_deadline = self.notice_date + relativedelta(days=30)
+
+        # حساب due_date من أقدم تاريخ استحقاق في التفاصيل
+        if self.details.exists():
+            try:
+                self.due_date = self.details.order_by('due_date').first().due_date
+            except:
+                pass
+
         super().save(*args, **kwargs)
-    
-    def get_notice_content(self):
-        """إنشاء محتوى الإنذار باللغة العربية متوافق مع القوانين العمانية"""
-        
+
+    @property
+    def overdue_month(self):
+        """الحصول على الشهر الأول من التأخير (للتوافق مع Django Admin)"""
+        try:
+            first_detail = self.details.first()
+            return first_detail.overdue_month if first_detail else None
+        except:
+            return None
+
+    @property
+    def overdue_year(self):
+        """الحصول على السنة الأولى من التأخير (للتوافق مع Django Admin)"""
+        try:
+            first_detail = self.details.first()
+            return first_detail.overdue_year if first_detail else None
+        except:
+            return None
+
+    @property
+    def overdue_amount(self):
+        """الحصول على إجمالي مبلغ التأخير (للتوافق مع Django Admin)"""
+        return self.total_overdue_amount
+
+    @property
+    def due_date(self):
+        """الحصول على أقدم تاريخ استحقاق (للتوافق مع Django Admin)"""
+        try:
+            first_detail = self.details.order_by('due_date').first()
+            return first_detail.due_date if first_detail else None
+        except:
+            return None
+
+    @property
+    def total_overdue_amount(self):
+        """حساب المجموع الكلي للتأخير"""
+        try:
+            return self.details.aggregate(total=Sum('overdue_amount'))['total'] or Decimal('0.00')
+        except:
+            return Decimal('0.00')
+
+    @property
+    def overdue_months_count(self):
+        """عدد شهور التأخير"""
+        try:
+            return self.details.count()
+        except:
+            return 0
+
+    @classmethod
+    def generate_automatic_notice(cls, lease):
+        """إنشاء إنذار تلقائي لعقد متأخر في السداد"""
+        from django.db.models import Q
+
+        today = timezone.now().date()
+
+        # فحص عدم وجود إنذار سابق لنفس العقد في نفس اليوم
+        existing_notice = cls.objects.filter(
+            lease=lease,
+            notice_date=today
+        ).first()
+
+        if existing_notice:
+            return existing_notice
+
+        # البحث عن شهور التأخير للعقد
+        payment_summary = lease.get_payment_summary()
+        overdue_months = []
+
+        for month_data in payment_summary:
+            # فحص الدفعات المتأخرة لأكثر من شهر
+            if (month_data['status'] == 'overdue' and
+                month_data['balance'] > 0):
+
+                # حساب تاريخ الاستحقاق للشهر
+                due_date = datetime.date(month_data['year'], month_data['month'], 1)
+
+                # فحص إذا كان متأخر لأكثر من شهر
+                if due_date <= today - relativedelta(months=1):
+                    overdue_months.append({
+                        'month': month_data['month'],
+                        'year': month_data['year'],
+                        'amount': month_data['balance'],
+                        'due_date': due_date
+                    })
+
+        if overdue_months:
+            # إنشاء إنذار جديد
+            notice = cls.objects.create(
+                lease=lease,
+                notice_date=today,
+                status='draft'
+            )
+
+            # إضافة تفاصيل كل شهر تأخير
+            for overdue_month in overdue_months:
+                try:
+                    detail = PaymentOverdueDetail.objects.create(
+                        notice=notice,
+                        overdue_month=overdue_month['month'],
+                        overdue_year=overdue_month['year'],
+                        overdue_amount=overdue_month['amount'],
+                        due_date=overdue_month['due_date']
+                    )
+                except Exception as e:
+                    print(f"Error creating detail for {overdue_month}: {e}")
+                    continue
+
+            # حفظ الإنذار مرة أخرى لحساب due_date من التفاصيل
+            try:
+                notice.save()
+            except:
+                pass
+
+            return notice
+
+        return None
+
+    @classmethod
+    def generate_automatic_notices(cls):
+        """إنشاء إنذارات تلقائية للعقود المتأخرة"""
+        active_leases = Lease.objects.filter(status='active')
+        notices_created = []
+
+        for lease in active_leases:
+            notice = cls.generate_automatic_notice(lease)
+            if notice:
+                notices_created.append(notice)
+
+        return notices_created
+
+
+class PaymentOverdueDetail(models.Model):
+    """تفاصيل شهر تأخير محدد في الإنذار"""
+
+    notice = models.ForeignKey(PaymentOverdueNotice, on_delete=models.CASCADE, related_name='details', verbose_name=_("الإنذار"))
+    overdue_month = models.IntegerField(_("الشهر المتأخر"), choices=[(i, _(str(i))) for i in range(1, 13)])
+    overdue_year = models.IntegerField(_("السنة المتأخرة"), default=timezone.now().year)
+    overdue_amount = models.DecimalField(_("المبلغ المتأخر"), max_digits=10, decimal_places=2)
+    due_date = models.DateField(_("تاريخ الاستحقاق الأصلي"))
+
+    class Meta:
+        verbose_name = _("تفصيل تأخير دفعة")
+        verbose_name_plural = _("تفاصيل تأخير الدفعات")
+        ordering = ['overdue_year', 'overdue_month']
+        unique_together = ['notice', 'overdue_month', 'overdue_year']
+
+    def __str__(self):
+        return f"تأخير {self.overdue_month}/{self.overdue_year} - {self.overdue_amount}"
+
+    def get_days_since_due(self):
+        """حساب عدد الأيام منذ تاريخ الاستحقاق"""
+        today = timezone.now().date()
+        return (today - self.due_date).days
+
+    def get_days_until_legal_deadline(self):
+        """حساب عدد الأيام المتبقية حتى الموعد النهائي القانوني"""
+        today = timezone.now().date()
+        return (self.legal_deadline - today).days
+
+    def get_month_name(self):
+        """الحصول على اسم الشهر باللغة العربية"""
         month_names = {
             1: 'يناير', 2: 'فبراير', 3: 'مارس', 4: 'أبريل',
             5: 'مايو', 6: 'يونيو', 7: 'يوليو', 8: 'أغسطس',
             9: 'سبتمبر', 10: 'أكتوبر', 11: 'نوفمبر', 12: 'ديسمبر'
         }
-        
-        content = f"""
-        <div style="text-align: right; font-family: 'Traditional Arabic', Arial, sans-serif; direction: rtl;">
-            <h2 style="text-align: center; color: #d32f2f; font-weight: bold;">
-                إنذار رسمي بطلب السداد
-            </h2>
-            
-            <div style="margin: 20px 0; padding: 15px; border: 2px solid #d32f2f; background-color: #ffebee;">
-                <h3 style="color: #d32f2f; margin-bottom: 10px;">الموضوع: إنذار رسمي لعدم سداد إيجار الوحدة رقم {self.lease.unit.unit_number}</h3>
-            </div>
-            
-            <div style="margin: 20px 0; line-height: 1.8;">
-                <p><strong>إلى السيد/السيدة:</strong> {self.lease.tenant.name}</p>
-                <p><strong>رقم العقد:</strong> {self.lease.contract_number}</p>
-                <p><strong>الوحدة:</strong> {self.lease.unit.unit_number} - {self.lease.unit.building.name}</p>
-                <p><strong>تاريخ الإنذار:</strong> {self.notice_date.strftime('%d/%m/%Y')}</p>
-            </div>
-            
-            <div style="margin: 20px 0; padding: 15px; background-color: #fff3e0; border-right: 4px solid #ff9800;">
-                <h4 style="color: #e65100; margin-bottom: 10px;">المحتوى:</h4>
-                <p>تنبيه رسمي بالتأخر عن سداد إيجار شهر <strong>{month_names[self.overdue_month]} {self.overdue_year}</strong> 
-                بقيمة <strong>{self.overdue_amount} ريال عماني</strong></p>
-                <p><strong>التاريخ المستحق:</strong> {self.due_date.strftime('%d/%m/%Y')}</p>
-            </div>
-            
-            <div style="margin: 20px 0; padding: 15px; background-color: #e8f5e8; border-right: 4px solid #4caf50;">
-                <h4 style="color: #2e7d32; margin-bottom: 10px;">الإجراء المطلوب:</h4>
-                <p>يجب سداد المبلغ كاملاً خلال <strong>المدة القانونية المحددة في سلطنة عمان (30 يوماً)</strong> 
-                من تاريخ هذا الإنذار لتجنب فسخ العقد و/أو الإخلاء</p>
-                <p><strong>الموعد النهائي للسداد:</strong> {self.legal_deadline.strftime('%d/%m/%Y')}</p>
-            </div>
-            
-            <div style="margin: 20px 0; padding: 15px; background-color: #ffebee; border: 1px solid #f44336;">
-                <h4 style="color: #c62828; margin-bottom: 10px;">ملاحظات قانونية هامة:</h4>
-                <ul style="margin-right: 20px;">
-                    <li>هذا الإنذار صادر وفقاً لأحكام قانون الإيجار في سلطنة عمان</li>
-                    <li>عدم الاستجابة خلال المدة المحددة قد يؤدي إلى اتخاذ الإجراءات القانونية اللازمة</li>
-                    <li>يحق للمؤجر المطالبة بالتعويضات والأضرار الناتجة عن التأخير</li>
-                    <li>في حالة عدم السداد، سيتم اتخاذ إجراءات فسخ العقد والإخلاء وفقاً للقانون</li>
-                    <li>يمكن للمستأجر التواصل مع إدارة العقارات لمناقشة ترتيبات السداد</li>
-                </ul>
-            </div>
-            
-            <div style="margin: 30px 0; text-align: center;">
-                <p style="font-weight: bold;">إدارة العقارات</p>
-                <p>التاريخ: {timezone.now().strftime('%d/%m/%Y')}</p>
-            </div>
-            
-            <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; font-size: 12px; color: #666;">
-                <p><strong>للاستفسار:</strong> يرجى التواصل مع إدارة العقارات</p>
-                <p><strong>رقم المرجع:</strong> {self.id if self.id else 'سيتم إنشاؤه'}</p>
-            </div>
-        </div>
-        """
-        
-        return content
-    
-    def is_overdue_for_notice(self):
-        """فحص ما إذا كان الإيجار متأخر لمدة شهر كامل لإصدار الإنذار"""
-        today = timezone.now().date()
-        overdue_threshold = self.due_date + relativedelta(months=1)
-        return today >= overdue_threshold
-    
-    def get_days_since_due(self):
-        """حساب عدد الأيام منذ تاريخ الاستحقاق"""
-        today = timezone.now().date()
-        return (today - self.due_date).days
-    
-    def get_days_until_legal_deadline(self):
-        """حساب عدد الأيام المتبقية حتى الموعد النهائي القانوني"""
-        today = timezone.now().date()
-        return (self.legal_deadline - today).days
-    
-    @classmethod
-    def generate_automatic_notices(cls):
-        """إنشاء إنذارات تلقائية للإيجارات المتأخرة لمدة شهر"""
-        from django.db.models import Q
-        
-        today = timezone.now().date()
-        one_month_ago = today - relativedelta(months=1)
-        
-        # البحث عن العقود النشطة التي لديها دفعات متأخرة لأكثر من شهر
-        active_leases = Lease.objects.filter(status='active')
-        
-        notices_created = []
-        
-        for lease in active_leases:
-            payment_summary = lease.get_payment_summary()
-            
-            for month_data in payment_summary:
-                # فحص الدفعات المتأخرة لأكثر من شهر
-                if (month_data['status'] == 'overdue' and 
-                    month_data['balance'] > 0):
-                    
-                    # حساب تاريخ الاستحقاق للشهر
-                    due_date = datetime.date(month_data['year'], month_data['month'], 1)
-                    
-                    # فحص إذا كان متأخر لأكثر من شهر
-                    if due_date <= one_month_ago:
-                        # فحص عدم وجود إنذار سابق لنفس الشهر
-                        existing_notice = cls.objects.filter(
-                            lease=lease,
-                            overdue_month=month_data['month'],
-                            overdue_year=month_data['year']
-                        ).first()
-                        
-                        if not existing_notice:
-                            notice = cls.objects.create(
-                                lease=lease,
-                                overdue_month=month_data['month'],
-                                overdue_year=month_data['year'],
-                                overdue_amount=month_data['balance'],
-                                due_date=due_date,
-                                status='draft'
-                            )
-                            notices_created.append(notice)
-        
-        return notices_created
+        return month_names.get(self.overdue_month, str(self.overdue_month))
 
 
 class LeaseRenewalReminder(models.Model):

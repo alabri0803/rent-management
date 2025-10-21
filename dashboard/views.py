@@ -2056,15 +2056,34 @@ class PaymentOverdueNoticeDetailView(LoginRequiredMixin, UserPassesTestMixin, De
         notice = self.get_object()
         
         # إضافة معلومات إضافية
-        context['days_since_due'] = notice.get_days_since_due()
-        context['days_until_deadline'] = notice.get_days_until_legal_deadline()
-        context['notice_content'] = notice.get_notice_content()
+        try:
+            # حساب متوسط الأيام منذ تاريخ الاستحقاق للتفاصيل
+            if notice.details.exists():
+                total_days = sum(detail.get_days_since_due() for detail in notice.details.all())
+                avg_days_since_due = total_days // notice.details.count()
+            else:
+                avg_days_since_due = 0
+            context['days_since_due'] = avg_days_since_due
+        except:
+            context['days_since_due'] = 0
+            
+        try:
+            # حساب متوسط الأيام حتى الموعد النهائي
+            today = timezone.now().date()
+            total_days_until_deadline = sum((detail.due_date - today).days for detail in notice.details.all() if detail.due_date > today)
+            if notice.details.exists():
+                avg_days_until_deadline = total_days_until_deadline // notice.details.count()
+            else:
+                avg_days_until_deadline = (notice.legal_deadline - today).days if notice.legal_deadline > today else 0
+            context['days_until_deadline'] = avg_days_until_deadline
+        except:
+            context['days_until_deadline'] = 0
         
         # الدفعات المرتبطة بنفس الفترة
         context['related_payments'] = Payment.objects.filter(
             lease=notice.lease,
-            payment_for_month=notice.overdue_month,
-            payment_for_year=notice.overdue_year
+            payment_for_month__in=[detail.overdue_month for detail in notice.details.all()],
+            payment_for_year__in=[detail.overdue_year for detail in notice.details.all()]
         ).order_by('-payment_date')
         
         return context
@@ -2190,13 +2209,12 @@ def notice_update_status(request, pk):
 def notice_print_view(request, pk):
     """طباعة الإنذار"""
     notice = get_object_or_404(PaymentOverdueNotice, pk=pk)
-    
+
     context = {
         'notice': notice,
-        'notice_content': notice.get_notice_content(),
         'company': Company.objects.first(),
     }
-    
+
     return render(request, 'dashboard/overdue_notices/print.html', context)
 
 

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+{% load dashboard_extras %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -233,32 +234,36 @@
         <!-- موضوع الإنذار -->
         <div class="warning-box">
             <h4>الموضوع: إنذار رسمي لعدم سداد إيجار الوحدة رقم {{ notice.lease.unit.unit_number }}</h4>
-            
+
             <p><strong>المحتوى:</strong></p>
             <p>
-                نتشرف بإحاطتكم علماً بأنه قد تأخر سداد إيجار شهر 
-                <strong>
-                    {% with month_names="يناير,فبراير,مارس,أبريل,مايو,يونيو,يوليو,أغسطس,سبتمبر,أكتوبر,نوفمبر,ديسمبر"|split:"," %}
-                        {{ month_names|slice:notice.overdue_month|slice:"-1"|first }}
-                    {% endwith %}
-                    {{ notice.overdue_year }}
-                </strong>
-                بقيمة <span class="amount-highlight">{{ notice.overdue_amount }} ريال عماني</span>
+                نتشرف بإحاطتكم علماً بأنه قد تأخر سداد إيجار الوحدة المؤجرة لكم لعدة شهور كما هو موضح في الجدول أدناه.
             </p>
-            
+
+            <!-- جدول شهور التأخير -->
             <table class="info-table">
-                <tr>
-                    <th>تاريخ الاستحقاق الأصلي:</th>
-                    <td>{{ notice.due_date|date:"d/m/Y" }}</td>
-                </tr>
-                <tr>
-                    <th>المبلغ المستحق:</th>
-                    <td class="amount-highlight">{{ notice.overdue_amount }} ريال عماني</td>
-                </tr>
-                <tr>
-                    <th>عدد أيام التأخير:</th>
-                    <td>{{ notice.get_days_since_due }} يوم</td>
-                </tr>
+                <thead>
+                    <tr>
+                        <th>الشهر والسنة</th>
+                        <th>المبلغ المستحق (ر.ع)</th>
+                        <th>تاريخ الاستحقاق</th>
+                        <th>عدد أيام التأخير</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in notice.details.all %}
+                    <tr>
+                        <td>{{ detail.get_month_name }} {{ detail.overdue_year }}</td>
+                        <td class="amount-highlight">{{ detail.overdue_amount|floatformat:2 }}</td>
+                        <td>{{ detail.due_date|date:"d/m/Y" }}</td>
+                        <td>{{ detail.get_days_since_due }} يوم</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="background-color: #ffebee; font-weight: bold;">
+                        <td colspan="3"><strong>إجمالي المبالغ المتأخرة:</strong></td>
+                        <td class="amount-highlight"><strong>{{ notice.total_overdue_amount|floatformat:2 }} ريال عماني</strong></td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 
@@ -266,11 +271,11 @@
         <div class="warning-box">
             <h4>الإجراء المطلوب:</h4>
             <p>
-                يجب عليكم سداد المبلغ المذكور أعلاه كاملاً خلال 
+                يجب عليكم سداد جميع المبالغ المتأخرة المذكورة أعلاه كاملة خلال
                 <span class="deadline-highlight">المدة القانونية المحددة في سلطنة عمان (30 يوماً)</span>
                 من تاريخ هذا الإنذار وذلك لتجنب اتخاذ الإجراءات القانونية اللازمة بما في ذلك فسخ العقد و/أو الإخلاء.
             </p>
-            
+
             <table class="info-table">
                 <tr>
                     <th>الموعد النهائي للسداد:</th>
@@ -279,6 +284,10 @@
                 <tr>
                     <th>الإجراء في حالة عدم السداد:</th>
                     <td>{{ notice.get_potential_legal_action_display }}</td>
+                </tr>
+                <tr>
+                    <th>عدد شهور التأخير:</th>
+                    <td><strong>{{ notice.overdue_months_count }} شهر</strong></td>
                 </tr>
             </table>
         </div>

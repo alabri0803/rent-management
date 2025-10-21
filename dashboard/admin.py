@@ -130,7 +130,7 @@ class CommissionDistributionAdmin(admin.ModelAdmin):
 @admin.register(PaymentOverdueNotice)
 class PaymentOverdueNoticeAdmin(admin.ModelAdmin):
     list_display = ('lease', 'overdue_month', 'overdue_year', 'overdue_amount', 'notice_date', 'legal_deadline', 'status')
-    list_filter = ('status', 'overdue_year', 'potential_legal_action', 'notice_date')
+    list_filter = ('status', 'potential_legal_action', 'notice_date')
     search_fields = ('lease__contract_number', 'lease__tenant__name', 'lease__unit__unit_number')
     date_hierarchy = 'notice_date'
     readonly_fields = ('legal_deadline',)

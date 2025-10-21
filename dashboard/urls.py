@@ -217,4 +217,6 @@ urlpatterns = [
     path('overdue-notices/<int:pk>/update-status/', notice_update_status, name='notice_update_status'),
     path('overdue-notices/<int:pk>/print/', notice_print_view, name='notice_print_view'),
     path('overdue-notices/bulk-actions/', notices_bulk_actions, name='notices_bulk_actions'),
+    # New Payment Overdue Notice for specific lease
+    path('lease/<int:lease_id>/payment-overdue-notice/', PaymentOverdueNoticeDetailView.as_view(), name='payment_overdue_notice'),
 ]
