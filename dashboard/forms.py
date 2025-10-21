@@ -5,7 +5,7 @@ from .models import (
 )
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User, Group, Permission
 
 # ADDED
 class CompanyForm(forms.ModelForm):
@@ -110,16 +110,23 @@ class TenantRatingForm(forms.ModelForm):
 class UserManagementForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, required=False, help_text=_("Leave blank to keep the current password."))
     group = forms.ModelChoiceField(queryset=Group.objects.all(), required=False, label=_("Role"))
+    user_permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.filter(content_type__app_label='dashboard'),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label=_("Permissions")
+    )
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active']
+        fields = ['username', 'first_name', 'last_name', 'email', 'group', 'is_staff', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.fields['group'].initial = self.instance.groups.first()
             self.fields['password'].required = False
+            self.fields['user_permissions'].initial = self.instance.user_permissions.all()
         else:
             self.fields['password'].required = True
 
@@ -139,6 +146,9 @@ class UserManagementForm(forms.ModelForm):
                 user.groups.set([group])
             else:
                 user.groups.clear()
+
+            permissions = self.cleaned_data.get('user_permissions')
+            user.user_permissions.set(permissions)
 
         return user
 
