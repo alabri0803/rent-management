@@ -49,7 +49,8 @@ from .forms import (
     MaintenanceRequestUpdateForm, ExpenseForm, PaymentForm, LeaseCancelForm, 
     CompanyForm, TenantRatingForm, InvoiceForm, InvoiceItemFormSet,
     RealEstateOfficeForm, BuildingOwnerForm, CommissionAgreementForm, 
-    RentCollectionForm, CommissionDistributionForm, SecurityDepositForm
+    RentCollectionForm, CommissionDistributionForm, SecurityDepositForm,
+    UserManagementForm
 )
 from .utils import render_to_pdf, generate_pdf_bytes
 
@@ -283,6 +284,58 @@ class DashboardHomeView(StaffRequiredMixin, ListView):
         context['expiring_leases'] = expiring_soon
 
         return context
+
+# --- User Management ---
+class UserListView(StaffRequiredMixin, ListView):
+    model = User
+    template_name = 'dashboard/user_management.html'
+    context_object_name = 'users'
+
+    def get_queryset(self):
+        return User.objects.all().prefetch_related('groups').order_by('username')
+
+class UserCreateView(StaffRequiredMixin, CreateView):
+    model = User
+    form_class = UserManagementForm
+    template_name = 'dashboard/user_form.html'
+    success_url = reverse_lazy('user_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = _("Add New User")
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, _("User created successfully!"))
+        return super().form_valid(form)
+
+class UserUpdateView(StaffRequiredMixin, UpdateView):
+    model = User
+    form_class = UserManagementForm
+    template_name = 'dashboard/user_form.html'
+    success_url = reverse_lazy('user_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = _("Edit User")
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, _("User updated successfully!"))
+        return super().form_valid(form)
+
+class UserDeleteView(StaffRequiredMixin, DeleteView):
+    model = User
+    template_name = 'dashboard/user_confirm_delete.html'
+    success_url = reverse_lazy('user_list')
+
+    def form_valid(self, form):
+        if self.object == self.request.user:
+            messages.error(self.request, _("You cannot delete your own account."))
+            return redirect(self.success_url)
+        messages.success(self.request, _("User deleted successfully."))
+        return super().form_valid(form)
+
 
 # --- Finance Lock/Unlock ---
 @login_required
@@ -1156,7 +1209,7 @@ class UserCreateView(StaffRequiredMixin, CreateView):
     model = User
     form_class = UserManagementForm
     template_name = 'dashboard/user_form.html'
-    success_url = reverse_lazy('user_management')
+    success_url = reverse_lazy('user_list')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1171,7 +1224,7 @@ class UserUpdateView(StaffRequiredMixin, UpdateView):
     model = User
     form_class = UserManagementForm
     template_name = 'dashboard/user_form.html'
-    success_url = reverse_lazy('user_management')
+    success_url = reverse_lazy('user_list')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1185,7 +1238,7 @@ class UserUpdateView(StaffRequiredMixin, UpdateView):
 class UserDeleteView(StaffRequiredMixin, DeleteView):
     model = User
     template_name = 'dashboard/user_confirm_delete.html'
-    success_url = reverse_lazy('user_management')
+    success_url = reverse_lazy('user_list')
     
     def form_valid(self, form):
         messages.success(self.request, _("تم حذف المستخدم بنجاح."))

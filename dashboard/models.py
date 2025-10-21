@@ -136,6 +136,12 @@ class Lease(models.Model):
     class Meta:
         verbose_name = _("عقد إيجار")
         verbose_name_plural = _("عقود الإيجار")
+        permissions = [
+            ("can_view_financial_reports", _("Can view financial reports")),
+            ("can_manage_leases", _("Can manage leases")),
+            ("can_manage_notices", _("Can manage notices")),
+            ("can_access_settings", _("Can access settings")),
+        ]
         
     def save(self, *args, **kwargs):
         self.registration_fee = (self.monthly_rent * 12) * Decimal('0.03')

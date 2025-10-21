@@ -5,6 +5,7 @@ from .models import (
 )
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.contrib.auth.models import User, Group
 
 # ADDED
 class CompanyForm(forms.ModelForm):
@@ -105,6 +106,42 @@ class TenantRatingForm(forms.ModelForm):
         widgets = {
             'rating': forms.Select(attrs={'class': 'p-2 border rounded-md'})
         }
+
+class UserManagementForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput, required=False, help_text=_("Leave blank to keep the current password."))
+    group = forms.ModelChoiceField(queryset=Group.objects.all(), required=False, label=_("Role"))
+
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['group'].initial = self.instance.groups.first()
+            self.fields['password'].required = False
+        else:
+            self.fields['password'].required = True
+
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'w-full p-2 border rounded-md'})
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get("password")
+        if password:
+            user.set_password(password)
+
+        if commit:
+            user.save()
+            group = self.cleaned_data.get('group')
+            if group:
+                user.groups.set([group])
+            else:
+                user.groups.clear()
+
+        return user
+
 
 class MaintenanceRequestForm(forms.ModelForm):
     class Meta:
