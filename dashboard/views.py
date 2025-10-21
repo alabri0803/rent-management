@@ -42,7 +42,7 @@ from .models import (
     Tenant, Unit, Building, Lease, Document, MaintenanceRequest, 
     Expense, Payment, Company, Invoice, InvoiceItem,
     RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, SecurityDeposit,
-    PaymentOverdueNotice, NoticeTemplate
+    PaymentOverdueNotice, NoticeTemplate, LeaseRenewalNotice
 )
 from .forms import (
     TenantForm, UnitForm, BuildingForm, LeaseForm, DocumentForm, 
@@ -2457,3 +2457,208 @@ def tenant_comprehensive_report_view(request, tenant_id):
     }
     
     return render(request, 'dashboard/reports/tenant_comprehensive_report.html', context)
+
+
+# === Lease Renewal Notice Views ===
+
+class LeaseRenewalNoticeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = LeaseRenewalNotice
+    template_name = 'dashboard/renewal_notices/list.html'
+    context_object_name = 'renewal_notices'
+    paginate_by = 20
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_queryset(self):
+        queryset = LeaseRenewalNotice.objects.select_related('lease', 'lease__tenant', 'lease__unit', 'lease__unit__building').all()
+
+        # فلترة حسب الحالة
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # فلترة حسب المستأجر
+        tenant_filter = self.request.GET.get('tenant')
+        if tenant_filter:
+            queryset = queryset.filter(lease__tenant__name__icontains=tenant_filter)
+
+        # فلترة حسب رقم العقد
+        contract_filter = self.request.GET.get('contract')
+        if contract_filter:
+            queryset = queryset.filter(lease__contract_number__icontains=contract_filter)
+
+        # فلترة حسب تاريخ التذكير
+        reminder_date_from = self.request.GET.get('reminder_date_from')
+        reminder_date_to = self.request.GET.get('reminder_date_to')
+
+        if reminder_date_from:
+            queryset = queryset.filter(reminder_date__gte=reminder_date_from)
+        if reminder_date_to:
+            queryset = queryset.filter(reminder_date__lte=reminder_date_to)
+
+        return queryset.order_by('-reminder_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # إحصائيات الرسائل
+        total_notices = LeaseRenewalNotice.objects.count()
+        sent_notices = LeaseRenewalNotice.objects.filter(status='sent').count()
+        responded_notices = LeaseRenewalNotice.objects.filter(status='responded').count()
+        no_response_notices = LeaseRenewalNotice.objects.filter(status='no_response').count()
+
+        # الرسائل المستحقة للإرسال
+        due_notices = LeaseRenewalNotice.objects.filter(
+            status='draft',
+            reminder_date__lte=timezone.now().date()
+        ).count()
+
+        context.update({
+            'total_notices': total_notices,
+            'sent_notices': sent_notices,
+            'responded_notices': responded_notices,
+            'no_response_notices': no_response_notices,
+            'due_notices': due_notices,
+            'status_choices': LeaseRenewalNotice.NOTICE_STATUS_CHOICES,
+        })
+
+        return context
+
+
+class LeaseRenewalNoticeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = LeaseRenewalNotice
+    template_name = 'dashboard/renewal_notices/detail.html'
+    context_object_name = 'notice'
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        notice = self.object
+
+        # حساب الأيام المتبقية
+        days_until_reminder = notice.days_until_reminder()
+        days_until_expiry = notice.days_until_expiry()
+
+        context.update({
+            'days_until_reminder': days_until_reminder,
+            'days_until_expiry': days_until_expiry,
+            'response_choices': LeaseRenewalNotice.RESPONSE_CHOICES,
+        })
+
+        return context
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def renewal_notice_update_response(request, pk):
+    """تحديث رد المستأجر على رسالة التجديد"""
+    notice = get_object_or_404(LeaseRenewalNotice, pk=pk)
+
+    if request.method == 'POST':
+        response = request.POST.get('response')
+        notes = request.POST.get('notes', '')
+
+        if response:
+            notice.record_response(response, notes)
+            messages.success(request, _('تم تحديث رد المستأجر بنجاح'))
+        else:
+            messages.error(request, _('يرجى اختيار رد صالح'))
+
+    return redirect('renewal_notice_detail', pk=notice.pk)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def renewal_notice_print_view(request, pk):
+    """عرض رسالة التجديد بتنسيق قابل للطباعة"""
+    notice = get_object_or_404(LeaseRenewalNotice, pk=pk)
+
+    context = {
+        'notice': notice,
+        'company': Company.objects.first(),
+        'today': timezone.now().date(),
+    }
+
+    return render(request, 'dashboard/renewal_notices/print.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def generate_renewal_notices_preview(request):
+    """معاينة رسائل التجديد التي سيتم إنشاؤها"""
+    if request.method == 'POST':
+        # إنشاء الرسائل الجديدة
+        notices_created = LeaseRenewalNotice.generate_automatic_notices()
+
+        context = {
+            'notices_created': notices_created,
+            'count': len(notices_created),
+        }
+
+        return render(request, 'dashboard/renewal_notices/generate_preview.html', context)
+
+    # عرض نموذج المعاينة
+    expiring_leases = Lease.objects.filter(
+        status='active',
+        end_date__lte=timezone.now().date() + timedelta(days=30),
+        end_date__gt=timezone.now().date()
+    ).select_related('tenant', 'unit', 'unit__building')[:10]  # أول 10 نتائج فقط للمعاينة
+
+    context = {
+        'expiring_leases': expiring_leases,
+        'total_count': Lease.objects.filter(
+            status='active',
+            end_date__lte=timezone.now().date() + timedelta(days=30),
+            end_date__gt=timezone.now().date()
+        ).count()
+    }
+
+    return render(request, 'dashboard/renewal_notices/generate_preview.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def renewal_notices_bulk_actions(request):
+    """العمليات المجمعة على رسائل التجديد"""
+    action = request.POST.get('action')
+    notice_ids = request.POST.getlist('notice_ids')
+
+    if not notice_ids:
+        messages.error(request, _('لم يتم اختيار أي رسائل'))
+        return redirect('renewal_notices_list')
+
+    notices = LeaseRenewalNotice.objects.filter(id__in=notice_ids)
+
+    if action == 'mark_sent':
+        updated = notices.filter(status='draft').update(
+            status='sent',
+            sent_date=timezone.now(),
+            delivery_method='manual'
+        )
+        messages.success(request, _('تم تحديث حالة {} رسالة إلى "تم الإرسال"').format(updated))
+
+    elif action == 'mark_responded':
+        updated = notices.filter(status='sent').update(
+            status='responded',
+            response_date=timezone.now()
+        )
+        messages.success(request, _('تم تحديث حالة {} رسالة إلى "تم الرد"').format(updated))
+
+    elif action == 'mark_no_response':
+        updated = notices.filter(status='sent').update(
+            status='no_response'
+        )
+        messages.success(request, _('تم تحديث حالة {} رسالة إلى "لا رد"').format(updated))
+
+    elif action == 'delete':
+        deleted, _ = notices.delete()
+        messages.success(request, _('تم حذف {} رسالة بنجاح').format(deleted))
+
+    else:
+        messages.error(request, _('العملية المطلوبة غير صالحة'))
+
+    return redirect('renewal_notices_list')

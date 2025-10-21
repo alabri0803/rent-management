@@ -28,6 +28,9 @@ from .views import (
     # Payment Overdue Notice Views
     PaymentOverdueNoticeListView, PaymentOverdueNoticeDetailView,
     generate_automatic_notices, notice_update_status, notice_print_view, notices_bulk_actions,
+    # Lease Renewal Notice Views
+    LeaseRenewalNoticeListView, LeaseRenewalNoticeDetailView,
+    renewal_notice_update_response, renewal_notice_print_view, generate_renewal_notices_preview, renewal_notices_bulk_actions,
     # Registration Invoice
     registration_invoice_view,
     # New Report Views
@@ -209,11 +212,11 @@ urlpatterns = [
     path('commission-distributions/<int:pk>/edit/', CommissionDistributionUpdateView.as_view(), name='commission_distribution_update'),
     path('commission-distributions/<int:pk>/delete/', CommissionDistributionDeleteView.as_view(), name='commission_distribution_delete'),
     
-    # Payment Overdue Notices
-    path('overdue-notices/', PaymentOverdueNoticeListView.as_view(), name='overdue_notices_list'),
-    path('overdue-notices/<int:pk>/', PaymentOverdueNoticeDetailView.as_view(), name='overdue_notice_detail'),
-    path('overdue-notices/generate/', generate_automatic_notices, name='generate_automatic_notices'),
-    path('overdue-notices/<int:pk>/update-status/', notice_update_status, name='notice_update_status'),
-    path('overdue-notices/<int:pk>/print/', notice_print_view, name='notice_print_view'),
-    path('overdue-notices/bulk-actions/', notices_bulk_actions, name='notices_bulk_actions'),
+    # Lease Renewal Notices
+    path('renewal-notices/', LeaseRenewalNoticeListView.as_view(), name='renewal_notices_list'),
+    path('renewal-notices/<int:pk>/', LeaseRenewalNoticeDetailView.as_view(), name='renewal_notice_detail'),
+    path('renewal-notices/<int:pk>/update-response/', renewal_notice_update_response, name='renewal_notice_update_response'),
+    path('renewal-notices/<int:pk>/print/', renewal_notice_print_view, name='renewal_notice_print_view'),
+    path('renewal-notices/generate-preview/', generate_renewal_notices_preview, name='generate_renewal_notices_preview'),
+    path('renewal-notices/bulk-actions/', renewal_notices_bulk_actions, name='renewal_notices_bulk_actions'),
 ]
