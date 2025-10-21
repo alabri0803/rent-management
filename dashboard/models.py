@@ -1086,6 +1086,81 @@ class PaymentOverdueNotice(models.Model):
             except:
                 pass
 
+    def generate_formal_payment_request(self):
+        """إنشاء إنذار رسمي بطلب السداد"""
+        from django.utils import timezone
+        
+        # تحديث محتوى الإنذار ليعكس الحالة الحالية
+        overdue_months = []
+        total_amount = 0
+        
+        for detail in self.details.all():
+            overdue_months.append({
+                'month': detail.overdue_month,
+                'year': detail.overdue_year,
+                'amount': detail.overdue_amount
+            })
+            total_amount += detail.overdue_amount
+        
+        # إنشاء محتوى الإنذار الرسمي
+        content = f"""
+        <div style="text-align: center; font-family: Arial, sans-serif; direction: rtl;">
+            <h2 style="color: #d32f2f; font-weight: bold;">إنذار رسمي بطلب السداد</h2>
+            <hr style="border: 2px solid #d32f2f; margin: 20px 0;">
+            
+            <div style="text-align: right; margin: 20px 0;">
+                <p><strong>رقم العقد:</strong> {self.lease.contract_number}</p>
+                <p><strong>المستأجر:</strong> {self.lease.tenant.name}</p>
+                <p><strong>الوحدة:</strong> {self.lease.unit.unit_number} - {self.lease.unit.building.name}</p>
+                <p><strong>تاريخ الإنذار:</strong> {self.notice_date.strftime('%d/%m/%Y')}</p>
+                <p><strong>الموعد النهائي للسداد:</strong> {self.legal_deadline.strftime('%d/%m/%Y')}</p>
+            </div>
+            
+            <div style="background-color: #ffebee; padding: 15px; border-right: 4px solid #d32f2f; margin: 20px 0;">
+                <h3 style="color: #d32f2f;">المبالغ المستحقة:</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">الشهر</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">المبلغ المستحق</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        """
+        
+        for month_data in overdue_months:
+            content += f"""
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{month_data['month']}/{month_data['year']}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{month_data['amount']} ر.ع</td>
+                        </tr>
+            """
+        
+        content += f"""
+                    </tbody>
+                    <tfoot>
+                        <tr style="background-color: #ffcdd2; font-weight: bold;">
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">الإجمالي</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{total_amount} ر.ع</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            <div style="background-color: #fff3e0; padding: 15px; border-right: 4px solid #ff9800; margin: 20px 0;">
+                <h3 style="color: #e65100;">المطلوب:</h3>
+                <p>يُطلب منكم سداد المبالغ المستحقة أعلاه في موعد أقصاه <strong>{self.legal_deadline.strftime('%d/%m/%Y')}</strong></p>
+                <p>في حالة عدم السداد في الموعد المحدد، سيتم اتخاذ الإجراءات القانونية اللازمة.</p>
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center;">
+                <p style="font-size: 12px; color: #666;">هذا إنذار رسمي وفقاً للقوانين المعمول بها في سلطنة عمان</p>
+            </div>
+        </div>
+        """
+        
+        return content
+
     @property
     def overdue_month(self):
         """الحصول على الشهر الأول من التأخير (للتوافق مع Django Admin)"""
@@ -1190,6 +1265,9 @@ class PaymentOverdueNotice(models.Model):
                     print(f"خطأ في إنشاء تفاصيل الإنذار للشهر {overdue_month}: {e}")
                     continue
 
+            # إنشاء محتوى الإنذار الرسمي
+            notice.content = notice.generate_formal_payment_request()
+            
             # حفظ الإنذار مرة أخرى لحساب due_date من التفاصيل
             notice.save()
             return notice

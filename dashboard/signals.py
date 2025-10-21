@@ -2,8 +2,10 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
-from .models import Tenant, MaintenanceRequest, Lease, Notification, Building, Expense
+from django.db import models
+from .models import Tenant, MaintenanceRequest, Lease, Notification, Building, Expense, Payment, PaymentOverdueNotice, PaymentOverdueDetail
 from .utils import auto_translate_to_english
+from decimal import Decimal
 
 @receiver(post_save, sender=Tenant)
 def create_tenant_user_account(sender, instance, created, **kwargs):
@@ -68,3 +70,96 @@ def auto_translate_tenant(sender, instance, **kwargs):
 def auto_translate_expense(sender, instance, **kwargs):
     if instance.description_ar and not instance.description_en:
         instance.description_en = auto_translate_to_english(instance.description_ar)
+
+
+@receiver(post_save, sender=Payment)
+def update_overdue_notices_on_payment(sender, instance, created, **kwargs):
+    """تحديث الإنذارات تلقائياً عند دفع مبلغ لشهر متأخر"""
+    if created:
+        # البحث عن الإنذارات المرتبطة بهذا العقد والشهر
+        overdue_details = PaymentOverdueDetail.objects.filter(
+            notice__lease=instance.lease,
+            overdue_month=instance.payment_for_month,
+            overdue_year=instance.payment_for_year,
+            notice__status__in=['draft', 'sent', 'acknowledged']  # الإنذارات غير المحلولة
+        )
+        
+        for detail in overdue_details:
+            notice = detail.notice
+            
+            # حساب المبلغ المدفوع لهذا الشهر
+            total_paid_for_month = Payment.objects.filter(
+                lease=instance.lease,
+                payment_for_month=instance.payment_for_month,
+                payment_for_year=instance.payment_for_year
+            ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
+            
+            # حساب المبلغ المتبقي
+            monthly_rent = instance.lease.monthly_rent
+            remaining_amount = monthly_rent - total_paid_for_month
+            
+            if remaining_amount <= 0:
+                # تم دفع المبلغ كاملاً - حذف هذا التفصيل من الإنذار
+                detail.delete()
+                
+                # إضافة ملاحظة للإنذار
+                current_notes = notice.notes or ""
+                new_note = f"\n✅ تم دفع مبلغ {monthly_rent} ر.ع كاملاً لشهر {instance.payment_for_month}/{instance.payment_for_year} بتاريخ {instance.payment_date.strftime('%d/%m/%Y')}"
+                notice.notes = current_notes + new_note
+                
+                # فحص إذا لم تعد هناك تفاصيل متأخرة - تحديث حالة الإنذار إلى محلول
+                if not notice.details.exists():
+                    notice.status = 'resolved'
+                    notice.resolved_date = instance.payment_date
+                    final_note = f"\n🎉 تم حل الإنذار بالكامل - دفع جميع المبالغ المتأخرة بتاريخ {instance.payment_date.strftime('%d/%m/%Y')}"
+                    notice.notes = notice.notes + final_note
+                    # مسح محتوى الإنذار لأنه تم حله
+                    notice.content = f"""
+                    <div style="text-align: center; font-family: Arial, sans-serif; direction: rtl; color: #4caf50;">
+                        <h2>✅ تم حل الإنذار بالكامل</h2>
+                        <p>تم دفع جميع المبالغ المستحقة بتاريخ {instance.payment_date.strftime('%d/%m/%Y')}</p>
+                        <p>شكراً لكم على التزامكم بالسداد</p>
+                    </div>
+                    """
+                else:
+                    # تحديث محتوى الإنذار ليعكس المبالغ المتبقية
+                    notice.content = notice.generate_formal_payment_request()
+                
+                notice.save()
+                
+            else:
+                # تم دفع جزء من المبلغ - تحديث المبلغ المتأخر
+                detail.overdue_amount = remaining_amount
+                detail.save()
+                
+                # إضافة ملاحظة للدفع الجزئي
+                current_notes = notice.notes or ""
+                new_note = f"\n💰 دفع جزئي لشهر {instance.payment_for_month}/{instance.payment_for_year}: دفع {instance.amount} ر.ع، المتبقي {remaining_amount} ر.ع بتاريخ {instance.payment_date.strftime('%d/%m/%Y')}"
+                notice.notes = current_notes + new_note
+                
+                # تحديث محتوى الإنذار الرسمي ليعكس المبالغ الجديدة
+                notice.content = notice.generate_formal_payment_request()
+                notice.save()
+                
+                # إنشاء إشعار للمستأجر
+                if instance.lease.tenant.user:
+                    message = f"تم استلام دفعة جزئية بمبلغ {instance.amount} ر.ع لشهر {instance.payment_for_month}/{instance.payment_for_year}. المبلغ المتبقي: {remaining_amount} ر.ع"
+                    Notification.objects.create(
+                        user=instance.lease.tenant.user,
+                        message=message,
+                        related_object=notice
+                    )
+            
+            # إنشاء إشعار للموظفين
+            staff_users = User.objects.filter(is_staff=True)
+            for user in staff_users:
+                if remaining_amount <= 0:
+                    message = f"✅ تم دفع مبلغ {monthly_rent} ر.ع كاملاً لشهر {instance.payment_for_month}/{instance.payment_for_year} من العقد {instance.lease.contract_number}"
+                else:
+                    message = f"💰 دفعة جزئية: {instance.amount} ر.ع لشهر {instance.payment_for_month}/{instance.payment_for_year} من العقد {instance.lease.contract_number}. المتبقي: {remaining_amount} ر.ع"
+                
+                Notification.objects.create(
+                    user=user,
+                    message=message,
+                    related_object=notice
+                )
