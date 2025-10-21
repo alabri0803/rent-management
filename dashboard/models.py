@@ -831,6 +831,17 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.phone_number or 'لا يوجد رقم هاتف'}"
+    
+    def get_display_name(self, language='ar'):
+        """Get user's display name based on language preference"""
+        if language == 'en' and self.first_name_english:
+            # Use English translation if available and language is English
+            english_name = self.first_name_english
+            last_name = self.user.last_name or ''
+            return f"{english_name} {last_name}".strip()
+        else:
+            # Use Arabic name (default behavior)
+            return self.user.get_full_name() or self.user.username
 
 
 class OTP(models.Model):

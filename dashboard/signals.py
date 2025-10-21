@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from django.db import models
-from .models import Tenant, MaintenanceRequest, Lease, Notification, Building, Expense, Payment, PaymentOverdueNotice, PaymentOverdueDetail
+from .models import Tenant, MaintenanceRequest, Lease, Notification, Building, Expense, Payment, PaymentOverdueNotice, PaymentOverdueDetail, UserProfile
 from .utils import auto_translate_to_english
 from decimal import Decimal
 
@@ -163,3 +163,17 @@ def update_overdue_notices_on_payment(sender, instance, created, **kwargs):
                     message=message,
                     related_object=notice
                 )
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Create UserProfile when a new User is created"""
+    if created:
+        UserProfile.objects.get_or_create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """Save UserProfile when User is saved"""
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
+    else:
+        UserProfile.objects.get_or_create(user=instance)
