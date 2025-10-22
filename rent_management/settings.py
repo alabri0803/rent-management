@@ -304,7 +304,7 @@ LOGGING = {
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
         'json': {
-            'format': '{"time": "{asctime}", "level": "{levelname}", "logger": "{name}", "message": "{message}"}',
+            'format': '{asctime} | {levelname} | {name} | {message}',
             'style': '{',
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
