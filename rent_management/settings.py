@@ -61,8 +61,10 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.cache.UpdateCacheMiddleware',  # Cache middleware (must be first after session)
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',  # Cache middleware (must be last)
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -173,6 +175,38 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ==================== CACHING CONFIGURATION ====================
+# نظام التخزين المؤقت لتحسين الأداء
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'rent-management-cache',
+        'TIMEOUT': 300,  # 5 minutes default
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    },
+    # Cache منفصل للـ API responses
+    'api': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'api-cache',
+        'TIMEOUT': 600,  # 10 minutes for API
+        'OPTIONS': {
+            'MAX_ENTRIES': 500,
+        }
+    },
+    # Cache للتقارير والإحصائيات
+    'reports': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'reports-cache',
+        'TIMEOUT': 1800,  # 30 minutes for reports
+        'OPTIONS': {
+            'MAX_ENTRIES': 200,
+        }
+    }
+}
+
 # Session settings to expire at browser close
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = False
@@ -246,24 +280,205 @@ if not DEBUG:
 # ✅ إعدادات البريد الإلكتروني (للتطوير)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# ✅ Logging configuration
+# ==================== ADVANCED LOGGING CONFIGURATION ====================
+# نظام سجلات متقدم وشامل
+
+# إنشاء مجلد logs
+LOGS_DIR = os.path.join(str(BASE_DIR), 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    
+    # ==================== Formatters ====================
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '[{levelname}] {asctime} | {name} | {module}.{funcName}:{lineno} | {message}',
             'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '[{levelname}] {asctime} | {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'json': {
+            'format': '{"time": "{asctime}", "level": "{levelname}", "logger": "{name}", "message": "{message}"}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
+    
+    # ==================== Filters ====================
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    
+    # ==================== Handlers ====================
     'handlers': {
+        # Console Handler - للتطوير
         'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
+            'formatter': 'simple',
+            'filters': ['require_debug_true'],
+        },
+        
+        # File Handler - جميع السجلات
+        'file_all': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'all.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        
+        # File Handler - الأخطاء فقط
+        'file_errors': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'errors.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        
+        # File Handler - أمان وصلاحيات
+        'file_security': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'security.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 20,
+            'formatter': 'verbose',
+        },
+        
+        # File Handler - API requests
+        'file_api': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'api.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 15,
+            'formatter': 'verbose',
+        },
+        
+        # File Handler - Database queries
+        'file_db': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'database.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'filters': ['require_debug_true'],
+        },
+        
+        # File Handler - User actions (Audit Trail)
+        'file_audit': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'audit.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 30,  # حفظ 30 ملف للتدقيق
+            'formatter': 'verbose',
+        },
+        
+        # File Handler - Performance
+        'file_performance': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'performance.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 7,
+            'formatter': 'verbose',
+        },
+        
+        # Email Handler - للأخطاء الحرجة
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'filters': ['require_debug_false'],
+            'formatter': 'verbose',
         },
     },
+    
+    # ==================== Loggers ====================
+    'loggers': {
+        # Django Core
+        'django': {
+            'handlers': ['console', 'file_all', 'file_errors'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # Django Request
+        'django.request': {
+            'handlers': ['console', 'file_errors', 'mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        
+        # Django Database
+        'django.db.backends': {
+            'handlers': ['file_db'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        
+        # Django Security
+        'django.security': {
+            'handlers': ['file_security', 'mail_admins'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # Dashboard App
+        'dashboard': {
+            'handlers': ['console', 'file_all', 'file_errors'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        
+        # API Logger
+        'api': {
+            'handlers': ['file_api', 'file_errors'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # Security & Authentication
+        'security': {
+            'handlers': ['file_security', 'file_errors'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # Audit Trail
+        'audit': {
+            'handlers': ['file_audit'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # Performance
+        'performance': {
+            'handlers': ['file_performance'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+    
+    # Root Logger
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file_all'],
         'level': 'INFO',
     },
 }
@@ -330,6 +545,10 @@ REST_FRAMEWORK = {
     # Date/Time formatting
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
     'DATE_FORMAT': '%Y-%m-%d',
+    
+    # Caching
+    'DEFAULT_CACHE_RESPONSE_TIMEOUT': 600,  # 10 minutes
+    'DEFAULT_USE_CACHE': 'api',  # Use 'api' cache
 }
 
 # ==================== JWT Configuration ====================
