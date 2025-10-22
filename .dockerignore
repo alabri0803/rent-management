@@ -1,0 +1,107 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+logs/
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+local_settings.py
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Documentation
+docs/_build/
+*.md
+!README.md
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Environment
+.env
+.env.*
+*.env
+
+# Backups
+backups/
+*.backup
+*.sql
+*.dump
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Node modules (if using frontend tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Certificates
+*.pem
+*.key
+*.crt
+ssl/
+
+# Cache
+.cache/
+*.cache
+
+# Nginx config (will be mounted)
+nginx/
