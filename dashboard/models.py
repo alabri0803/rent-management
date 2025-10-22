@@ -855,6 +855,10 @@ class UserProfile(models.Model):
     phone_number = models.CharField(_("رقم الهاتف"), max_length=15, blank=True, null=True, help_text=_("رقم الهاتف للتحقق عبر OTP"), validators=[RegexValidator(regex=r'^\+968\d{8}$', message=_("الرجاء إدخال رقم هاتف عماني صالح يبدأ بـ +968 (8 أرقام بعد المقدمة)"))])
     first_name_english = models.CharField(_("الاسم الأول بالإنجليزية"), max_length=150, blank=True, null=True, help_text=_("ترجمة تلقائية للاسم الأول"))
     
+    # حقول الإشعارات
+    device_token = models.CharField(_("رمز الجهاز"), max_length=255, blank=True, null=True, help_text=_("Firebase device token للإشعارات الفورية"))
+    whatsapp_number = models.CharField(_("رقم واتساب"), max_length=20, blank=True, null=True, help_text=_("رقم واتساب لاستقبال الإشعارات"))
+    
     # === صلاحيات الوصول (Permissions) ===
     # لوحة التحكم
     can_view_dashboard = models.BooleanField(_("عرض لوحة التحكم"), default=True, help_text=_("الوصول إلى لوحة التحكم الرئيسية"))
@@ -2020,3 +2024,266 @@ class NoticeTemplate(models.Model):
         for key, value in context.items():
             content = content.replace(f"{{{key}}}", str(value))
         return content
+
+
+# ==================== Enhanced Notification System Models ====================
+
+class NotificationChannel(models.TextChoices):
+    """قنوات الإشعارات المتاحة"""
+    IN_APP = 'in_app', _('داخل التطبيق')
+    EMAIL = 'email', _('البريد الإلكتروني')
+    SMS = 'sms', _('رسالة نصية')
+    WHATSAPP = 'whatsapp', _('واتساب')
+    PUSH = 'push', _('إشعار فوري')
+
+
+class NotificationPriority(models.TextChoices):
+    """أولوية الإشعار"""
+    LOW = 'low', _('منخفضة')
+    NORMAL = 'normal', _('عادية')
+    HIGH = 'high', _('عالية')
+    URGENT = 'urgent', _('عاجلة')
+
+
+class NotificationCategory(models.TextChoices):
+    """تصنيفات الإشعارات"""
+    PAYMENT = 'payment', _('دفعة')
+    LEASE = 'lease', _('عقد')
+    MAINTENANCE = 'maintenance', _('صيانة')
+    OVERDUE = 'overdue', _('تأخير سداد')
+    REMINDER = 'reminder', _('تذكير')
+    SYSTEM = 'system', _('نظام')
+    SECURITY = 'security', _('أمان')
+    GENERAL = 'general', _('عام')
+
+
+class EnhancedNotificationTemplate(models.Model):
+    """قوالب الإشعارات المحسّنة"""
+    name = models.CharField(_("اسم القالب"), max_length=100, unique=True)
+    category = models.CharField(
+        _("التصنيف"),
+        max_length=20,
+        choices=NotificationCategory.choices,
+        default=NotificationCategory.GENERAL
+    )
+    
+    # محتوى القالب
+    subject = models.CharField(_("الموضوع"), max_length=200)
+    body_text = models.TextField(_("المحتوى النصي"))
+    body_html = models.TextField(_("المحتوى HTML"), blank=True, null=True)
+    
+    # إعدادات القالب
+    channels = models.JSONField(
+        _("القنوات المفعلة"),
+        default=list,
+        help_text=_("قائمة القنوات: in_app, email, sms, whatsapp, push")
+    )
+    variables = models.JSONField(
+        _("المتغيرات"),
+        default=dict,
+        help_text=_("المتغيرات المتاحة في القالب")
+    )
+    
+    # حالة القالب
+    is_active = models.BooleanField(_("مفعل"), default=True)
+    created_at = models.DateTimeField(_("تاريخ الإنشاء"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("تاريخ التحديث"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("قالب إشعار محسّن")
+        verbose_name_plural = _("قوالب الإشعارات المحسّنة")
+        ordering = ['category', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_category_display()})"
+
+
+class EnhancedNotificationPreference(models.Model):
+    """تفضيلات الإشعارات للمستخدمين"""
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='enhanced_notification_preferences',
+        verbose_name=_("المستخدم")
+    )
+    
+    # القنوات المفعلة
+    enable_in_app = models.BooleanField(_("تفعيل الإشعارات الداخلية"), default=True)
+    enable_email = models.BooleanField(_("تفعيل البريد الإلكتروني"), default=True)
+    enable_sms = models.BooleanField(_("تفعيل الرسائل النصية"), default=False)
+    enable_whatsapp = models.BooleanField(_("تفعيل واتساب"), default=False)
+    enable_push = models.BooleanField(_("تفعيل الإشعارات الفورية"), default=True)
+    
+    # التصنيفات المفعلة
+    categories = models.JSONField(
+        _("التصنيفات المفعلة"),
+        default=dict,
+        help_text=_("تفعيل/تعطيل كل تصنيف لكل قناة")
+    )
+    
+    # أوقات الإرسال
+    quiet_hours_start = models.TimeField(_("بداية وقت الهدوء"), null=True, blank=True)
+    quiet_hours_end = models.TimeField(_("نهاية وقت الهدوء"), null=True, blank=True)
+    
+    created_at = models.DateTimeField(_("تاريخ الإنشاء"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("تاريخ التحديث"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("تفضيلات الإشعارات المحسّنة")
+        verbose_name_plural = _("تفضيلات الإشعارات المحسّنة")
+    
+    def __str__(self):
+        return f"تفضيلات {self.user.get_full_name() or self.user.username}"
+
+
+class EnhancedNotification(models.Model):
+    """نموذج الإشعارات المحسّن"""
+    
+    # المستخدم والمحتوى
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='enhanced_notifications',
+        verbose_name=_("المستخدم")
+    )
+    
+    # تفاصيل الإشعار
+    title = models.CharField(_("العنوان"), max_length=200)
+    message = models.TextField(_("الرسالة"))
+    category = models.CharField(
+        _("التصنيف"),
+        max_length=20,
+        choices=NotificationCategory.choices,
+        default=NotificationCategory.GENERAL
+    )
+    priority = models.CharField(
+        _("الأولوية"),
+        max_length=10,
+        choices=NotificationPriority.choices,
+        default=NotificationPriority.NORMAL
+    )
+    
+    # القنوات المستخدمة
+    channels = models.JSONField(
+        _("القنوات"),
+        default=list,
+        help_text=_("القنوات التي تم إرسال الإشعار عبرها")
+    )
+    
+    # الكائن المرتبط
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    related_object = GenericForeignKey('content_type', 'object_id')
+    
+    # البيانات الإضافية
+    data = models.JSONField(
+        _("بيانات إضافية"),
+        default=dict,
+        blank=True
+    )
+    
+    # رابط الإجراء
+    action_url = models.CharField(_("رابط الإجراء"), max_length=500, blank=True, null=True)
+    action_text = models.CharField(_("نص الإجراء"), max_length=100, blank=True, null=True)
+    
+    # حالة الإشعار
+    is_read = models.BooleanField(_("مقروء"), default=False)
+    read_at = models.DateTimeField(_("وقت القراءة"), null=True, blank=True)
+    
+    # حالة الإرسال
+    sent_via_email = models.BooleanField(_("تم الإرسال عبر البريد"), default=False)
+    sent_via_sms = models.BooleanField(_("تم الإرسال عبر SMS"), default=False)
+    sent_via_whatsapp = models.BooleanField(_("تم الإرسال عبر واتساب"), default=False)
+    sent_via_push = models.BooleanField(_("تم الإرسال عبر Push"), default=False)
+    
+    # سجل الإرسال
+    delivery_log = models.JSONField(
+        _("سجل التسليم"),
+        default=dict,
+        blank=True
+    )
+    
+    # التواريخ
+    created_at = models.DateTimeField(_("تاريخ الإنشاء"), auto_now_add=True)
+    scheduled_at = models.DateTimeField(_("موعد الإرسال"), null=True, blank=True)
+    expires_at = models.DateTimeField(_("تاريخ الانتهاء"), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _("إشعار محسّن")
+        verbose_name_plural = _("الإشعارات المحسّنة")
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['category', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.user.get_full_name() or self.user.username}"
+    
+    def mark_as_read(self):
+        """تحديد الإشعار كمقروء"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+
+
+class EnhancedNotificationLog(models.Model):
+    """سجل إرسال الإشعارات المحسّن"""
+    
+    notification = models.ForeignKey(
+        EnhancedNotification,
+        on_delete=models.CASCADE,
+        related_name='logs',
+        verbose_name=_("الإشعار")
+    )
+    
+    channel = models.CharField(
+        _("القناة"),
+        max_length=20,
+        choices=NotificationChannel.choices
+    )
+    
+    status = models.CharField(
+        _("الحالة"),
+        max_length=20,
+        choices=[
+            ('pending', _('قيد الانتظار')),
+            ('sent', _('تم الإرسال')),
+            ('delivered', _('تم التسليم')),
+            ('failed', _('فشل')),
+            ('bounced', _('مرتد')),
+        ],
+        default='pending'
+    )
+    
+    recipient = models.CharField(_("المستلم"), max_length=200)
+    
+    # تفاصيل الإرسال
+    provider = models.CharField(_("مزود الخدمة"), max_length=50, blank=True, null=True)
+    provider_id = models.CharField(_("معرف المزود"), max_length=200, blank=True, null=True)
+    
+    # الاستجابة
+    response_data = models.JSONField(_("بيانات الاستجابة"), default=dict, blank=True)
+    error_message = models.TextField(_("رسالة الخطأ"), blank=True, null=True)
+    
+    # التكلفة
+    cost = models.DecimalField(_("التكلفة"), max_digits=10, decimal_places=4, null=True, blank=True)
+    
+    # التواريخ
+    sent_at = models.DateTimeField(_("وقت الإرسال"), auto_now_add=True)
+    delivered_at = models.DateTimeField(_("وقت التسليم"), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _("سجل إشعار محسّن")
+        verbose_name_plural = _("سجلات الإشعارات المحسّنة")
+        ordering = ['-sent_at']
+    
+    def __str__(self):
+        return f"{self.get_channel_display()} - {self.recipient} - {self.get_status_display()}"
