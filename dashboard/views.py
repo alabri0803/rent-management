@@ -273,7 +273,7 @@ class DashboardHomeView(StaffRequiredMixin, ListView):
                 'url': reverse('lease_detail', kwargs={'pk': renewal.pk}),
                 'extendedProps': {
                     'contract_number': renewal.contract_number,
-                    'days_until_expiry': renewal.days_until_expiry()
+                    'days_until_expiry': renewal.days_until_expiry
                 }
             })
         context['calendar_events'] = json.dumps(calendar_events)

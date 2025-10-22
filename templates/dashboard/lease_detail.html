@@ -63,7 +63,7 @@
             {% endif %}
 
             <!-- رسالة تذكير التجديد - تظهر قبل انتهاء العقد بـ90 يوماً -->
-            {% if lease.status == 'active' and lease.days_until_expiry <= 90 and lease.days_until_expiry > 0 %}
+            {% if lease.days_until_expiry and lease.days_until_expiry <= 90 and lease.days_until_expiry > 0 %}
             <a href="{% url 'renewal_reminder' lease_id=lease.id %}" class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 inline-flex items-center" target="_blank">
                 <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -90,6 +90,57 @@
                 </svg>
                 📋 {% trans "إنذارات العقد" %} ({{ lease.overdue_notices.count }})
             </a>
+            {% endif %}
+            
+            <!-- تنبيه التجديد - يظهر قبل 90 يوماً من انتهاء العقد -->
+            {% if lease.days_until_expiry and lease.days_until_expiry <= 90 and lease.days_until_expiry > 0 %}
+            <div class="w-full mt-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-r-4 border-blue-500 rounded-xl">
+                <div class="flex items-center mb-4">
+                    <div class="bg-blue-500 rounded-full p-2 ml-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-blue-900">⏰ {% trans "عقد قريب من الانتهاء" %}</h3>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-800 font-semibold text-sm">📅 {% trans "تاريخ الانتهاء" %}</p>
+                                <p class="text-blue-900 font-bold">{{ lease.end_date|date:"d/m/Y" }}</p>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-blue-800 font-semibold text-sm">⏰ {% trans "الأيام المتبقية" %}</p>
+                                <p class="text-blue-900 font-bold text-2xl">{{ lease.days_until_expiry }} {% trans "يوم" %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-100 p-4 rounded-lg border-2 border-blue-300">
+                        <p class="text-blue-900 font-semibold mb-2">💬 {% trans "رسالة تجديد" %}</p>
+                        <p class="text-blue-800 text-lg">
+                            {% trans "هل لديك رغبة في تجديد عقد الإيجار؟" %}
+                        </p>
+                    </div>
+                    
+                    <div class="flex gap-3 mt-4">
+                        <a href="{% url 'renewal_reminder' lease_id=lease.id %}" target="_blank" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-center">
+                            <svg class="w-5 h-5 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            🔔 {% trans "رسالة تذكير التجديد" %}
+                        </a>
+                        <a href="{% url 'lease_renew' lease.pk %}" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-center">
+                            <svg class="w-5 h-5 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            🔄 {% trans "تجديد العقد" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
             {% endif %}
             
             <!-- إشعارات العقد المنتهي - تظهر للعقود المنتهية -->

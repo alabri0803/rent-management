@@ -219,7 +219,9 @@ class Lease(models.Model):
         if self.status == 'renewed': return 'active'
         return 'cancelled'
     
+    @property
     def days_until_expiry(self):
+        """عدد الأيام المتبقية حتى انتهاء العقد"""
         today = timezone.now().date()
         if self.status == 'cancelled':
             return None
