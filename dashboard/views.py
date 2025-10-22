@@ -35,6 +35,7 @@ from django import forms
 import json
 from django.views.decorators.http import require_POST
 import logging
+import decimal
 from decimal import Decimal
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ from .models import (
     Tenant, Unit, Building, Lease, Document, MaintenanceRequest, 
     Expense, Payment, Company, Invoice, InvoiceItem,
     RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, SecurityDeposit,
-    PaymentOverdueNotice, NoticeTemplate, LeaseRenewalReminder
+    PaymentOverdueNotice, NoticeTemplate, LeaseRenewalReminder, Notification
 )
 from .forms import (
     TenantForm, UnitForm, BuildingForm, LeaseForm, DocumentForm, 
@@ -2473,6 +2474,72 @@ def notice_update_status(request, pk):
 
 
 @login_required
+@require_POST
+def quick_notice_status_change(request, pk):
+    """تغيير سريع لحالة الإنذار من صفحة تفاصيل العقد"""
+    from django.utils.translation import gettext as _trans
+    
+    notice = get_object_or_404(PaymentOverdueNotice, pk=pk)
+    
+    try:
+        new_status = request.POST.get('status')
+        notes = request.POST.get('notes', '')
+        
+        if new_status not in dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES):
+            return HttpResponse(json.dumps({
+                'success': False,
+                'error': str(_trans('حالة غير صحيحة'))
+            }), content_type='application/json', status=400)
+        
+        old_status = notice.status
+        notice.status = new_status
+        
+        # تحديث التواريخ المناسبة
+        now = timezone.now()
+        if new_status == 'sent' and old_status == 'draft':
+            notice.sent_date = now
+        elif new_status == 'acknowledged' and old_status == 'sent':
+            notice.acknowledged_date = now
+        elif new_status == 'resolved':
+            notice.resolved_date = now
+        
+        # إضافة الملاحظات
+        if notes:
+            status_label = dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES).get(new_status, new_status)
+            note_text = f"{now.strftime('%Y-%m-%d %H:%M')}: تم تغيير الحالة إلى '{status_label}' - {notes}"
+            if notice.notes:
+                notice.notes += f"\n\n{note_text}"
+            else:
+                notice.notes = note_text
+        
+        notice.save()
+        
+        # إنشاء إشعار
+        Notification.objects.create(
+            user=notice.lease.tenant.user if hasattr(notice.lease.tenant, 'user') else request.user,
+            message=str(_trans('تم تحديث حالة الإنذار #{} إلى "{}"').format(
+                notice.id, dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES).get(new_status, new_status)
+            ))
+        )
+        
+        messages.success(request, _('تم تحديث حالة الإنذار بنجاح'))
+        
+        return HttpResponse(json.dumps({
+            'success': True,
+            'notice_id': notice.id,
+            'new_status': new_status,
+            'status_display': dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES).get(new_status, new_status)
+        }), content_type='application/json')
+        
+    except Exception as e:
+        logger.error(f"Error changing notice status: {e}")
+        return HttpResponse(json.dumps({
+            'success': False,
+            'error': str(_trans('حدث خطأ أثناء تحديث الحالة'))
+        }), content_type='application/json', status=500)
+
+
+@login_required
 @user_passes_test(lambda u: u.is_staff)
 def notice_print_view(request, pk):
     """طباعة الإنذار"""
@@ -2774,5 +2841,116 @@ def renewal_reminder_view(request, lease_id):
         'company': company,
         'today': timezone.now().date(),
     }
-
+    
     return render(request, 'dashboard/reports/lease_renewal_reminder.html', context)
+
+@login_required
+@require_POST
+def quick_payment_create(request, lease_id):
+    """معالجة الدفع السريع من كشف الحساب"""
+    from django.utils.translation import gettext as _trans
+    
+    lease = get_object_or_404(Lease, id=lease_id)
+    
+    try:
+        # Get form data
+        month = int(request.POST.get('month'))
+        year = int(request.POST.get('year'))
+        payment_type = request.POST.get('payment_type')  # 'full' or 'partial'
+        payment_method = request.POST.get('payment_method', 'cash')
+        notes = request.POST.get('notes', '')
+        
+        # Validate month and year
+        if month < 1 or month > 12:
+            return HttpResponse(json.dumps({
+                'success': False,
+                'error': str(_trans('رقم الشهر غير صحيح'))
+            }), content_type='application/json', status=400)
+        
+        # Determine amount based on payment type
+        if payment_type == 'full':
+            # Check if there's already a payment for this month
+            existing_payment = Payment.objects.filter(
+                lease=lease,
+                payment_for_month=month,
+                payment_for_year=year
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            
+            amount = lease.monthly_rent - existing_payment
+            
+            if amount <= 0:
+                return HttpResponse(json.dumps({
+                    'success': False,
+                    'error': str(_trans('هذا الشهر مدفوع بالكامل'))
+                }), content_type='application/json', status=400)
+                
+        elif payment_type == 'partial':
+            # Get amount from form
+            amount_str = request.POST.get('amount', '').strip()
+            if not amount_str:
+                return HttpResponse(json.dumps({
+                    'success': False,
+                    'error': str(_trans('يرجى إدخال المبلغ'))
+                }), content_type='application/json', status=400)
+            
+            try:
+                amount = Decimal(amount_str)
+            except (ValueError, decimal.InvalidOperation):
+                return HttpResponse(json.dumps({
+                    'success': False,
+                    'error': str(_trans('المبلغ المدخل غير صحيح'))
+                }), content_type='application/json', status=400)
+            
+            if amount <= 0:
+                return HttpResponse(json.dumps({
+                    'success': False,
+                    'error': str(_trans('المبلغ يجب أن يكون أكبر من صفر'))
+                }), content_type='application/json', status=400)
+        else:
+            return HttpResponse(json.dumps({
+                'success': False,
+                'error': str(_trans('نوع الدفع غير صحيح'))
+            }), content_type='application/json', status=400)
+        
+        # Create payment
+        payment = Payment.objects.create(
+            lease=lease,
+            payment_date=timezone.now().date(),
+            amount=amount,
+            payment_for_month=month,
+            payment_for_year=year,
+            payment_method=payment_method,
+            notes=notes
+        )
+        
+        # Create success notification
+        Notification.objects.create(
+            user=lease.tenant.user if hasattr(lease.tenant, 'user') else request.user,
+            message=str(_trans('تم إضافة دفعة جديدة بمبلغ {} ر.ع عن شهر {}/{}').format(
+                amount, month, year
+            ))
+        )
+        
+        messages.success(request, _('تم إضافة الدفعة بنجاح'))
+        
+        return HttpResponse(json.dumps({
+            'success': True,
+            'payment_id': payment.id,
+            'amount': str(amount),
+            'month': month,
+            'year': year,
+            'redirect_url': reverse('lease_detail', kwargs={'pk': lease_id})
+        }), content_type='application/json')
+        
+    except ValueError as e:
+        logger.error(f"ValueError in quick payment: {e}")
+        return HttpResponse(json.dumps({
+            'success': False,
+            'error': str(_trans('خطأ في البيانات المدخلة'))
+        }), content_type='application/json', status=400)
+    except Exception as e:
+        logger.error(f"Error creating quick payment: {e}")
+        return HttpResponse(json.dumps({
+            'success': False,
+            'error': str(_trans('حدث خطأ أثناء إنشاء الدفعة'))
+        }), content_type='application/json', status=500)

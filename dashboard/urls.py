@@ -27,12 +27,14 @@ from .views import (
     media_diagnostics,
     # Payment Overdue Notice Views
     PaymentOverdueNoticeListView, PaymentOverdueNoticeDetailView, LeaseOverdueNoticesView,
-    generate_automatic_notices, notice_update_status, notice_print_view, notices_bulk_actions,
+    generate_automatic_notices, notice_update_status, notice_print_view, notices_bulk_actions, quick_notice_status_change,
     # Registration Invoice
     registration_invoice_view,
     # New Report Views
     renewal_invoice_view, cancellation_form_view, renewal_form_view,
     tenant_comprehensive_report_view, renewal_reminder_view,
+    # Quick Payment View
+    quick_payment_create,
 )
 from .auth_views import (
     EnhancedLoginView, send_login_otp, verify_login_otp, user_profile,
@@ -127,6 +129,8 @@ urlpatterns = [
     path('payments/<int:pk>/edit/', PaymentUpdateView.as_view(), name='payment_update'),
     path('payments/<int:pk>/delete/', PaymentDeleteView.as_view(), name='payment_delete'), # ADDED
     path('payments/<int:pk>/receipt/', PaymentReceiptPDFView.as_view(), name='payment_receipt'),
+    # Quick Payment from Statement
+    path('lease/<int:lease_id>/quick-payment/', quick_payment_create, name='quick_payment_create'),
 
     # Security Deposits
     path('security-deposits/', SecurityDepositListView.as_view(), name='security_deposit_list'),
@@ -216,6 +220,7 @@ urlpatterns = [
     path('overdue-notices/<int:pk>/', PaymentOverdueNoticeDetailView.as_view(), name='overdue_notice_detail'),
     path('overdue-notices/generate/', generate_automatic_notices, name='generate_automatic_notices'),
     path('overdue-notices/<int:pk>/update-status/', notice_update_status, name='notice_update_status'),
+    path('overdue-notices/<int:pk>/quick-status-change/', quick_notice_status_change, name='quick_notice_status_change'),
     path('overdue-notices/<int:pk>/print/', notice_print_view, name='notice_print_view'),
     path('overdue-notices/bulk-actions/', notices_bulk_actions, name='notices_bulk_actions'),
     # Payment Overdue Notices for specific lease
