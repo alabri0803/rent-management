@@ -415,27 +415,39 @@
         </thead>
         <tbody>
           <tr>
-            <td>☐</td>
+            <td style="font-size: 20px; font-weight: bold; text-align: center;">
+              {% if lease.cancellation_reason and 'contract_term_ended' in lease.cancellation_reason %}☑{% else %}☐{% endif %}
+            </td>
             <td>{% trans "انتهاء المدة المحددة في العقد" %}</td>
           </tr>
           <tr>
-            <td>☐</td>
+            <td style="font-size: 20px; font-weight: bold; text-align: center;">
+              {% if lease.cancellation_reason and 'non_payment' in lease.cancellation_reason %}☑{% else %}☐{% endif %}
+            </td>
             <td>{% trans "عدم دفع الإيجار لأكثر من شهرين متتاليين" %}</td>
           </tr>
           <tr>
-            <td>☐</td>
+            <td style="font-size: 20px; font-weight: bold; text-align: center;">
+              {% if lease.cancellation_reason and 'tenant_violation' in lease.cancellation_reason %}☑{% else %}☐{% endif %}
+            </td>
             <td>{% trans "مخالفة شروط العقد من قبل المستأجر" %}</td>
           </tr>
           <tr>
-            <td>☐</td>
+            <td style="font-size: 20px; font-weight: bold; text-align: center;">
+              {% if lease.cancellation_reason and 'owner_reclaim' in lease.cancellation_reason %}☑{% else %}☐{% endif %}
+            </td>
             <td>{% trans "رغبة المالك في استرداد العقار" %}</td>
           </tr>
           <tr>
-            <td>☐</td>
+            <td style="font-size: 20px; font-weight: bold; text-align: center;">
+              {% if lease.cancellation_reason and 'tenant_request' in lease.cancellation_reason %}☑{% else %}☐{% endif %}
+            </td>
             <td>{% trans "رغبة المستأجر في إنهاء العقد" %}</td>
           </tr>
           <tr>
-            <td>☐</td>
+            <td style="font-size: 20px; font-weight: bold; text-align: center;">
+              {% if lease.cancellation_reason and 'other' in lease.cancellation_reason %}☑{% else %}☐{% endif %}
+            </td>
             <td>{% trans "أسباب أخرى (يرجى التوضيح أدناه)" %}</td>
           </tr>
         </tbody>
@@ -446,7 +458,7 @@
       <div class="section-title">
         <span>{% trans "تفاصيل إضافية وأسباب أخرى" %}</span>
       </div>
-      <textarea class="reason-area" placeholder="{% trans 'يرجى كتابة أي تفاصيل إضافية أو أسباب أخرى للإلغاء...' %}">{{ cancellation_reason|default:"" }}</textarea>
+      <textarea class="reason-area" placeholder="{% trans 'يرجى كتابة أي تفاصيل إضافية أو أسباب أخرى للإلغاء...' %}">{{ lease.cancellation_details|default:"" }}</textarea>
     </div>
 
     <div class="section">

@@ -2596,14 +2596,21 @@ def cancellation_form_view(request, lease_id):
     """Generate and display lease cancellation form"""
     lease = get_object_or_404(Lease, id=lease_id)
     
-    # Calculate outstanding amounts (example calculations)
-    outstanding_rent = Decimal('0.00')  # Should be calculated based on actual payments
-    outstanding_utilities = Decimal('0.00')  # Should be calculated based on actual utilities
+    # حساب الإيجار المستحق الفعلي من كشف الحساب
+    payment_summary = lease.get_payment_summary()
+    outstanding_rent = sum(Decimal(str(month['balance'])) for month in payment_summary)
+    
+    # رسوم الخدمات (افتراضياً 0 إذا لم تكن موجودة)
+    outstanding_utilities = Decimal('0.00')  # يمكن إضافة منطق لحسابها لاحقاً
     
     # Get security deposit from SecurityDeposit model
+    # البحث عن التأمين المحتفظ به أو المستلم
     try:
-        security_deposit_obj = SecurityDeposit.objects.filter(lease=lease, status='held').first()
-        security_deposit = security_deposit_obj.amount if security_deposit_obj else Decimal('0.00')
+        security_deposits = SecurityDeposit.objects.filter(
+            lease=lease, 
+            status__in=['held', 'received']  # محتفظ به أو مستلم
+        )
+        security_deposit = sum(d.amount for d in security_deposits)
     except:
         security_deposit = Decimal('0.00')
     

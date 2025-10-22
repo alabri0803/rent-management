@@ -127,11 +127,33 @@ class Lease(models.Model):
     office_fee = models.DecimalField(_("رسوم المكتب"), max_digits=10, decimal_places=2, default=5.00)
     admin_fee = models.DecimalField(_("الرسوم الإدارية"), max_digits=10, decimal_places=2, default=1.00)
     registration_fee = models.DecimalField(_("رسوم تسجيل العقد (3%)"), max_digits=10, decimal_places=2, blank=True)
+    
+    # أسباب الإلغاء
+    CANCELLATION_REASON_CHOICES = [
+        ('contract_term_ended', _('انتهاء المدة المحددة في العقد')),
+        ('non_payment', _('عدم دفع الإيجار لأكثر من شهرين متتاليين')),
+        ('tenant_violation', _('مخالفة شروط العقد من قبل المستأجر')),
+        ('owner_reclaim', _('رغبة المالك في استرداد العقار')),
+        ('tenant_request', _('رغبة المستأجر في إنهاء العقد')),
+        ('other', _('أسباب أخرى')),
+    ]
+    
     cancellation_date = models.DateField(_("تاريخ الإلغاء"), blank=True, null=True)
-    cancellation_reason = models.TextField(_("سبب الإلغاء"), blank=True, null=True)
+    cancellation_reason = models.CharField(_("أسباب الإلغاء"), max_length=500, blank=True, null=True, help_text=_("يمكنك اختيار حتى 3 أسباب، مفصولة بفواصل"))
+    cancellation_details = models.TextField(_("تفاصيل إضافية عن سبب الإلغاء"), blank=True, null=True)
     
     # المدير المخصص
     objects = LeaseManager()
+    
+    def get_cancellation_reasons_display(self):
+        """تحويل أكواد أسباب الإلغاء إلى نصوص عربية"""
+        if not self.cancellation_reason:
+            return None
+        
+        reasons_dict = dict(self.CANCELLATION_REASON_CHOICES)
+        reason_codes = self.cancellation_reason.split(',')
+        reason_texts = [reasons_dict.get(code.strip(), code) for code in reason_codes]
+        return reason_texts
     
     class Meta:
         verbose_name = _("عقد إيجار")

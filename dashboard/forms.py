@@ -87,16 +87,65 @@ class LeaseForm(forms.ModelForm):
 
 # ADDED
 class LeaseCancelForm(forms.ModelForm):
+    # استخدام MultipleChoiceField بدلاً من الحقل العادي
+    cancellation_reasons = forms.MultipleChoiceField(
+        choices=Lease.CANCELLATION_REASON_CHOICES,
+        widget=forms.CheckboxSelectMultiple(),
+        required=False,
+        label=_('أسباب الإلغاء'),
+        help_text=_('يمكنك اختيار حتى 3 أسباب')
+    )
+    
     class Meta:
         model = Lease
-        fields = ['cancellation_reason']
+        fields = ['cancellation_details', 'cancellation_date']
         widgets = {
-            'cancellation_reason': forms.Textarea(attrs={'rows': 4, 'placeholder': _('يرجى ذكر سبب إلغاء العقد...')})
+            'cancellation_details': forms.Textarea(attrs={
+                'rows': 4, 
+                'placeholder': _('يرجى توضيح التفاصيل الإضافية إذا اخترت "أسباب أخرى" أو إذا كان هناك معلومات إضافية...')
+            }),
+            'cancellation_date': forms.DateInput(attrs={'type': 'date'}),
         }
+        labels = {
+            'cancellation_details': _('تفاصيل إضافية وأسباب أخرى'),
+            'cancellation_date': _('تاريخ طلب الإلغاء'),
+        }
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.update({'class': 'w-full p-2 border rounded-md'})
+        # تعيين تاريخ اليوم افتراضياً
+        if not self.instance.pk or not self.instance.cancellation_date:
+            from django.utils import timezone
+            self.fields['cancellation_date'].initial = timezone.now().date()
+        
+        # تحميل الأسباب المحفوظة إذا كان تعديل
+        if self.instance.pk and self.instance.cancellation_reason:
+            self.fields['cancellation_reasons'].initial = self.instance.cancellation_reason.split(',')
+        
+        # تخصيص الأنماط
+        self.fields['cancellation_details'].widget.attrs.update({
+            'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500'
+        })
+        self.fields['cancellation_date'].widget.attrs.update({
+            'class': 'w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500'
+        })
+    
+    def clean_cancellation_reasons(self):
+        """التحقق من عدم تجاوز 3 أسباب"""
+        reasons = self.cleaned_data.get('cancellation_reasons', [])
+        if len(reasons) > 3:
+            raise forms.ValidationError(_('يمكنك اختيار 3 أسباب كحد أقصى'))
+        return reasons
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # حفظ الأسباب مفصولة بفواصل
+        reasons = self.cleaned_data.get('cancellation_reasons', [])
+        instance.cancellation_reason = ','.join(reasons) if reasons else None
+        
+        if commit:
+            instance.save()
+        return instance
 
 # ADDED
 class TenantRatingForm(forms.ModelForm):
