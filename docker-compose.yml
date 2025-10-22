@@ -169,6 +169,42 @@ services:
     networks:
       - rent_network
 
+  # Automated Backup Service
+  backup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rent_management_backup
+    restart: unless-stopped
+    command: >
+      sh -c "
+      echo '0 2 * * * cd /app && python manage.py backup --type=full --upload >> /app/backups/logs/backup-cron.log 2>&1' | crontab - &&
+      crond -f -l 2
+      "
+    environment:
+      - DB_NAME=${DB_NAME:-rent_management}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - ENABLE_S3_UPLOAD=${ENABLE_S3_UPLOAD:-false}
+      - S3_BUCKET=${S3_BUCKET:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - ENABLE_GCS_UPLOAD=${ENABLE_GCS_UPLOAD:-false}
+      - GCS_BUCKET=${GCS_BUCKET:-}
+      - ENABLE_EMAIL=${ENABLE_EMAIL:-false}
+      - EMAIL_TO=${EMAIL_TO:-}
+    volumes:
+      - ./backups:/app/backups
+      - ./media:/app/media
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+    networks:
+      - rent_network
+
 volumes:
   postgres_data:
     driver: local
