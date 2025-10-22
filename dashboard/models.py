@@ -2287,3 +2287,278 @@ class EnhancedNotificationLog(models.Model):
     
     def __str__(self):
         return f"{self.get_channel_display()} - {self.recipient} - {self.get_status_display()}"
+
+
+# ==================== نماذج التقارير المتقدمة ====================
+
+class ReportType(models.TextChoices):
+    """أنواع التقارير"""
+    PROFITABILITY = 'profitability', _('تقرير الربحية')
+    CASH_FLOW = 'cash_flow', _('تقرير التدفق النقدي')
+    OCCUPANCY = 'occupancy', _('تقرير معدل الإشغال')
+    OVERDUE_TENANTS = 'overdue_tenants', _('تقرير المستأجرين المتأخرين')
+    REVENUE = 'revenue', _('تقرير الإيرادات')
+    EXPENSES = 'expenses', _('تقرير المصروفات')
+    LEASE_EXPIRY = 'lease_expiry', _('تقرير انتهاء العقود')
+    TENANT_RATING = 'tenant_rating', _('تقرير تقييم المستأجرين')
+    UNIT_PERFORMANCE = 'unit_performance', _('تقرير أداء الوحدات')
+    CUSTOM = 'custom', _('تقرير مخصص')
+
+
+class ReportFormat(models.TextChoices):
+    """صيغ التقارير"""
+    PDF = 'pdf', _('PDF')
+    EXCEL = 'excel', _('Excel')
+    CSV = 'csv', _('CSV')
+    JSON = 'json', _('JSON')
+    HTML = 'html', _('HTML')
+
+
+class ReportFrequency(models.TextChoices):
+    """تكرار التقارير المجدولة"""
+    DAILY = 'daily', _('يومي')
+    WEEKLY = 'weekly', _('أسبوعي')
+    MONTHLY = 'monthly', _('شهري')
+    QUARTERLY = 'quarterly', _('ربع سنوي')
+    YEARLY = 'yearly', _('سنوي')
+    CUSTOM = 'custom', _('مخصص')
+
+
+class ScheduledReport(models.Model):
+    """التقارير المجدولة"""
+    
+    name = models.CharField(_("اسم التقرير"), max_length=200)
+    description = models.TextField(_("الوصف"), blank=True, null=True)
+    
+    report_type = models.CharField(
+        _("نوع التقرير"),
+        max_length=50,
+        choices=ReportType.choices
+    )
+    
+    frequency = models.CharField(
+        _("التكرار"),
+        max_length=20,
+        choices=ReportFrequency.choices,
+        default=ReportFrequency.MONTHLY
+    )
+    
+    format = models.CharField(
+        _("الصيغة"),
+        max_length=20,
+        choices=ReportFormat.choices,
+        default=ReportFormat.PDF
+    )
+    
+    # المستلمون
+    recipients = models.ManyToManyField(
+        User,
+        verbose_name=_("المستلمون"),
+        related_name='scheduled_reports',
+        help_text=_("المستخدمون الذين سيستلمون التقرير")
+    )
+    
+    recipient_emails = models.TextField(
+        _("بريد إلكتروني إضافي"),
+        blank=True,
+        null=True,
+        help_text=_("عناوين بريد إلكتروني إضافية مفصولة بفواصل")
+    )
+    
+    # الفلاتر والإعدادات
+    filters = models.JSONField(
+        _("الفلاتر"),
+        default=dict,
+        blank=True,
+        help_text=_("فلاتر التقرير (مباني، وحدات، تواريخ، إلخ)")
+    )
+    
+    # الجدولة
+    is_active = models.BooleanField(_("مفعّل"), default=True)
+    next_run = models.DateTimeField(_("التشغيل التالي"), null=True, blank=True)
+    last_run = models.DateTimeField(_("آخر تشغيل"), null=True, blank=True)
+    
+    # التواريخ
+    created_at = models.DateTimeField(_("تاريخ الإنشاء"), auto_now_add=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_scheduled_reports',
+        verbose_name=_("أنشئ بواسطة")
+    )
+    
+    class Meta:
+        verbose_name = _("تقرير مجدول")
+        verbose_name_plural = _("التقارير المجدولة")
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_frequency_display()})"
+
+
+class GeneratedReport(models.Model):
+    """التقارير المُنشأة"""
+    
+    scheduled_report = models.ForeignKey(
+        ScheduledReport,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='generated_reports',
+        verbose_name=_("التقرير المجدول")
+    )
+    
+    report_type = models.CharField(
+        _("نوع التقرير"),
+        max_length=50,
+        choices=ReportType.choices
+    )
+    
+    title = models.CharField(_("العنوان"), max_length=200)
+    
+    # الفترة الزمنية
+    start_date = models.DateField(_("تاريخ البداية"), null=True, blank=True)
+    end_date = models.DateField(_("تاريخ النهاية"), null=True, blank=True)
+    
+    # البيانات
+    data = models.JSONField(
+        _("البيانات"),
+        default=dict,
+        help_text=_("بيانات التقرير المُنشأ")
+    )
+    
+    # الملف
+    file = models.FileField(
+        _("الملف"),
+        upload_to='reports/%Y/%m/',
+        null=True,
+        blank=True
+    )
+    
+    format = models.CharField(
+        _("الصيغة"),
+        max_length=20,
+        choices=ReportFormat.choices
+    )
+    
+    # الحالة
+    status = models.CharField(
+        _("الحالة"),
+        max_length=20,
+        choices=[
+            ('generating', _('قيد الإنشاء')),
+            ('completed', _('مكتمل')),
+            ('failed', _('فشل')),
+            ('sent', _('تم الإرسال')),
+        ],
+        default='generating'
+    )
+    
+    error_message = models.TextField(_("رسالة الخطأ"), blank=True, null=True)
+    
+    # التواريخ
+    generated_at = models.DateTimeField(_("تاريخ الإنشاء"), auto_now_add=True)
+    generated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='generated_reports',
+        verbose_name=_("أنشئ بواسطة")
+    )
+    
+    # الإحصائيات
+    file_size = models.BigIntegerField(_("حجم الملف"), null=True, blank=True)
+    download_count = models.IntegerField(_("عدد التنزيلات"), default=0)
+    
+    class Meta:
+        verbose_name = _("تقرير مُنشأ")
+        verbose_name_plural = _("التقارير المُنشأة")
+        ordering = ['-generated_at']
+    
+    def __str__(self):
+        return f"{self.title} - {self.generated_at.strftime('%Y-%m-%d')}"
+
+
+class ReportAnalytics(models.Model):
+    """تحليلات التقارير"""
+    
+    # الفترة
+    period_start = models.DateField(_("بداية الفترة"))
+    period_end = models.DateField(_("نهاية الفترة"))
+    period_type = models.CharField(
+        _("نوع الفترة"),
+        max_length=20,
+        choices=[
+            ('daily', _('يومي')),
+            ('weekly', _('أسبوعي')),
+            ('monthly', _('شهري')),
+            ('quarterly', _('ربع سنوي')),
+            ('yearly', _('سنوي')),
+        ]
+    )
+    
+    # الإيرادات
+    total_revenue = models.DecimalField(
+        _("إجمالي الإيرادات"),
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+    
+    # المصروفات
+    total_expenses = models.DecimalField(
+        _("إجمالي المصروفات"),
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+    
+    # الربحية
+    net_profit = models.DecimalField(
+        _("صافي الربح"),
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+    
+    profit_margin = models.DecimalField(
+        _("هامش الربح %"),
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+    
+    # الإشغال
+    total_units = models.IntegerField(_("إجمالي الوحدات"), default=0)
+    occupied_units = models.IntegerField(_("الوحدات المشغولة"), default=0)
+    occupancy_rate = models.DecimalField(
+        _("معدل الإشغال %"),
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+    
+    # العقود
+    active_leases = models.IntegerField(_("العقود النشطة"), default=0)
+    
+    # المدفوعات
+    overdue_amount = models.DecimalField(
+        _("المبالغ المتأخرة"),
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+    
+    # التواريخ
+    calculated_at = models.DateTimeField(_("تاريخ الحساب"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("آخر تحديث"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("تحليلات التقرير")
+        verbose_name_plural = _("تحليلات التقارير")
+        ordering = ['-period_end']
+        unique_together = ['period_start', 'period_end', 'period_type']
+    
+    def __str__(self):
+        return f"تحليلات {self.period_start} - {self.period_end}"
