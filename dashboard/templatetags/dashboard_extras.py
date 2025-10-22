@@ -56,3 +56,45 @@ def user_display_name(context, user):
         return full_name
     else:
         return user.username or "-"
+
+
+# ==== Permission Checking Template Tags ====
+@register.simple_tag(takes_context=True)
+def has_permission(context, permission_name):
+    """
+    التحقق من صلاحية المستخدم الحالي
+    Usage: {% has_permission 'can_manage_units' as can_edit %}
+    """
+    request = context.get('request')
+    if not request or not request.user.is_authenticated:
+        return False
+    
+    # المستخدمون الإداريون لديهم جميع الصلاحيات
+    if request.user.is_superuser:
+        return True
+    
+    # التحقق من الصلاحية
+    if hasattr(request.user, 'profile'):
+        return request.user.profile.has_permission(permission_name)
+    
+    return False
+
+
+@register.filter
+def has_perm(user, permission_name):
+    """
+    Filter للتحقق من صلاحية المستخدم
+    Usage: {% if request.user|has_perm:'can_manage_units' %}
+    """
+    if not user or not user.is_authenticated:
+        return False
+    
+    # المستخدمون الإداريون لديهم جميع الصلاحيات
+    if user.is_superuser:
+        return True
+    
+    # التحقق من الصلاحية
+    if hasattr(user, 'profile'):
+        return user.profile.has_permission(permission_name)
+    
+    return False

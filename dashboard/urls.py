@@ -10,7 +10,7 @@ from .views import (
     ExpenseListView, ExpenseCreateView, ExpenseUpdateView, ExpenseDeleteView,
     PaymentListView, PaymentCreateView, PaymentUpdateView, PaymentDeleteView, PaymentReceiptPDFView,
     CheckManagementView, CheckStatusUpdateView,
-    UserListView, UserCreateView, UserUpdateView, UserDeleteView,
+    UserListView, UserCreateView, UserUpdateView, UserDeleteView, UserPermissionsView,
     ReportSelectionView, LeaseReportView, GenerateTenantStatementPDF, GenerateMonthlyPLReportPDF, GenerateAnnualPLReportPDF, GenerateOccupancyReportPDF, GeneratePaymentReceiptPDF,
     CompanyUpdateView, UpdateTenantRatingView,
     InvoiceListView, InvoiceDetailView, InvoiceCreateView, InvoiceUpdateView, InvoiceDeleteView,
@@ -142,6 +142,7 @@ urlpatterns = [
     path('users/', UserListView.as_view(), name='user_list'),
     path('users/new/', UserCreateView.as_view(), name='user_create'),
     path('users/<int:pk>/edit/', UserUpdateView.as_view(), name='user_update'),
+    path('users/<int:pk>/permissions/', UserPermissionsView.as_view(), name='user_permissions'),
     path('users/<int:pk>/delete/', UserDeleteView.as_view(), name='user_delete'),
 
     # Reports

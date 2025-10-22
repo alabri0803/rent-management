@@ -34,9 +34,9 @@ class Command(BaseCommand):
         self.stdout.write(f'التاريخ الحالي: {today}')
         self.stdout.write(f'البحث عن الدفعات المتأخرة منذ: {one_month_ago}')
 
-        # البحث عن العقود النشطة
-        active_leases = Lease.objects.filter(status='active')
-        self.stdout.write(f'عدد العقود النشطة: {active_leases.count()}')
+        # البحث عن العقود النشطة والمنتهية (للعقود المنتهية التي لديها دفعات متأخرة)
+        active_leases = Lease.objects.filter(status__in=['active', 'expired', 'expiring_soon'])
+        self.stdout.write(f'عدد العقود (النشطة والمنتهية): {active_leases.count()}')
 
         notices_created = 0
         notices_skipped = 0

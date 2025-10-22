@@ -96,7 +96,6 @@
                             <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الاسم الكامل" %}</th>
                             <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "البريد الإلكتروني" %}</th>
                             <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "رقم الهاتف" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "Role" %}</th>
                             <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الحالة" %}</th>
                             <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "تاريخ الانضمام" %}</th>
                             <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "إجراءات" %}</th>
@@ -114,17 +113,6 @@
                                 {% else %}
                                     <span class="text-gray-400">-</span>
                                 {% endif %}
-                            </td>
-                            <td class="px-6 py-4">
-                                {% for group in user.groups.all %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                        {{ group.name }}
-                                    </span>
-                                {% empty %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        {% trans "No Role" %}
-                                    </span>
-                                {% endfor %}
                             </td>
                             <td class="px-6 py-4">
                                 {% if user.is_active %}
@@ -152,6 +140,11 @@
                                         </svg>
                                     </a>
                                     {% if not user.is_superuser %}
+                                    <a href="{% url 'user_permissions' user.pk %}" class="bg-purple-100 text-purple-700 p-2 rounded-lg hover:bg-purple-200 transition-colors" title="{% trans 'إدارة الصلاحيات' %}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                        </svg>
+                                    </a>
                                     <a href="{% url 'user_delete' user.pk %}" class="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition-colors" title="{% trans 'حذف' %}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

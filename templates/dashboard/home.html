@@ -47,7 +47,9 @@
 
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {% load dashboard_extras %}
             <!-- Active Contracts -->
+            {% if user|has_perm:'can_view_leases' %}
             <div class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
                 <div class="flex items-center justify-between">
                     <div>
@@ -61,8 +63,10 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Expected Monthly Income -->
+            {% if user|has_perm:'can_view_dashboard_financial' %}
             <div class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
                 <div class="flex items-center justify-between">
                     <div>
@@ -83,8 +87,10 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Monthly Expenses -->
+            {% if user|has_perm:'can_view_dashboard_financial' %}
             <div class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
                 <div class="flex items-center justify-between">
                     <div>
@@ -105,8 +111,10 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Net Monthly Income -->
+            {% if user|has_perm:'can_view_dashboard_financial' %}
             <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105 text-white">
                 <div class="flex items-center justify-between">
                     <div>
@@ -127,6 +135,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
 
         <!-- Main Content Grid -->
@@ -134,6 +143,7 @@
             <!-- Left Column - Charts -->
             <div class="lg:col-span-2 space-y-8">
                 <!-- Calendar Card -->
+                {% if user|has_perm:'can_view_leases' %}
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <div class="flex items-center mb-6">
                         <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full p-3 ml-4">
@@ -145,8 +155,10 @@
                     </div>
                     <div id="calendar" class="text-sm"></div>
                 </div>
+                {% endif %}
 
                 <!-- Financial Trend Chart -->
+                {% if user|has_perm:'can_view_dashboard_charts' %}
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <div class="flex items-center mb-6">
                         <div class="bg-gradient-to-br from-green-500 to-blue-600 rounded-full p-3 ml-4">
@@ -160,11 +172,13 @@
                         <canvas id="financialTrendChart"></canvas>
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Right Column - Sidebar -->
             <div class="lg:col-span-1 space-y-8">
                 <!-- Occupancy Chart -->
+                {% if user|has_perm:'can_view_dashboard_charts' %}
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <div class="flex items-center mb-6">
                         <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-full p-3 ml-4">
@@ -178,8 +192,10 @@
                         <canvas id="occupancyChart"></canvas>
                     </div>
                 </div>
+                {% endif %}
                 
                 <!-- Financial Transactions -->
+                {% if user|has_perm:'can_view_dashboard_transactions' %}
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <div class="flex items-center justify-between mb-6">
                         <div class="flex items-center">
@@ -256,6 +272,7 @@
                     </div>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>

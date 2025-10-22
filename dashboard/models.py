@@ -831,6 +831,49 @@ class UserProfile(models.Model):
     phone_number = models.CharField(_("رقم الهاتف"), max_length=15, blank=True, null=True, help_text=_("رقم الهاتف للتحقق عبر OTP"), validators=[RegexValidator(regex=r'^\+968\d{8}$', message=_("الرجاء إدخال رقم هاتف عماني صالح يبدأ بـ +968 (8 أرقام بعد المقدمة)"))])
     first_name_english = models.CharField(_("الاسم الأول بالإنجليزية"), max_length=150, blank=True, null=True, help_text=_("ترجمة تلقائية للاسم الأول"))
     
+    # === صلاحيات الوصول (Permissions) ===
+    # لوحة التحكم
+    can_view_dashboard = models.BooleanField(_("عرض لوحة التحكم"), default=True, help_text=_("الوصول إلى لوحة التحكم الرئيسية"))
+    can_view_dashboard_stats = models.BooleanField(_("عرض إحصائيات العقود"), default=True, help_text=_("بطاقة العقود النشطة"))
+    can_view_dashboard_financial = models.BooleanField(_("عرض البيانات المالية"), default=False, help_text=_("الدخل المتوقع، المصاريف، صافي الدخل"))
+    can_view_dashboard_calendar = models.BooleanField(_("عرض تقويم التجديد"), default=True, help_text=_("تقويم تجديد العقود"))
+    can_view_dashboard_charts = models.BooleanField(_("عرض المخططات البيانية"), default=True, help_text=_("اتجاه الإيرادات، إشغال الوحدات"))
+    can_view_dashboard_transactions = models.BooleanField(_("عرض الحركات المالية"), default=False, help_text=_("آخر الدفعات والمصاريف"))
+    
+    # إدارة العقارات
+    can_view_buildings = models.BooleanField(_("عرض المباني"), default=True)
+    can_manage_buildings = models.BooleanField(_("إدارة المباني"), default=False, help_text=_("إضافة، تعديل، حذف المباني"))
+    can_view_units = models.BooleanField(_("عرض الوحدات"), default=True)
+    can_manage_units = models.BooleanField(_("إدارة الوحدات"), default=False, help_text=_("إضافة، تعديل، حذف الوحدات"))
+    
+    # إدارة العقود
+    can_view_leases = models.BooleanField(_("عرض العقود"), default=True)
+    can_manage_leases = models.BooleanField(_("إدارة العقود"), default=False, help_text=_("إضافة، تعديل، حذف، تجديد، إلغاء العقود"))
+    
+    # إدارة المستأجرين
+    can_view_tenants = models.BooleanField(_("عرض المستأجرين"), default=True)
+    can_manage_tenants = models.BooleanField(_("إدارة المستأجرين"), default=False, help_text=_("إضافة، تعديل، حذف المستأجرين"))
+    
+    # العمليات المالية
+    can_view_payments = models.BooleanField(_("عرض الدفعات"), default=False)
+    can_manage_payments = models.BooleanField(_("إدارة الدفعات"), default=False, help_text=_("إضافة، تعديل، حذف الدفعات"))
+    can_view_invoices = models.BooleanField(_("عرض الفواتير"), default=False)
+    can_manage_invoices = models.BooleanField(_("إدارة الفواتير"), default=False, help_text=_("إنشاء، تعديل، حذف الفواتير"))
+    can_view_expenses = models.BooleanField(_("عرض المصروفات"), default=False)
+    can_manage_expenses = models.BooleanField(_("إدارة المصروفات"), default=False, help_text=_("إضافة، تعديل، حذف المصروفات"))
+    
+    # الإنذارات والإشعارات
+    can_view_notices = models.BooleanField(_("عرض الإنذارات"), default=False)
+    can_manage_notices = models.BooleanField(_("إدارة الإنذارات"), default=False, help_text=_("إنشاء، تعديل، إرسال الإنذارات"))
+    
+    # التقارير
+    can_view_reports = models.BooleanField(_("عرض التقارير"), default=False)
+    can_export_reports = models.BooleanField(_("تصدير التقارير"), default=False, help_text=_("تصدير التقارير إلى PDF/Excel"))
+    
+    # إدارة المستخدمين والإعدادات
+    can_manage_users = models.BooleanField(_("إدارة المستخدمين"), default=False, help_text=_("إضافة، تعديل، حذف المستخدمين وصلاحياتهم"))
+    can_access_settings = models.BooleanField(_("الوصول إلى الإعدادات"), default=False, help_text=_("تعديل إعدادات النظام"))
+    
     class Meta:
         verbose_name = _("ملف المستخدم")
         verbose_name_plural = _("ملفات المستخدمين")
@@ -848,6 +891,117 @@ class UserProfile(models.Model):
         else:
             # Use Arabic name (default behavior)
             return self.user.get_full_name() or self.user.username
+    
+    def has_permission(self, permission_name):
+        """التحقق من وجود صلاحية معينة للمستخدم"""
+        # المستخدمون الإداريون (superusers) لديهم جميع الصلاحيات
+        if self.user.is_superuser:
+            return True
+        # التحقق من الصلاحية المحددة
+        return getattr(self, permission_name, False)
+    
+    def get_all_permissions(self):
+        """الحصول على جميع الصلاحيات المفعلة للمستخدم"""
+        permissions = {}
+        permission_fields = [
+            'can_view_dashboard', 'can_view_dashboard_stats', 'can_view_dashboard_financial',
+            'can_view_dashboard_calendar', 'can_view_dashboard_charts', 'can_view_dashboard_transactions',
+            'can_view_buildings', 'can_manage_buildings',
+            'can_view_units', 'can_manage_units',
+            'can_view_leases', 'can_manage_leases',
+            'can_view_tenants', 'can_manage_tenants',
+            'can_view_payments', 'can_manage_payments',
+            'can_view_invoices', 'can_manage_invoices',
+            'can_view_expenses', 'can_manage_expenses',
+            'can_view_notices', 'can_manage_notices',
+            'can_view_reports', 'can_export_reports',
+            'can_manage_users', 'can_access_settings',
+        ]
+        for field in permission_fields:
+            permissions[field] = getattr(self, field, False)
+        return permissions
+    
+    def set_role_permissions(self, role):
+        """تعيين صلاحيات محددة مسبقاً حسب الدور الوظيفي"""
+        role_permissions = {
+            'property_manager': {  # مدير عقارات
+                'can_view_dashboard': True,
+                'can_view_dashboard_stats': True,
+                'can_view_dashboard_financial': False,
+                'can_view_dashboard_calendar': True,
+                'can_view_dashboard_charts': False,
+                'can_view_dashboard_transactions': False,
+                'can_view_buildings': True, 'can_manage_buildings': False,
+                'can_view_units': True, 'can_manage_units': True,
+                'can_view_leases': True, 'can_manage_leases': True,
+                'can_view_tenants': True, 'can_manage_tenants': False,
+                'can_view_payments': False, 'can_manage_payments': False,
+                'can_view_invoices': False, 'can_manage_invoices': False,
+                'can_view_expenses': False, 'can_manage_expenses': False,
+                'can_view_notices': False, 'can_manage_notices': False,
+                'can_view_reports': False, 'can_export_reports': False,
+                'can_manage_users': False, 'can_access_settings': False,
+            },
+            'financial_manager': {  # مدير مالي
+                'can_view_dashboard': True,
+                'can_view_dashboard_stats': True,
+                'can_view_dashboard_financial': True,
+                'can_view_dashboard_calendar': False,
+                'can_view_dashboard_charts': True,
+                'can_view_dashboard_transactions': True,
+                'can_view_buildings': True, 'can_manage_buildings': False,
+                'can_view_units': True, 'can_manage_units': False,
+                'can_view_leases': True, 'can_manage_leases': False,
+                'can_view_tenants': True, 'can_manage_tenants': False,
+                'can_view_payments': True, 'can_manage_payments': True,
+                'can_view_invoices': True, 'can_manage_invoices': True,
+                'can_view_expenses': True, 'can_manage_expenses': True,
+                'can_view_notices': True, 'can_manage_notices': True,
+                'can_view_reports': True, 'can_export_reports': True,
+                'can_manage_users': False, 'can_access_settings': False,
+            },
+            'tenant_manager': {  # مدير المستأجرين
+                'can_view_dashboard': True,
+                'can_view_dashboard_stats': True,
+                'can_view_dashboard_financial': False,
+                'can_view_dashboard_calendar': True,
+                'can_view_dashboard_charts': False,
+                'can_view_dashboard_transactions': False,
+                'can_view_buildings': True, 'can_manage_buildings': False,
+                'can_view_units': True, 'can_manage_units': False,
+                'can_view_leases': True, 'can_manage_leases': False,
+                'can_view_tenants': True, 'can_manage_tenants': True,
+                'can_view_payments': False, 'can_manage_payments': False,
+                'can_view_invoices': False, 'can_manage_invoices': False,
+                'can_view_expenses': False, 'can_manage_expenses': False,
+                'can_view_notices': False, 'can_manage_notices': False,
+                'can_view_reports': False, 'can_export_reports': False,
+                'can_manage_users': False, 'can_access_settings': False,
+            },
+            'viewer': {  # مشاهد فقط
+                'can_view_dashboard': True,
+                'can_view_dashboard_stats': True,
+                'can_view_dashboard_financial': True,
+                'can_view_dashboard_calendar': True,
+                'can_view_dashboard_charts': True,
+                'can_view_dashboard_transactions': True,
+                'can_view_buildings': True, 'can_manage_buildings': False,
+                'can_view_units': True, 'can_manage_units': False,
+                'can_view_leases': True, 'can_manage_leases': False,
+                'can_view_tenants': True, 'can_manage_tenants': False,
+                'can_view_payments': True, 'can_manage_payments': False,
+                'can_view_invoices': True, 'can_manage_invoices': False,
+                'can_view_expenses': True, 'can_manage_expenses': False,
+                'can_view_notices': True, 'can_manage_notices': False,
+                'can_view_reports': True, 'can_export_reports': False,
+                'can_manage_users': False, 'can_access_settings': False,
+            },
+        }
+        
+        if role in role_permissions:
+            for permission, value in role_permissions[role].items():
+                setattr(self, permission, value)
+            self.save()
 
 
 class OTP(models.Model):

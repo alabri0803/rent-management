@@ -1244,6 +1244,159 @@ class UserDeleteView(StaffRequiredMixin, DeleteView):
         messages.success(self.request, _("تم حذف المستخدم بنجاح."))
         return super().form_valid(form)
 
+
+class UserPermissionsView(StaffRequiredMixin, UpdateView):
+    """واجهة إدارة صلاحيات المستخدم"""
+    model = User
+    template_name = 'dashboard/user_permissions.html'
+    success_url = reverse_lazy('user_list')
+    fields = []  # لا نحتاج حقول من User
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.get_object()
+        
+        # إنشاء UserProfile إذا لم يكن موجوداً
+        if not hasattr(user, 'profile'):
+            from .models import UserProfile
+            UserProfile.objects.create(user=user)
+        
+        profile = user.profile
+        
+        # الحصول على مجموعات الصلاحيات وإضافة حالة checked لكل صلاحية
+        permission_groups = self.get_permission_groups()
+        for group_key, group_data in permission_groups.items():
+            for permission in group_data['permissions']:
+                # إضافة حقل checked بناءً على قيمة الصلاحية في الـ profile
+                permission['checked'] = getattr(profile, permission['name'], False)
+        
+        context['title'] = _("إدارة صلاحيات المستخدم")
+        context['user'] = user
+        context['profile'] = profile
+        context['permission_groups'] = permission_groups
+        context['predefined_roles'] = [
+            {'id': 'property_manager', 'name': _('مدير عقارات'), 'description': _('إدارة الوحدات والعقود فقط')},
+            {'id': 'financial_manager', 'name': _('مدير مالي'), 'description': _('إدارة العمليات المالية والإنذارات')},
+            {'id': 'tenant_manager', 'name': _('مدير المستأجرين'), 'description': _('إدارة المستأجرين فقط')},
+            {'id': 'viewer', 'name': _('مشاهد'), 'description': _('عرض البيانات فقط بدون تعديل')},
+        ]
+        return context
+    
+    def get_permission_groups(self):
+        """تنظيم الصلاحيات في مجموعات"""
+        return {
+            'dashboard': {
+                'title': _('لوحة التحكم'),
+                'permissions': [
+                    {'name': 'can_view_dashboard', 'label': _('عرض لوحة التحكم')},
+                    {'name': 'can_view_dashboard_stats', 'label': _('عرض إحصائيات العقود')},
+                    {'name': 'can_view_dashboard_financial', 'label': _('عرض البيانات المالية')},
+                    {'name': 'can_view_dashboard_calendar', 'label': _('عرض تقويم التجديد')},
+                    {'name': 'can_view_dashboard_charts', 'label': _('عرض المخططات البيانية')},
+                    {'name': 'can_view_dashboard_transactions', 'label': _('عرض الحركات المالية')},
+                ]
+            },
+            'property': {
+                'title': _('إدارة العقارات'),
+                'permissions': [
+                    {'name': 'can_view_buildings', 'label': _('عرض المباني')},
+                    {'name': 'can_manage_buildings', 'label': _('إدارة المباني')},
+                    {'name': 'can_view_units', 'label': _('عرض الوحدات')},
+                    {'name': 'can_manage_units', 'label': _('إدارة الوحدات')},
+                ]
+            },
+            'leases': {
+                'title': _('إدارة العقود'),
+                'permissions': [
+                    {'name': 'can_view_leases', 'label': _('عرض العقود')},
+                    {'name': 'can_manage_leases', 'label': _('إدارة العقود')},
+                ]
+            },
+            'tenants': {
+                'title': _('إدارة المستأجرين'),
+                'permissions': [
+                    {'name': 'can_view_tenants', 'label': _('عرض المستأجرين')},
+                    {'name': 'can_manage_tenants', 'label': _('إدارة المستأجرين')},
+                ]
+            },
+            'financial': {
+                'title': _('العمليات المالية'),
+                'permissions': [
+                    {'name': 'can_view_payments', 'label': _('عرض الدفعات')},
+                    {'name': 'can_manage_payments', 'label': _('إدارة الدفعات')},
+                    {'name': 'can_view_invoices', 'label': _('عرض الفواتير')},
+                    {'name': 'can_manage_invoices', 'label': _('إدارة الفواتير')},
+                    {'name': 'can_view_expenses', 'label': _('عرض المصروفات')},
+                    {'name': 'can_manage_expenses', 'label': _('إدارة المصروفات')},
+                ]
+            },
+            'notices': {
+                'title': _('الإنذارات'),
+                'permissions': [
+                    {'name': 'can_view_notices', 'label': _('عرض الإنذارات')},
+                    {'name': 'can_manage_notices', 'label': _('إدارة الإنذارات')},
+                ]
+            },
+            'reports': {
+                'title': _('التقارير'),
+                'permissions': [
+                    {'name': 'can_view_reports', 'label': _('عرض التقارير')},
+                    {'name': 'can_export_reports', 'label': _('تصدير التقارير')},
+                ]
+            },
+            'admin': {
+                'title': _('الإدارة'),
+                'permissions': [
+                    {'name': 'can_manage_users', 'label': _('إدارة المستخدمين')},
+                    {'name': 'can_access_settings', 'label': _('الوصول إلى الإعدادات')},
+                ]
+            },
+        }
+    
+    def post(self, request, *args, **kwargs):
+        """معالجة تحديث الصلاحيات"""
+        user = self.get_object()
+        
+        # إنشاء UserProfile إذا لم يكن موجوداً
+        if not hasattr(user, 'profile'):
+            from .models import UserProfile
+            UserProfile.objects.create(user=user)
+        
+        profile = user.profile
+        
+        # التحقق من تطبيق دور محدد مسبقاً
+        if 'apply_role' in request.POST:
+            role = request.POST.get('role')
+            profile.set_role_permissions(role)
+            messages.success(request, _('تم تطبيق صلاحيات "%s" بنجاح.') % dict([
+                ('property_manager', _('مدير عقارات')),
+                ('financial_manager', _('مدير مالي')),
+                ('tenant_manager', _('مدير المستأجرين')),
+                ('viewer', _('مشاهد')),
+            ]).get(role, role))
+            return redirect('user_permissions', pk=user.pk)
+        
+        # تحديث الصلاحيات الفردية
+        permission_fields = [
+            'can_view_buildings', 'can_manage_buildings',
+            'can_view_units', 'can_manage_units',
+            'can_view_leases', 'can_manage_leases',
+            'can_view_tenants', 'can_manage_tenants',
+            'can_view_payments', 'can_manage_payments',
+            'can_view_invoices', 'can_manage_invoices',
+            'can_view_expenses', 'can_manage_expenses',
+            'can_view_notices', 'can_manage_notices',
+            'can_view_reports', 'can_export_reports',
+            'can_manage_users', 'can_access_settings',
+        ]
+        
+        for field in permission_fields:
+            setattr(profile, field, field in request.POST)
+        
+        profile.save()
+        messages.success(request, _('تم تحديث صلاحيات المستخدم بنجاح.'))
+        return redirect('user_list')
+
 # --- Reports ---
 # --- Invoice Views ---
 class InvoiceListView(StaffRequiredMixin, ListView):
