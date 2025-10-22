@@ -65,3 +65,11 @@ python-dotenv
 # twilio
 # boto3
 pycairo
+
+# Django REST Framework and API dependencies
+djangorestframework
+djangorestframework-simplejwt
+drf-yasg
+django-cors-headers
+django-filter
+django-ratelimit
