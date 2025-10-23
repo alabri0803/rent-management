@@ -1,0 +1,290 @@
+/* Base Styles for Dashboard */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Inter:wght@400;700&display=swap');
+
+/* CSS Variables */
+:root {
+    --primary-color: #993333;
+    --primary-700: #7c2a2a;
+    --primary-50: #fdf2f2;
+    --secondary-color: #D4AF37;
+    --card-radius: 0.75rem;
+    --ring: 0 0 0 3px rgba(153, 51, 51, 0.25);
+}
+
+/* Base Typography */
+body {
+    font-family: 'Tajawal', sans-serif;
+    background-color: #f7fafc;
+    color: #374151;
+}
+
+html:not(.lang-ar) body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    background: radial-gradient(1200px 600px at 10% -10%, rgba(255,255,255,0.04), transparent), 
+                linear-gradient(180deg, #1f2937, #111827 65%);
+    transition: transform 0.3s ease-in-out, box-shadow .2s ease;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+}
+
+.sidebar nav a {
+    color: #cbd5e1;
+    transition: background-color .2s ease, color .2s ease, transform .08s ease;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    border: 1px solid transparent;
+}
+
+.sidebar nav a:hover {
+    background-color: rgba(255,255,255,0.06);
+    color: #fff;
+}
+
+.sidebar nav a.active {
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-700));
+    color: white;
+    border-color: rgba(255,255,255,0.08);
+    box-shadow: 0 6px 14px rgba(153,51,51,.25), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+/* Card Styles */
+.card {
+    background-color: #ffffff;
+    border-radius: var(--card-radius);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid #eef2f7;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px rgba(0,0,0,.08), 0 3px 10px rgba(0,0,0,.05);
+}
+
+/* Button Styles */
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    transition: background-color 0.2s, transform .06s;
+    min-height: 44px;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-700);
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+.btn-primary:focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.status-active {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-expiring {
+    background-color: #fef9c3;
+    color: #854d0e;
+}
+
+.status-expired {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-cancelled {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+/* Navigation Icons */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.nav-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    color: currentColor;
+    display: inline-block;
+}
+
+.lang-ar .nav-item {
+    flex-direction: row-reverse;
+}
+
+/* Dropdown Containers */
+.nav-dropdown-content {
+    border-left: 2px solid rgba(255,255,255,0.06);
+}
+
+.lang-ar .nav-dropdown-content {
+    border-right: 2px solid rgba(255,255,255,0.06);
+    border-left: 0;
+}
+
+/* Table Styles */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+}
+
+tbody tr {
+    transition: background-color .12s;
+}
+
+tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+th, td {
+    border-bottom: 1px solid #eef2f7;
+}
+
+/* Messages Animation */
+.message-enter {
+    animation: fadeIn .25s ease-out both;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile Sidebar */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: auto;
+        height: 100vh;
+        z-index: 50;
+        transform: translateX(-100%);
+    }
+    
+    .lang-ar .sidebar {
+        left: auto;
+        right: 0;
+        transform: translateX(100%);
+    }
+    
+    .sidebar.open {
+        transform: translateX(0) !important;
+    }
+    
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 40;
+        display: none;
+    }
+    
+    .overlay.show {
+        display: block;
+    }
+}
+
+/* Accessibility - Touch Targets */
+button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Scrollbar Styling */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Mobile Font Size */
+@media (max-width: 640px) {
+    body {
+        font-size: 16px;
+    }
+}
+
+/* Desktop Toggle */
+@media (min-width: 768px) {
+    .hidden-desktop {
+        display: none !important;
+    }
+}
+
+/* Focus Indicators for Accessibility */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Skip to Content Link (Accessibility) */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    top: 0;
+}

@@ -7333,3 +7333,20 @@ msgstr ""
 #: venv/lib/python3.9/site-packages/modeltranslation/widgets.py:32
 msgid "None"
 msgstr ""
+
+# Base Template Translations
+#: templates/dashboard/base.html:42
+msgid "تخطي إلى المحتوى الرئيسي"
+msgstr "Skip to main content"
+
+#: templates/dashboard/base.html:9
+msgid "نظام إدارة الإيجارات - إدارة شاملة للعقارات والعقود والمدفوعات"
+msgstr "Rent Management System - Comprehensive property, contract and payment management"
+
+#: templates/dashboard/base.html:10
+msgid "إدارة إيجارات, عقارات, عقود, مدفوعات"
+msgstr "Rent management, properties, contracts, payments"
+
+#: templates/dashboard/base.html:16
+msgid "نظام إدارة الإيجارات"
+msgstr "Rent Management System"
