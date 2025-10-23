@@ -1,0 +1,216 @@
+{% load i18n %}
+{% load dashboard_extras %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{% if LANGUAGE_CODE == 'ar' %}rtl{% else %}ltr{% endif %}" class="{% if LANGUAGE_CODE == 'ar' %}lang-ar{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="{% block meta_description %}نظام إدارة الإيجارات - إدارة شاملة للعقارات والعقود والمدفوعات{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}إدارة إيجارات، عقارات، عقود، مدفوعات{% endblock %}">
+    <meta name="author" content="{% get_company_name %}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}{% block title %}{% trans 'لوحة التحكم' %}{% endblock %} - {% get_company_name %}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}نظام إدارة الإيجارات{% endblock %}">
+    
+    <title>{% block page_title %}{% block title %}{% trans "لوحة التحكم" %}{% endblock %} - {% get_company_name %}{% endblock %}</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <link rel="apple-touch-icon" href="{% static 'favicon.svg' %}">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="{% static 'css/output.css' %}" as="style">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <link rel="stylesheet" href="{% static 'css/forms.css' %}">
+    
+    <!-- Chart.js - Load only when needed -->
+    {% block extra_head_scripts %}{% endblock %}
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="text-gray-700">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-link">
+        {% trans "تخطى إلى المحتوى الرئيسي" %}
+    </a>
+    
+    <!-- Mobile Overlay -->
+    <div class="overlay" id="overlay" onclick="toggleMenu()" role="presentation"></div>
+
+    <!-- Mobile Menu Toggle -->
+    <button onclick="toggleMenu()" 
+            class="md:hidden fixed top-4 {% if LANGUAGE_CODE == 'ar' %}right{% else %}left{% endif %}-4 z-50 bg-primary-700 text-white p-3 rounded-lg shadow-lg hover:bg-primary-800 transition-colors" 
+            aria-label="{% trans 'فتح القائمة' %}"
+            aria-expanded="false"
+            aria-controls="sidebar">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar w-64 p-6 text-white flex-shrink-0 flex flex-col overflow-y-auto" 
+               id="sidebar" 
+               role="navigation"
+               aria-label="{% trans 'القائمة الرئيسية' %}">
+            
+            <!-- Close Button (Mobile) -->
+            <button onclick="toggleMenu()" 
+                    class="md:hidden absolute top-4 {% if LANGUAGE_CODE == 'ar' %}left{% else %}right{% endif %}-4 text-white hover:text-gray-300 transition-colors" 
+                    aria-label="{% trans 'إغلاق القائمة' %}">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <!-- Logo & Company Name -->
+            <div class="text-center mb-6 md:mb-10">
+                {% get_company_logo as logo %}
+                {% if logo %}
+                <img src="{{ logo.url }}" alt="{% get_company_name %} {% trans 'شعار' %}" class="w-16 h-16 md:w-20 md:h-20 mx-auto mb-2 md:mb-4 rounded-full">
+                {% endif %}
+                <h1 class="text-xl md:text-2xl font-bold">{% get_company_name %}</h1>
+                <p class="text-xs md:text-sm text-gray-400">{% trans "ادارة الايجارات" %}</p>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="flex-1" aria-label="{% trans 'القائمة الرئيسية' %}">
+                {% block sidebar_nav %}
+                {# Navigation items will be included here #}
+                {% endblock %}
+            </nav>
+
+            <!-- User Profile Section -->
+            <div class="mt-auto pt-6 border-t border-gray-700">
+                <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                    <div class="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold">
+                        {{ user.get_full_name|slice:":1"|upper|default:"U" }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="text-xs text-gray-400 truncate">{{ user.email }}</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto bg-gray-50" id="main-content" role="main">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10" role="banner">
+                <div class="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between">
+                    <h2 class="text-lg md:text-xl font-bold text-gray-800">
+                        {% block page_header %}{% block title %}{% trans "لوحة التحكم" %}{% endblock %}{% endblock %}
+                    </h2>
+                    
+                    <div class="flex items-center gap-3">
+                        <!-- Language Switcher -->
+                        <form action="{% url 'set_language' %}" method="post" class="inline-block">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <select name="language" 
+                                    onchange="this.form.submit()" 
+                                    class="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-700"
+                                    aria-label="{% trans 'اختر اللغة' %}">
+                                <option value="ar" {% if LANGUAGE_CODE == 'ar' %}selected{% endif %}>العربية</option>
+                                <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>English</option>
+                            </select>
+                        </form>
+                        
+                        <!-- Logout Button -->
+                        <a href="{% url 'logout' %}" 
+                           class="text-sm text-red-600 hover:text-red-800 font-semibold transition-colors"
+                           aria-label="{% trans 'تسجيل الخروج' %}">
+                            {% trans "تسجيل الخروج" %}
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div class="px-4 py-3 md:px-6" role="alert" aria-live="polite">
+                {% for message in messages %}
+                <div class="message-enter mb-3 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-200{% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-200{% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <p class="flex-1">{{ message }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Page Content -->
+            <div class="p-4 md:p-6">
+                {% block content %}{% endblock %}
+            </div>
+
+            <!-- Footer -->
+            <footer class="mt-auto py-6 px-4 md:px-6 bg-white border-t border-gray-200" role="contentinfo">
+                <div class="text-center text-sm text-gray-600">
+                    <p>&copy; {% now "Y" %} {% get_company_name %}. {% trans "جميع الحقوق محفوظة" %}.</p>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Mobile Menu Toggle
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const menuButton = document.querySelector('[aria-controls="sidebar"]');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+            
+            // Update ARIA
+            const isOpen = sidebar.classList.contains('open');
+            if (menuButton) {
+                menuButton.setAttribute('aria-expanded', isOpen);
+            }
+            sidebar.setAttribute('aria-hidden', !isOpen);
+        }
+
+        // Close menu on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('open')) {
+                    toggleMenu();
+                }
+            }
+        });
+
+        // Auto-dismiss messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.message-enter');
+            messages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-10px)';
+                    setTimeout(function() {
+                        message.remove();
+                    }, 300);
+                }, 5000);
+            });
+        });
+    </script>
+    
+    <!-- Load JavaScript modules -->
+    <script src="{% static 'js/modals.js' %}" defer></script>
+    <script src="{% static 'js/forms.js' %}" defer></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

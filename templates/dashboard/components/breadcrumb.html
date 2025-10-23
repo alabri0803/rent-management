@@ -1,0 +1,16 @@
+{% load i18n %}
+{# 
+    Breadcrumb Component
+    Usage: {% include 'dashboard/components/breadcrumb.html' with back_url='...' back_text='...' %}
+#}
+
+<nav class="flex items-center justify-center mb-8" aria-label="{% trans 'التنقل' %}">
+    <div class="flex items-center space-x-2 bg-white rounded-full px-6 py-3 shadow-lg">
+        <a href="{{ back_url }}" class="flex items-center {{ link_color|default:'text-blue-600' }} hover:{{ hover_color|default:'text-blue-800' }} transition-colors">
+            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            <span>{{ back_text }}</span>
+        </a>
+    </div>
+</nav>

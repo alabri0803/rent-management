@@ -1,0 +1,40 @@
+{% load i18n %}
+{# 
+    Status Badge Component
+    Usage: {% include 'dashboard/components/status_badge.html' with status='active' text='نشط' %}
+    Status options: active, expiring, expired, cancelled, paid, pending, overdue
+#}
+
+{% if status == 'active' %}
+    <span class="status-badge status-active" role="status" aria-label="{% trans 'نشط' %}">
+        {{ text|default:_("نشط") }}
+    </span>
+{% elif status == 'expiring' %}
+    <span class="status-badge status-expiring" role="status" aria-label="{% trans 'قريب من الانتهاء' %}">
+        {{ text|default:_("قريب من الانتهاء") }}
+    </span>
+{% elif status == 'expired' %}
+    <span class="status-badge status-expired" role="status" aria-label="{% trans 'منتهي' %}">
+        {{ text|default:_("منتهي") }}
+    </span>
+{% elif status == 'cancelled' %}
+    <span class="status-badge status-cancelled" role="status" aria-label="{% trans 'ملغي' %}">
+        {{ text|default:_("ملغي") }}
+    </span>
+{% elif status == 'paid' %}
+    <span class="status-badge bg-green-100 text-green-800" role="status" aria-label="{% trans 'مدفوع' %}">
+        {{ text|default:_("مدفوع") }}
+    </span>
+{% elif status == 'pending' %}
+    <span class="status-badge bg-yellow-100 text-yellow-800" role="status" aria-label="{% trans 'معلق' %}">
+        {{ text|default:_("معلق") }}
+    </span>
+{% elif status == 'overdue' %}
+    <span class="status-badge bg-red-100 text-red-800" role="status" aria-label="{% trans 'متأخر' %}">
+        {{ text|default:_("متأخر") }}
+    </span>
+{% else %}
+    <span class="status-badge bg-gray-100 text-gray-800" role="status">
+        {{ text }}
+    </span>
+{% endif %}
