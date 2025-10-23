@@ -1,161 +1,37 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "إدارة المصاريف" %}{% endblock %}
-
 {% block content %}
-<div class="bg-gradient-to-br from-red-50 to-pink-100 rounded-2xl p-8 -mx-4 -mb-4">
-    <div class="max-w-7xl mx-auto px-4">
-        <!-- Header Section -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-red-600 rounded-full mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                </svg>
-            </div>
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "إدارة المصاريف" %}</h1>
-            <p class="text-gray-600">{% trans "إدارة وعرض جميع المصاريف والنفقات التشغيلية" %}</p>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-            <a href="{% url 'export_expenses_excel' %}" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-8 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                {% trans "تصدير Excel" %}
-            </a>
-            <a href="{% url 'expense_create' %}" class="bg-gradient-to-r from-red-600 to-rose-600 text-white py-3 px-8 rounded-xl font-bold text-lg hover:from-red-700 hover:to-rose-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                {% trans "إضافة مصروف جديد" %}
-            </a>
-        </div>
-
-        <!-- Main Content Card -->
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Table Header -->
-            <div class="bg-gradient-to-r from-red-600 to-rose-600 px-8 py-6">
-                <h2 class="text-2xl font-bold text-white flex items-center">
-                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8m-5-9V9a2 2 0 012-2h2a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V9z"></path>
-                    </svg>
-                    {% trans "قائمة المصاريف" %}
-                </h2>
-            </div>
-            
-            <!-- Table Section -->
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                        <tr>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "التاريخ" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الوصف" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "المبنى" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الفئة" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "المبلغ" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "إجراءات" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for expense in expenses %}
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-gray-700">{{ expense.expense_date|date:"d M Y" }}</td>
-                            <td class="px-6 py-4 text-gray-900 font-medium">{{ expense.description }}</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {{ expense.building.name }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                    </svg>
-                                    {{ expense.get_category_display }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex flex-col">
-                                    <span class="font-mono text-lg font-bold text-red-600">{{ expense.amount|floatformat:2 }}</span>
-                                    <span class="text-sm text-gray-500">{% trans "ر.ع" %}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <a href="{% url 'expense_update' expense.pk %}" class="bg-blue-100 text-blue-700 p-2 rounded-lg hover:bg-blue-200 transition-colors inline-flex items-center" title="{% trans 'تعديل' %}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                    </svg>
-                                    <p class="text-lg font-medium">{% trans "لا توجد مصاريف مسجلة." %}</p>
-                                    <p class="text-sm text-gray-400 mt-2">{% trans "ابدأ بإضافة مصروف جديد" %}</p>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+    <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">{% trans "المصاريف" %}</h2>
+    <div class="flex gap-3 w-full sm:w-auto flex-wrap">
+        <a href="{% url 'export_expenses_excel' %}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg font-semibold w-full sm:w-auto text-center">
+            📊 {% trans "تصدير Excel" %}
+        </a>
+        <a href="{% url 'expense_create' %}" class="btn-primary py-2 px-5 rounded-lg font-semibold w-full sm:w-auto text-center">{% trans "إضافة مصروف جديد" %}</a>
     </div>
 </div>
-
-<style>
-/* Expense-specific animations */
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in-up { animation: fadeInUp 0.6s ease-out; }
-
-/* Enhanced table row effects */
-tbody tr {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-tbody tr:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Money display enhancement */
-.font-mono.text-lg.font-bold {
-    position: relative;
-}
-
-.font-mono.text-lg.font-bold::after {
-    content: '💸';
-    position: absolute;
-    right: -25px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.font-mono.text-lg.font-bold:hover::after {
-    opacity: 1;
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const mainContent = document.querySelector('.max-w-7xl');
-    if (mainContent) {
-        mainContent.classList.add('fade-in-up');
-    }
-    
-    console.log('صفحة المصاريف - تم تحميل الصفحة بنجاح');
-});
-</script>
+<div class="card overflow-hidden">
+    <div class="w-full overflow-x-auto">
+        <table class="w-full text-start min-w-[720px]">
+            <thead class="bg-gray-50 border-b">
+                <tr><th class="p-4">{% trans "التاريخ" %}</th><th class="p-4">{% trans "الوصف" %}</th><th class="p-4">{% trans "المبنى" %}</th><th class="p-4">{% trans "الفئة" %}</th><th class="p-4">{% trans "المبلغ" %}</th><th class="p-4">{% trans "إجراءات" %}</th></tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-4">{{ expense.expense_date|date:"d M Y" }}</td>
+                    <td class="p-4">{{ expense.description }}</td>
+                    <td class="p-4">{{ expense.building.name }}</td>
+                    <td class="p-4">{{ expense.get_category_display }}</td>
+                    <td class="p-4 font-mono">{{ expense.amount|floatformat:2 }}</td>
+                    <td class="p-4"><a href="{% url 'expense_update' expense.pk %}" class="text-blue-600 hover:underline">{% trans "تعديل" %}</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="p-6 text-center text-gray-500">{% trans "لا توجد مصاريف مسجلة." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

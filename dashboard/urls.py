@@ -10,7 +10,7 @@ from .views import (
     ExpenseListView, ExpenseCreateView, ExpenseUpdateView, ExpenseDeleteView,
     PaymentListView, PaymentCreateView, PaymentUpdateView, PaymentDeleteView, PaymentReceiptPDFView,
     CheckManagementView, CheckStatusUpdateView,
-    UserListView, UserCreateView, UserUpdateView, UserDeleteView, UserPermissionsView,
+    UserManagementView, UserCreateView, UserUpdateView, UserDeleteView,
     ReportSelectionView, LeaseReportView, GenerateTenantStatementPDF, GenerateMonthlyPLReportPDF, GenerateAnnualPLReportPDF, GenerateOccupancyReportPDF, GeneratePaymentReceiptPDF,
     CompanyUpdateView, UpdateTenantRatingView,
     InvoiceListView, InvoiceDetailView, InvoiceCreateView, InvoiceUpdateView, InvoiceDeleteView,
@@ -25,16 +25,6 @@ from .views import (
     finance_unlock, finance_lock,
     backup_now, custom_logout, backup_restore_page, restore_backup,
     media_diagnostics,
-    # Payment Overdue Notice Views
-    PaymentOverdueNoticeListView, PaymentOverdueNoticeDetailView, LeaseOverdueNoticesView,
-    generate_automatic_notices, notice_update_status, notice_print_view, notices_bulk_actions, quick_notice_status_change,
-    # Registration Invoice
-    registration_invoice_view,
-    # New Report Views
-    renewal_invoice_view, cancellation_form_view, renewal_form_view,
-    tenant_comprehensive_report_view, renewal_reminder_view,
-    # Quick Payment View
-    quick_payment_create,
 )
 from .auth_views import (
     EnhancedLoginView, send_login_otp, verify_login_otp, user_profile,
@@ -97,14 +87,6 @@ urlpatterns = [
     path('lease/<int:pk>/delete/', LeaseDeleteView.as_view(), name='lease_delete'),
     path('lease/<int:pk>/renew/', renew_lease, name='lease_renew'),
     path('lease/<int:pk>/cancel/', LeaseCancelView.as_view(), name='lease_cancel'), # ADDED
-    path('lease/<int:lease_id>/registration-invoice/', registration_invoice_view, name='registration_invoice'),
-    path('lease/<int:lease_id>/renewal-invoice/', renewal_invoice_view, name='renewal_invoice'),
-    path('lease/<int:lease_id>/cancellation-form/', cancellation_form_view, name='cancellation_form'),
-    path('lease/<int:lease_id>/renewal-form/', renewal_form_view, name='renewal_form'),
-    path('lease/<int:lease_id>/renewal-reminder/', renewal_reminder_view, name='renewal_reminder'),
-
-    # Tenant Reports
-    path('tenant/<int:tenant_id>/comprehensive-report/', tenant_comprehensive_report_view, name='tenant_comprehensive_report'),
 
     # Tenant Rating - ADDED
     path('tenant/<int:pk>/rate/', UpdateTenantRatingView.as_view(), name='tenant_rate'),
@@ -129,8 +111,6 @@ urlpatterns = [
     path('payments/<int:pk>/edit/', PaymentUpdateView.as_view(), name='payment_update'),
     path('payments/<int:pk>/delete/', PaymentDeleteView.as_view(), name='payment_delete'), # ADDED
     path('payments/<int:pk>/receipt/', PaymentReceiptPDFView.as_view(), name='payment_receipt'),
-    # Quick Payment from Statement
-    path('lease/<int:lease_id>/quick-payment/', quick_payment_create, name='quick_payment_create'),
 
     # Security Deposits
     path('security-deposits/', SecurityDepositListView.as_view(), name='security_deposit_list'),
@@ -143,10 +123,9 @@ urlpatterns = [
     path('checks/<int:pk>/update-status/', CheckStatusUpdateView.as_view(), name='check_status_update'),
     
     # User Management
-    path('users/', UserListView.as_view(), name='user_list'),
+    path('users/', UserManagementView.as_view(), name='user_management'),
     path('users/new/', UserCreateView.as_view(), name='user_create'),
     path('users/<int:pk>/edit/', UserUpdateView.as_view(), name='user_update'),
-    path('users/<int:pk>/permissions/', UserPermissionsView.as_view(), name='user_permissions'),
     path('users/<int:pk>/delete/', UserDeleteView.as_view(), name='user_delete'),
 
     # Reports
@@ -214,15 +193,4 @@ urlpatterns = [
     path('commission-distributions/new/', CommissionDistributionCreateView.as_view(), name='commission_distribution_create'),
     path('commission-distributions/<int:pk>/edit/', CommissionDistributionUpdateView.as_view(), name='commission_distribution_update'),
     path('commission-distributions/<int:pk>/delete/', CommissionDistributionDeleteView.as_view(), name='commission_distribution_delete'),
-    
-    # Payment Overdue Notices
-    path('overdue-notices/', PaymentOverdueNoticeListView.as_view(), name='overdue_notices_list'),
-    path('overdue-notices/<int:pk>/', PaymentOverdueNoticeDetailView.as_view(), name='overdue_notice_detail'),
-    path('overdue-notices/generate/', generate_automatic_notices, name='generate_automatic_notices'),
-    path('overdue-notices/<int:pk>/update-status/', notice_update_status, name='notice_update_status'),
-    path('overdue-notices/<int:pk>/quick-status-change/', quick_notice_status_change, name='quick_notice_status_change'),
-    path('overdue-notices/<int:pk>/print/', notice_print_view, name='notice_print_view'),
-    path('overdue-notices/bulk-actions/', notices_bulk_actions, name='notices_bulk_actions'),
-    # Payment Overdue Notices for specific lease
-    path('lease/<int:lease_id>/payment-overdue-notice/', LeaseOverdueNoticesView.as_view(), name='payment_overdue_notice'),
 ]

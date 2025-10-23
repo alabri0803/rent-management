@@ -13,7 +13,7 @@
         {% csrf_token %}
         <div class="flex gap-4">
             <button type="submit" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700">{% trans "نعم، حذف المستخدم" %}</button>
-            <a href="{% url 'user_list' %}" class="btn-secondary py-2 px-6 rounded-lg">{% trans "إلغاء" %}</a>
+            <a href="{% url 'user_management' %}" class="btn-secondary py-2 px-6 rounded-lg">{% trans "إلغاء" %}</a>
         </div>
     </form>
 </div>

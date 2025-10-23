@@ -1,11 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect
 import os
 import io
 import zipfile
 import shutil
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.core.management import call_command
 
 def login_redirect(request):
@@ -35,23 +34,19 @@ from django import forms
 import json
 from django.views.decorators.http import require_POST
 import logging
-import decimal
-from decimal import Decimal
 logger = logging.getLogger(__name__)
 
 from .models import (
     Tenant, Unit, Building, Lease, Document, MaintenanceRequest, 
     Expense, Payment, Company, Invoice, InvoiceItem,
-    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, SecurityDeposit,
-    PaymentOverdueNotice, NoticeTemplate, LeaseRenewalReminder, Notification
+    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, SecurityDeposit
 )
 from .forms import (
     TenantForm, UnitForm, BuildingForm, LeaseForm, DocumentForm, 
     MaintenanceRequestUpdateForm, ExpenseForm, PaymentForm, LeaseCancelForm, 
     CompanyForm, TenantRatingForm, InvoiceForm, InvoiceItemFormSet,
     RealEstateOfficeForm, BuildingOwnerForm, CommissionAgreementForm, 
-    RentCollectionForm, CommissionDistributionForm, SecurityDepositForm,
-    UserManagementForm
+    RentCollectionForm, CommissionDistributionForm, SecurityDepositForm
 )
 from .utils import render_to_pdf, generate_pdf_bytes
 
@@ -273,7 +268,7 @@ class DashboardHomeView(StaffRequiredMixin, ListView):
                 'url': reverse('lease_detail', kwargs={'pk': renewal.pk}),
                 'extendedProps': {
                     'contract_number': renewal.contract_number,
-                    'days_until_expiry': renewal.days_until_expiry
+                    'days_until_expiry': renewal.days_until_expiry()
                 }
             })
         context['calendar_events'] = json.dumps(calendar_events)
@@ -285,58 +280,6 @@ class DashboardHomeView(StaffRequiredMixin, ListView):
         context['expiring_leases'] = expiring_soon
 
         return context
-
-# --- User Management ---
-class UserListView(StaffRequiredMixin, ListView):
-    model = User
-    template_name = 'dashboard/user_management.html'
-    context_object_name = 'users'
-
-    def get_queryset(self):
-        return User.objects.all().prefetch_related('groups').order_by('username')
-
-class UserCreateView(StaffRequiredMixin, CreateView):
-    model = User
-    form_class = UserManagementForm
-    template_name = 'dashboard/user_form.html'
-    success_url = reverse_lazy('user_list')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = _("Add New User")
-        return context
-
-    def form_valid(self, form):
-        messages.success(self.request, _("User created successfully!"))
-        return super().form_valid(form)
-
-class UserUpdateView(StaffRequiredMixin, UpdateView):
-    model = User
-    form_class = UserManagementForm
-    template_name = 'dashboard/user_form.html'
-    success_url = reverse_lazy('user_list')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = _("Edit User")
-        return context
-
-    def form_valid(self, form):
-        messages.success(self.request, _("User updated successfully!"))
-        return super().form_valid(form)
-
-class UserDeleteView(StaffRequiredMixin, DeleteView):
-    model = User
-    template_name = 'dashboard/user_confirm_delete.html'
-    success_url = reverse_lazy('user_list')
-
-    def form_valid(self, form):
-        if self.object == self.request.user:
-            messages.error(self.request, _("You cannot delete your own account."))
-            return redirect(self.success_url)
-        messages.success(self.request, _("User deleted successfully."))
-        return super().form_valid(form)
-
 
 # --- Finance Lock/Unlock ---
 @login_required
@@ -473,24 +416,9 @@ class TenantListView(StaffRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # إحصائيات المستأجرين
-        all_tenants = Tenant.objects.all()
-        individual_count = all_tenants.filter(tenant_type='individual').count()
-        company_count = all_tenants.filter(tenant_type='company').count()
-        total_count = all_tenants.count()
-        
-        context['stats'] = {
-            'individual_count': individual_count,
-            'company_count': company_count,
-            'total_count': total_count,
-        }
-        
-        # للتوافق مع الكود القديم
-        context['total_tenants'] = total_count
-        context['individual_tenants'] = individual_count
-        context['company_tenants'] = company_count
-        
+        context['total_tenants'] = context['paginator'].count if 'paginator' in context else len(context['tenants'])
+        context['individual_tenants'] = self.get_queryset().filter(tenant_type='individual').count()
+        context['company_tenants'] = self.get_queryset().filter(tenant_type='company').count()
         return context
 
 class TenantDetailView(StaffRequiredMixin, DetailView):
@@ -517,15 +445,8 @@ class TenantCreateView(StaffRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        logger.info(f"Creating new tenant with data: {form.cleaned_data}")
         messages.success(self.request, _("تمت إضافة المستأجر بنجاح!"))
         return super().form_valid(form)
-    
-    def form_invalid(self, form):
-        logger.error(f"Tenant form validation failed. Errors: {form.errors}")
-        logger.error(f"Form data: {form.data}")
-        messages.error(self.request, _("حدث خطأ في حفظ البيانات. يرجى التحقق من المعلومات المدخلة."))
-        return super().form_invalid(form)
 
 class TenantUpdateView(StaffRequiredMixin, UpdateView):
     model = Tenant
@@ -690,11 +611,7 @@ class LeaseCreateView(StaffRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs); context['title'] = _("إضافة عقد جديد"); return context
     def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, _("تمت إضافة العقد بنجاح!"))
-        # Add message about registration invoice
-        messages.info(self.request, _("يمكنك الآن إنشاء فاتورة رسوم التسجيل من صفحة تفاصيل العقد"))
-        return response
+        messages.success(self.request, _("تمت إضافة العقد بنجاح!")); return super().form_valid(form)
 
 class LeaseUpdateView(StaffRequiredMixin, UpdateView):
     model = Lease; form_class = LeaseForm; template_name = 'dashboard/lease_form.html'; success_url = reverse_lazy('lease_list')
@@ -704,30 +621,9 @@ class LeaseUpdateView(StaffRequiredMixin, UpdateView):
         messages.success(self.request, _("تم تحديث العقد بنجاح!")); return super().form_valid(form)
 
 class LeaseDeleteView(StaffRequiredMixin, DeleteView):
-    model = Lease
-    template_name = 'dashboard/lease_confirm_delete.html'
-    success_url = reverse_lazy('lease_list')
-    
+    model = Lease; template_name = 'dashboard/lease_confirm_delete.html'; success_url = reverse_lazy('lease_list')
     def form_valid(self, form):
-        # حفظ مرجع للوحدة قبل حذف العقد
-        unit = self.object.unit
-        contract_number = self.object.contract_number
-        
-        try:
-            # تحديث حالة الوحدة إلى متاحة عند حذف العقد
-            if unit:
-                unit.is_available = True
-                unit.save()
-                
-            # حذف العقد
-            result = super().form_valid(form)
-            
-            messages.success(self.request, _(f"تم حذف العقد {contract_number} بنجاح وتم تحرير الوحدة {unit}."))
-            return result
-            
-        except Exception as e:
-            messages.error(self.request, _(f"حدث خطأ أثناء حذف العقد: {str(e)}"))
-            return self.form_invalid(form)
+        messages.success(self.request, _("تم حذف العقد بنجاح.")); return super().form_valid(form)
 
 # ADDED: Lease Cancellation View
 class LeaseCancelView(StaffRequiredMixin, UpdateView):
@@ -746,8 +642,23 @@ class LeaseCancelView(StaffRequiredMixin, UpdateView):
         lease.unit.is_available = True
         lease.unit.save()
         lease.save()
-        # استمارة الإلغاء ستُنشأ تلقائياً من خلال دالة save() في النموذج
-        messages.success(self.request, _("تم إلغاء العقد وإرفاق استمارة الإلغاء بنجاح."))
+        # Generate and attach cancellation PDF to Documents
+        try:
+            context = {
+                'lease': lease,
+                'today': timezone.now().date(),
+                'company': Company.objects.first(),
+            }
+            pdf_bytes = generate_pdf_bytes('dashboard/reports/lease_cancellation_notice.html', context)
+
+            filename = f"lease_cancellation_{lease.contract_number}.pdf"
+            doc = Document(lease=lease, title=_('استمارة إلغاء عقد') + f" - {lease.contract_number}")
+            doc.file.save(filename, ContentFile(pdf_bytes))
+            doc.save()
+        except Exception as e:
+            logger.exception("Failed to generate/save cancellation PDF for lease %s", lease.id)
+            messages.warning(self.request, _("تم إلغاء العقد، لكن تعذر إرفاق استمارة الإلغاء تلقائياً."))
+        messages.success(self.request, _("تم إلغاء العقد بنجاح."))
         return super().form_valid(form)
 
 # ... (renew_lease, Document views, Maintenance views, Expense views remain similar) ...
@@ -800,22 +711,7 @@ def renew_lease(request, pk):
         except Exception as e:
             logger.exception("Failed to generate/save renewal PDF for new lease %s (from old %s)", new_lease.id, original_lease.id)
             messages.warning(request, _("تم التجديد، لكن تعذر إرفاق استمارة التجديد تلقائياً."))
-
-        # Generate renewal invoice automatically
-        try:
-            renewal_invoice = new_lease._generate_renewal_invoice()
-            if renewal_invoice:
-                messages.success(request, _("تم تجديد العقد وإنشاء فاتورة رسوم التجديد بنجاح!"))
-            else:
-                messages.warning(request, _("تم التجديد، لكن تعذر إنشاء فاتورة رسوم التجديد تلقائياً."))
-        except Exception as e:
-            logger.exception("Failed to generate renewal invoice for new lease %s", new_lease.id)
-            messages.warning(request, _("تم التجديد، لكن تعذر إنشاء فاتورة رسوم التجديد تلقائياً."))
-            
-        if 'renewal_invoice' not in locals() or not renewal_invoice:
-            messages.success(request, _("تم تجديد العقد بنجاح!"))
-        
-        return redirect('lease_detail', pk=new_lease.pk)
+        messages.success(request, _("تم تجديد العقد بنجاح!")); return redirect('lease_detail', pk=new_lease.pk)
     return render(request, 'dashboard/lease_renew.html', {'lease': original_lease})
 
 class DocumentUploadView(StaffRequiredMixin, CreateView):
@@ -1124,13 +1020,6 @@ class UserManagementForm(forms.ModelForm):
         help_text=_("رقم الهاتف العماني يبدأ بـ +968"),
         widget=forms.TextInput(attrs={'placeholder': '+968XXXXXXXX'})
     )
-    first_name_english = forms.CharField(
-        max_length=150,
-        required=False,
-        label=_("الاسم الأول بالإنجليزية"),
-        help_text=_("ترجمة تلقائية للاسم الأول"),
-        widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'bg-gray-100'})
-    )
     
     class Meta:
         model = User
@@ -1144,12 +1033,11 @@ class UserManagementForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Load phone number and English name from UserProfile if editing
+        # Load phone number from UserProfile if editing
         if self.instance and self.instance.pk:
             try:
                 profile = self.instance.profile
                 self.fields['phone_number'].initial = profile.phone_number
-                self.fields['first_name_english'].initial = profile.first_name_english
             except:
                 pass
         
@@ -1169,7 +1057,6 @@ class UserManagementForm(forms.ModelForm):
         user = super().save(commit=False)
         password = self.cleaned_data.get('password')
         phone_number = self.cleaned_data.get('phone_number')
-        first_name_english = self.cleaned_data.get('first_name_english')
         
         if password:
             user.set_password(password)
@@ -1180,11 +1067,10 @@ class UserManagementForm(forms.ModelForm):
             from .models import UserProfile
             profile, created = UserProfile.objects.get_or_create(
                 user=user,
-                defaults={'phone_number': phone_number, 'first_name_english': first_name_english}
+                defaults={'phone_number': phone_number}
             )
             if not created:
                 profile.phone_number = phone_number
-                profile.first_name_english = first_name_english
                 profile.save()
         
         return user
@@ -1210,7 +1096,7 @@ class UserCreateView(StaffRequiredMixin, CreateView):
     model = User
     form_class = UserManagementForm
     template_name = 'dashboard/user_form.html'
-    success_url = reverse_lazy('user_list')
+    success_url = reverse_lazy('user_management')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1225,7 +1111,7 @@ class UserUpdateView(StaffRequiredMixin, UpdateView):
     model = User
     form_class = UserManagementForm
     template_name = 'dashboard/user_form.html'
-    success_url = reverse_lazy('user_list')
+    success_url = reverse_lazy('user_management')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1239,164 +1125,11 @@ class UserUpdateView(StaffRequiredMixin, UpdateView):
 class UserDeleteView(StaffRequiredMixin, DeleteView):
     model = User
     template_name = 'dashboard/user_confirm_delete.html'
-    success_url = reverse_lazy('user_list')
+    success_url = reverse_lazy('user_management')
     
     def form_valid(self, form):
         messages.success(self.request, _("تم حذف المستخدم بنجاح."))
         return super().form_valid(form)
-
-
-class UserPermissionsView(StaffRequiredMixin, UpdateView):
-    """واجهة إدارة صلاحيات المستخدم"""
-    model = User
-    template_name = 'dashboard/user_permissions.html'
-    success_url = reverse_lazy('user_list')
-    fields = []  # لا نحتاج حقول من User
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.get_object()
-        
-        # إنشاء UserProfile إذا لم يكن موجوداً
-        if not hasattr(user, 'profile'):
-            from .models import UserProfile
-            UserProfile.objects.create(user=user)
-        
-        profile = user.profile
-        
-        # الحصول على مجموعات الصلاحيات وإضافة حالة checked لكل صلاحية
-        permission_groups = self.get_permission_groups()
-        for group_key, group_data in permission_groups.items():
-            for permission in group_data['permissions']:
-                # إضافة حقل checked بناءً على قيمة الصلاحية في الـ profile
-                permission['checked'] = getattr(profile, permission['name'], False)
-        
-        context['title'] = _("إدارة صلاحيات المستخدم")
-        context['user'] = user
-        context['profile'] = profile
-        context['permission_groups'] = permission_groups
-        context['predefined_roles'] = [
-            {'id': 'property_manager', 'name': _('مدير عقارات'), 'description': _('إدارة الوحدات والعقود فقط')},
-            {'id': 'financial_manager', 'name': _('مدير مالي'), 'description': _('إدارة العمليات المالية والإنذارات')},
-            {'id': 'tenant_manager', 'name': _('مدير المستأجرين'), 'description': _('إدارة المستأجرين فقط')},
-            {'id': 'viewer', 'name': _('مشاهد'), 'description': _('عرض البيانات فقط بدون تعديل')},
-        ]
-        return context
-    
-    def get_permission_groups(self):
-        """تنظيم الصلاحيات في مجموعات"""
-        return {
-            'dashboard': {
-                'title': _('لوحة التحكم'),
-                'permissions': [
-                    {'name': 'can_view_dashboard', 'label': _('عرض لوحة التحكم')},
-                    {'name': 'can_view_dashboard_stats', 'label': _('عرض إحصائيات العقود')},
-                    {'name': 'can_view_dashboard_financial', 'label': _('عرض البيانات المالية')},
-                    {'name': 'can_view_dashboard_calendar', 'label': _('عرض تقويم التجديد')},
-                    {'name': 'can_view_dashboard_charts', 'label': _('عرض المخططات البيانية')},
-                    {'name': 'can_view_dashboard_transactions', 'label': _('عرض الحركات المالية')},
-                ]
-            },
-            'property': {
-                'title': _('إدارة العقارات'),
-                'permissions': [
-                    {'name': 'can_view_buildings', 'label': _('عرض المباني')},
-                    {'name': 'can_manage_buildings', 'label': _('إدارة المباني')},
-                    {'name': 'can_view_units', 'label': _('عرض الوحدات')},
-                    {'name': 'can_manage_units', 'label': _('إدارة الوحدات')},
-                ]
-            },
-            'leases': {
-                'title': _('إدارة العقود'),
-                'permissions': [
-                    {'name': 'can_view_leases', 'label': _('عرض العقود')},
-                    {'name': 'can_manage_leases', 'label': _('إدارة العقود')},
-                ]
-            },
-            'tenants': {
-                'title': _('إدارة المستأجرين'),
-                'permissions': [
-                    {'name': 'can_view_tenants', 'label': _('عرض المستأجرين')},
-                    {'name': 'can_manage_tenants', 'label': _('إدارة المستأجرين')},
-                ]
-            },
-            'financial': {
-                'title': _('العمليات المالية'),
-                'permissions': [
-                    {'name': 'can_view_payments', 'label': _('عرض الدفعات')},
-                    {'name': 'can_manage_payments', 'label': _('إدارة الدفعات')},
-                    {'name': 'can_view_invoices', 'label': _('عرض الفواتير')},
-                    {'name': 'can_manage_invoices', 'label': _('إدارة الفواتير')},
-                    {'name': 'can_view_expenses', 'label': _('عرض المصروفات')},
-                    {'name': 'can_manage_expenses', 'label': _('إدارة المصروفات')},
-                ]
-            },
-            'notices': {
-                'title': _('الإنذارات'),
-                'permissions': [
-                    {'name': 'can_view_notices', 'label': _('عرض الإنذارات')},
-                    {'name': 'can_manage_notices', 'label': _('إدارة الإنذارات')},
-                ]
-            },
-            'reports': {
-                'title': _('التقارير'),
-                'permissions': [
-                    {'name': 'can_view_reports', 'label': _('عرض التقارير')},
-                    {'name': 'can_export_reports', 'label': _('تصدير التقارير')},
-                ]
-            },
-            'admin': {
-                'title': _('الإدارة'),
-                'permissions': [
-                    {'name': 'can_manage_users', 'label': _('إدارة المستخدمين')},
-                    {'name': 'can_access_settings', 'label': _('الوصول إلى الإعدادات')},
-                ]
-            },
-        }
-    
-    def post(self, request, *args, **kwargs):
-        """معالجة تحديث الصلاحيات"""
-        user = self.get_object()
-        
-        # إنشاء UserProfile إذا لم يكن موجوداً
-        if not hasattr(user, 'profile'):
-            from .models import UserProfile
-            UserProfile.objects.create(user=user)
-        
-        profile = user.profile
-        
-        # التحقق من تطبيق دور محدد مسبقاً
-        if 'apply_role' in request.POST:
-            role = request.POST.get('role')
-            profile.set_role_permissions(role)
-            messages.success(request, _('تم تطبيق صلاحيات "%s" بنجاح.') % dict([
-                ('property_manager', _('مدير عقارات')),
-                ('financial_manager', _('مدير مالي')),
-                ('tenant_manager', _('مدير المستأجرين')),
-                ('viewer', _('مشاهد')),
-            ]).get(role, role))
-            return redirect('user_permissions', pk=user.pk)
-        
-        # تحديث الصلاحيات الفردية
-        permission_fields = [
-            'can_view_buildings', 'can_manage_buildings',
-            'can_view_units', 'can_manage_units',
-            'can_view_leases', 'can_manage_leases',
-            'can_view_tenants', 'can_manage_tenants',
-            'can_view_payments', 'can_manage_payments',
-            'can_view_invoices', 'can_manage_invoices',
-            'can_view_expenses', 'can_manage_expenses',
-            'can_view_notices', 'can_manage_notices',
-            'can_view_reports', 'can_export_reports',
-            'can_manage_users', 'can_access_settings',
-        ]
-        
-        for field in permission_fields:
-            setattr(profile, field, field in request.POST)
-        
-        profile.save()
-        messages.success(request, _('تم تحديث صلاحيات المستخدم بنجاح.'))
-        return redirect('user_list')
 
 # --- Reports ---
 # --- Invoice Views ---
@@ -1416,34 +1149,6 @@ class InvoiceListView(StaffRequiredMixin, ListView):
                 Q(lease__contract_number__icontains=search_query)
             )
         return queryset.order_by('-issue_date')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        search_query = self.request.GET.get('q', '').strip()
-        filtered_qs = Invoice.objects.select_related('tenant', 'lease')
-        if search_query:
-            filtered_qs = filtered_qs.filter(
-                Q(invoice_number__icontains=search_query) |
-                Q(tenant__name__icontains=search_query) |
-                Q(lease__contract_number__icontains=search_query)
-            )
-
-        status_totals = {'draft': 0, 'sent': 0, 'paid': 0, 'overdue': 0, 'cancelled': 0}
-        for item in filtered_qs.values('status').annotate(total=Count('id')):
-            status = item['status']
-            if status in status_totals:
-                status_totals[status] = item['total']
-
-        context.update({
-            'total_invoices': filtered_qs.count(),
-            'draft_count': status_totals['draft'],
-            'sent_count': status_totals['sent'],
-            'paid_count': status_totals['paid'],
-            'overdue_count': status_totals['overdue'],
-            'cancelled_count': status_totals['cancelled'],
-            'search_query': search_query,
-        })
-        return context
 
 class InvoiceDetailView(StaffRequiredMixin, DetailView):
     model = Invoice
@@ -1477,18 +1182,15 @@ class InvoiceCreateView(StaffRequiredMixin, CreateView):
             else:
                 # If items are not valid, we prevent the form from being considered valid.
                 return self.form_invalid(form)
-        # Always redirect to invoice list after successful save
-        print("DEBUG: Redirecting to invoice_list from InvoiceCreateView")
-        return HttpResponseRedirect(reverse('invoice_list'))
+        return super().form_valid(form)
 
 class InvoiceUpdateView(StaffRequiredMixin, UpdateView):
     model = Invoice
     form_class = InvoiceForm
     template_name = 'dashboard/invoice_form.html'
-    success_url = reverse_lazy('invoice_list')
 
     def get_success_url(self):
-        return reverse_lazy('invoice_list')
+        return reverse('invoice_detail', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -1510,9 +1212,7 @@ class InvoiceUpdateView(StaffRequiredMixin, UpdateView):
                 messages.success(self.request, _("تم تحديث الفاتورة بنجاح."))
             else:
                 return self.form_invalid(form)
-        # Always redirect to invoice list after successful save
-        print("DEBUG: Redirecting to invoice_list from InvoiceUpdateView")
-        return HttpResponseRedirect(reverse('invoice_list'))
+        return super().form_valid(form)
 
 class InvoiceDeleteView(StaffRequiredMixin, DeleteView):
     model = Invoice
@@ -1663,9 +1363,9 @@ class CompanyUpdateView(StaffRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['title'] = _("إعدادات الشركة والهوية")
         return context
-    
+
     def form_valid(self, form):
-        messages.success(self.request, _("تم تحديث بيانات الشركة بنجاح! ستظهر هذه البيانات في جميع الفواتير والتقارير."))
+        messages.success(self.request, _("تم تحديث بيانات الشركة بنجاح."))
         return super().form_valid(form)
 
 
@@ -2200,757 +1900,3 @@ def serve_protected_media(request, path):
     except Exception as e:
         logger.exception(f"Error serving media file {path}")
         raise Http404("Error serving file")
-
-
-# ========== إدارة إنذارات عدم السداد ==========
-
-class PaymentOverdueNoticeListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    model = PaymentOverdueNotice
-    template_name = 'dashboard/overdue_notices/list.html'
-    context_object_name = 'notices'
-    paginate_by = 20
-    
-    def test_func(self):
-        return self.request.user.is_staff
-    
-    def get_queryset(self):
-        queryset = PaymentOverdueNotice.objects.select_related(
-            'lease__tenant', 'lease__unit__building'
-        ).order_by('-notice_date')
-        
-        # فلترة حسب العقد
-        lease_id = self.request.GET.get('lease')
-        if lease_id:
-            queryset = queryset.filter(lease_id=lease_id)
-        
-        # فلترة حسب الحالة
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        # فلترة حسب السنة
-        year = self.request.GET.get('year')
-        if year:
-            queryset = queryset.filter(overdue_year=year)
-        
-        # البحث
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(lease__contract_number__icontains=search) |
-                Q(lease__tenant__name__icontains=search) |
-                Q(lease__unit__unit_number__icontains=search)
-            )
-        
-        return queryset
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['status_choices'] = PaymentOverdueNotice.NOTICE_STATUS_CHOICES
-        context['current_status'] = self.request.GET.get('status', '')
-        context['current_year'] = self.request.GET.get('year', '')
-        context['search_query'] = self.request.GET.get('search', '')
-        
-        # إحصائيات سريعة
-        context['stats'] = {
-            'total': PaymentOverdueNotice.objects.count(),
-            'draft': PaymentOverdueNotice.objects.filter(status='draft').count(),
-            'sent': PaymentOverdueNotice.objects.filter(status='sent').count(),
-            'overdue_legal': PaymentOverdueNotice.objects.filter(
-                legal_deadline__lt=timezone.now().date(),
-                status__in=['sent', 'acknowledged']
-            ).count(),
-        }
-        
-        return context
-
-
-class LeaseOverdueNoticesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """عرض إنذارات عقد معين أو إنشاء إنذار جديد"""
-    model = PaymentOverdueNotice
-    template_name = 'dashboard/overdue_notices/lease_notices.html'
-    context_object_name = 'notices'
-    paginate_by = 10
-    
-    def test_func(self):
-        return self.request.user.is_staff
-    
-    def get_queryset(self):
-        self.lease = get_object_or_404(Lease, pk=self.kwargs['lease_id'])
-        return PaymentOverdueNotice.objects.filter(lease=self.lease).order_by('-notice_date')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['lease'] = self.lease
-        
-        # فحص إمكانية إنشاء إنذار جديد
-        can_create_notice = self.lease.has_overdue_payments
-        context['can_create_notice'] = can_create_notice
-        
-        # معاينة الإنذار الجديد إذا كان ممكناً
-        if can_create_notice:
-            preview_notice = PaymentOverdueNotice.generate_automatic_notice(self.lease)
-            if preview_notice:
-                # حذف الإنذار المؤقت (كان للمعاينة فقط)
-                preview_notice.delete()
-                context['preview_available'] = True
-            else:
-                context['preview_available'] = False
-        
-        return context
-
-
-class PaymentOverdueNoticeDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    model = PaymentOverdueNotice
-    template_name = 'dashboard/overdue_notices/detail.html'
-    context_object_name = 'notice'
-    
-    def test_func(self):
-        return self.request.user.is_staff
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        notice = self.get_object()
-        
-        # إضافة معلومات إضافية
-        try:
-            # حساب متوسط الأيام منذ تاريخ الاستحقاق للتفاصيل
-            if notice.details.exists():
-                total_days = sum(detail.get_days_since_due() for detail in notice.details.all())
-                avg_days_since_due = total_days // notice.details.count()
-            else:
-                avg_days_since_due = 0
-            context['days_since_due'] = avg_days_since_due
-        except:
-            context['days_since_due'] = 0
-            
-        try:
-            # حساب متوسط الأيام حتى الموعد النهائي
-            today = timezone.now().date()
-            total_days_until_deadline = sum((detail.due_date - today).days for detail in notice.details.all() if detail.due_date > today)
-            if notice.details.exists():
-                avg_days_until_deadline = total_days_until_deadline // notice.details.count()
-            else:
-                avg_days_until_deadline = (notice.legal_deadline - today).days if notice.legal_deadline > today else 0
-            context['days_until_deadline'] = avg_days_until_deadline
-        except:
-            context['days_until_deadline'] = 0
-        
-        # الدفعات المرتبطة بنفس الفترة
-        context['related_payments'] = Payment.objects.filter(
-            lease=notice.lease,
-            payment_for_month__in=[detail.overdue_month for detail in notice.details.all()],
-            payment_for_year__in=[detail.overdue_year for detail in notice.details.all()]
-        ).order_by('-payment_date')
-        
-        return context
-
-
-@login_required
-@user_passes_test(lambda u: u.is_staff)
-def generate_automatic_notices(request):
-    """عرض وتنفيذ إنشاء الإنذارات التلقائية"""
-    if request.method == 'POST':
-        try:
-            # تنفيذ أمر إنشاء الإنذارات
-            from io import StringIO
-            import sys
-            
-            # التقاط مخرجات الأمر
-            old_stdout = sys.stdout
-            sys.stdout = buffer = StringIO()
-            
-            try:
-                call_command('generate_overdue_notices')
-                output = buffer.getvalue()
-                messages.success(request, 'تم إنشاء الإنذارات التلقائية بنجاح!')
-            finally:
-                sys.stdout = old_stdout
-            
-            # إعادة توجيه إلى قائمة الإنذارات
-            return redirect('overdue_notices_list')
-            
-        except Exception as e:
-            messages.error(request, f'حدث خطأ أثناء إنشاء الإنذارات: {str(e)}')
-    
-    # عرض معاينة الإنذارات التي سيتم إنشاؤها
-    context = {
-        'title': 'إنشاء إنذارات تلقائية',
-        'preview_notices': _get_preview_notices(),
-    }
-    
-    return render(request, 'dashboard/overdue_notices/generate_automatic.html', context)
-
-
-def _get_preview_notices():
-    """الحصول على معاينة الإنذارات التي سيتم إنشاؤها"""
-    from dateutil.relativedelta import relativedelta
-    import datetime
-    
-    today = timezone.now().date()
-    
-    preview_notices = []
-    active_leases = Lease.objects.filter(status='active')
-    
-    for lease in active_leases[:20]:  # معاينة أول 20 عقد
-        try:
-            payment_summary = lease.get_payment_summary()
-            overdue_months = []
-            
-            for month_data in payment_summary:
-                # فحص الدفعات المتأخرة لأكثر من شهر
-                if (month_data['status'] == 'overdue' and
-                    month_data['balance'] > 0 and
-                    month_data['days_overdue'] >= 30):
-                    
-                    # فحص عدم وجود إنذار سابق لنفس الشهر والسنة
-                    existing_detail = PaymentOverdueDetail.objects.filter(
-                        notice__lease=lease,
-                        overdue_month=month_data['month'],
-                        overdue_year=month_data['year']
-                    ).exists()
-                    
-                    if not existing_detail:
-                        overdue_months.append({
-                            'month': month_data['month'],
-                            'year': month_data['year'],
-                            'amount': month_data['balance'],
-                            'due_date': month_data['due_date'],
-                            'days_overdue': month_data['days_overdue']
-                        })
-            
-            if overdue_months:
-                total_amount = sum(month['amount'] for month in overdue_months)
-                preview_notices.append({
-                    'lease': lease,
-                    'overdue_months': overdue_months,
-                    'total_amount': total_amount,
-                    'months_count': len(overdue_months)
-                })
-                
-        except Exception as e:
-            print(f"Error in preview for lease {lease.contract_number}: {e}")
-            continue
-    
-    return preview_notices
-
-
-@login_required
-@user_passes_test(lambda u: u.is_staff)
-def notice_update_status(request, pk):
-    """تحديث حالة الإنذار"""
-    notice = get_object_or_404(PaymentOverdueNotice, pk=pk)
-    
-    if request.method == 'POST':
-        new_status = request.POST.get('status')
-        notes = request.POST.get('notes', '')
-        
-        if new_status in dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES):
-            old_status = notice.status
-            notice.status = new_status
-            
-            # تحديث التواريخ المناسبة
-            now = timezone.now()
-            if new_status == 'sent' and old_status == 'draft':
-                notice.sent_date = now
-            elif new_status == 'acknowledged' and old_status == 'sent':
-                notice.acknowledged_date = now
-            elif new_status == 'resolved':
-                notice.resolved_date = now
-            
-            # إضافة الملاحظات
-            if notes:
-                if notice.notes:
-                    notice.notes += f"\n\n{now.strftime('%Y-%m-%d %H:%M')}: {notes}"
-                else:
-                    notice.notes = f"{now.strftime('%Y-%m-%d %H:%M')}: {notes}"
-            
-            notice.save()
-            messages.success(request, f'تم تحديث حالة الإنذار إلى "{notice.get_status_display()}"')
-        else:
-            messages.error(request, 'حالة غير صحيحة')
-    
-    return redirect('overdue_notice_detail', pk=pk)
-
-
-@login_required
-@require_POST
-def quick_notice_status_change(request, pk):
-    """تغيير سريع لحالة الإنذار من صفحة تفاصيل العقد"""
-    from django.utils.translation import gettext as _trans
-    
-    notice = get_object_or_404(PaymentOverdueNotice, pk=pk)
-    
-    try:
-        new_status = request.POST.get('status')
-        notes = request.POST.get('notes', '')
-        
-        if new_status not in dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES):
-            return HttpResponse(json.dumps({
-                'success': False,
-                'error': str(_trans('حالة غير صحيحة'))
-            }), content_type='application/json', status=400)
-        
-        old_status = notice.status
-        notice.status = new_status
-        
-        # تحديث التواريخ المناسبة
-        now = timezone.now()
-        if new_status == 'sent' and old_status == 'draft':
-            notice.sent_date = now
-        elif new_status == 'acknowledged' and old_status == 'sent':
-            notice.acknowledged_date = now
-        elif new_status == 'resolved':
-            notice.resolved_date = now
-        
-        # إضافة الملاحظات
-        if notes:
-            status_label = dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES).get(new_status, new_status)
-            note_text = f"{now.strftime('%Y-%m-%d %H:%M')}: تم تغيير الحالة إلى '{status_label}' - {notes}"
-            if notice.notes:
-                notice.notes += f"\n\n{note_text}"
-            else:
-                notice.notes = note_text
-        
-        notice.save()
-        
-        # إنشاء إشعار
-        Notification.objects.create(
-            user=notice.lease.tenant.user if hasattr(notice.lease.tenant, 'user') else request.user,
-            message=str(_trans('تم تحديث حالة الإنذار #{} إلى "{}"').format(
-                notice.id, dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES).get(new_status, new_status)
-            ))
-        )
-        
-        messages.success(request, _('تم تحديث حالة الإنذار بنجاح'))
-        
-        return HttpResponse(json.dumps({
-            'success': True,
-            'notice_id': notice.id,
-            'new_status': new_status,
-            'status_display': dict(PaymentOverdueNotice.NOTICE_STATUS_CHOICES).get(new_status, new_status)
-        }), content_type='application/json')
-        
-    except Exception as e:
-        logger.error(f"Error changing notice status: {e}")
-        return HttpResponse(json.dumps({
-            'success': False,
-            'error': str(_trans('حدث خطأ أثناء تحديث الحالة'))
-        }), content_type='application/json', status=500)
-
-
-@login_required
-@user_passes_test(lambda u: u.is_staff)
-def notice_print_view(request, pk):
-    """طباعة الإنذار"""
-    notice = get_object_or_404(PaymentOverdueNotice, pk=pk)
-
-    context = {
-        'notice': notice,
-        'company': Company.objects.first(),
-    }
-
-    return render(request, 'dashboard/overdue_notices/print.html', context)
-
-
-@login_required
-@user_passes_test(lambda u: u.is_staff)
-def notices_bulk_actions(request):
-    """إجراءات مجمعة على الإنذارات"""
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        notice_ids = request.POST.getlist('notice_ids')
-        
-        if not notice_ids:
-            messages.error(request, 'يرجى اختيار إنذار واحد على الأقل')
-            return redirect('overdue_notices_list')
-        
-        notices = PaymentOverdueNotice.objects.filter(id__in=notice_ids)
-        
-        if action == 'mark_sent':
-            notices.update(status='sent', sent_date=timezone.now())
-            messages.success(request, f'تم تحديث {notices.count()} إنذار إلى "مُرسل"')
-        
-        elif action == 'mark_acknowledged':
-            notices.update(status='acknowledged', acknowledged_date=timezone.now())
-            messages.success(request, f'تم تحديث {notices.count()} إنذار إلى "مُستلم"')
-        
-        elif action == 'mark_resolved':
-            notices.update(status='resolved', resolved_date=timezone.now())
-            messages.success(request, f'تم تحديث {notices.count()} إنذار إلى "محلول"')
-        
-        elif action == 'delete':
-            count = notices.count()
-            notices.delete()
-            messages.success(request, f'تم حذف {count} إنذار')
-        
-        else:
-            messages.error(request, 'إجراء غير صحيح')
-    
-    return redirect('overdue_notices_list')
-
-
-@login_required
-def registration_invoice_view(request, lease_id):
-    """Generate and display registration fee invoice for a lease"""
-    lease = get_object_or_404(Lease, id=lease_id)
-    
-    # Calculate fees based on example: monthly rent should be around 2166.67 to get 65.00 registration fee
-    monthly_rent = lease.monthly_rent or Decimal('2166.67')
-    registration_fee = (monthly_rent * Decimal('0.03')).quantize(Decimal('0.01'))  # 3% registration fee
-    
-    # New fee: (monthly_rent * 3% * 12 months) + 1
-    annual_percentage_fee = ((monthly_rent * Decimal('0.03') * Decimal('12')) + Decimal('1')).quantize(Decimal('0.01'))
-    
-    admin_fee = lease.admin_fee or Decimal('1.0')
-    office_fee = lease.office_fee or Decimal('5.0')
-    
-    # Calculate totals
-    subtotal_without_office = registration_fee + annual_percentage_fee + admin_fee
-    grand_total = subtotal_without_office + office_fee
-    
-    # Get company information from database
-    try:
-        company = Company.objects.first()
-    except Company.DoesNotExist:
-        company = None
-    
-    context = {
-        'lease': lease,
-        'registration_fee': registration_fee,
-        'annual_percentage_fee': annual_percentage_fee,
-        'admin_fee': admin_fee,
-        'office_fee': office_fee,
-        'subtotal_without_office': subtotal_without_office,
-        'grand_total': grand_total,
-        'company': company,
-    }
-    
-    return render(request, 'dashboard/reports/lease_initial_invoice.html', context)
-
-
-@login_required
-def renewal_invoice_view(request, lease_id):
-    """Generate and display renewal fee invoice for a lease"""
-    lease = get_object_or_404(Lease, id=lease_id)
-    
-    # Calculate renewal fees
-    renewal_fee = lease.office_fee or Decimal('5.0')
-    admin_fee = lease.admin_fee or Decimal('1.0')
-    total_fees = renewal_fee + admin_fee
-    
-    # Get company information from database
-    try:
-        company = Company.objects.first()
-    except Company.DoesNotExist:
-        company = None
-    
-    context = {
-        'lease': lease,
-        'renewal_fee': renewal_fee,
-        'office_fee': renewal_fee,
-        'admin_fee': admin_fee,
-        'total_fees': total_fees,
-        'company': company,
-        'today': timezone.now().date(),
-    }
-    
-    return render(request, 'dashboard/reports/lease_renewal_invoice.html', context)
-
-
-@login_required
-def cancellation_form_view(request, lease_id):
-    """Generate and display lease cancellation form"""
-    lease = get_object_or_404(Lease, id=lease_id)
-    
-    # حساب الإيجار المستحق الفعلي من كشف الحساب
-    payment_summary = lease.get_payment_summary()
-    outstanding_rent = sum(Decimal(str(month['balance'])) for month in payment_summary)
-    
-    # رسوم الخدمات (افتراضياً 0 إذا لم تكن موجودة)
-    outstanding_utilities = Decimal('0.00')  # يمكن إضافة منطق لحسابها لاحقاً
-    
-    # Get security deposit from SecurityDeposit model
-    # البحث عن التأمين المحتفظ به أو المستلم
-    try:
-        security_deposits = SecurityDeposit.objects.filter(
-            lease=lease, 
-            status__in=['held', 'received']  # محتفظ به أو مستلم
-        )
-        security_deposit = sum(d.amount for d in security_deposits)
-    except:
-        security_deposit = Decimal('0.00')
-    
-    # Net amount calculation (positive = owed to office, negative = refund to tenant)
-    net_amount = outstanding_rent + outstanding_utilities - security_deposit
-    
-    # Get company information from database
-    try:
-        company = Company.objects.first()
-    except Company.DoesNotExist:
-        company = None
-    
-    context = {
-        'lease': lease,
-        'outstanding_rent': outstanding_rent,
-        'outstanding_utilities': outstanding_utilities,
-        'security_deposit': security_deposit,
-        'net_amount': net_amount,
-        'company': company,
-        'today': timezone.now().date(),
-        'cancellation_reason': lease.cancellation_reason if hasattr(lease, 'cancellation_reason') else '',
-    }
-    
-    return render(request, 'dashboard/reports/lease_cancellation_form.html', context)
-
-
-@login_required
-def renewal_form_view(request, lease_id):
-    """Generate and display lease renewal form"""
-    lease = get_object_or_404(Lease, id=lease_id)
-    
-    # Calculate renewal fees
-    renewal_fee = lease.office_fee or Decimal('5.0')
-    office_fee = lease.office_fee or Decimal('5.0')
-    admin_fee = lease.admin_fee or Decimal('1.0')
-    security_difference = Decimal('0.00')  # Difference in security deposit if any
-    total_renewal_fees = renewal_fee + office_fee + admin_fee + security_difference
-    
-    # Get current security deposit from SecurityDeposit model
-    try:
-        security_deposit_obj = SecurityDeposit.objects.filter(lease=lease, status='held').first()
-        current_security_deposit = security_deposit_obj.amount if security_deposit_obj else Decimal('0.00')
-    except:
-        current_security_deposit = Decimal('0.00')
-    
-    # Calculate current lease duration in months
-    if lease.start_date and lease.end_date:
-        current_duration = (lease.end_date - lease.start_date).days // 30  # Approximate months
-    else:
-        current_duration = 12  # Default
-    
-    # Suggested new terms (can be customized)
-    new_start_date = lease.end_date if lease.end_date else timezone.now().date()
-    new_end_date = new_start_date + timedelta(days=365) if new_start_date else None
-    new_monthly_rent = lease.monthly_rent
-    new_duration = current_duration  # Use current duration as default
-    new_security_deposit = current_security_deposit
-    
-    # Get company information from database
-    try:
-        company = Company.objects.first()
-    except Company.DoesNotExist:
-        company = None
-    
-    context = {
-        'lease': lease,
-        'renewal_fee': renewal_fee,
-        'office_fee': office_fee,
-        'admin_fee': admin_fee,
-        'security_difference': security_difference,
-        'total_renewal_fees': total_renewal_fees,
-        'current_duration': current_duration,
-        'new_start_date': new_start_date,
-        'new_end_date': new_end_date,
-        'new_monthly_rent': new_monthly_rent,
-        'new_duration': new_duration,
-        'new_security_deposit': new_security_deposit,
-        'company': company,
-        'today': timezone.now().date(),
-    }
-    
-    return render(request, 'dashboard/reports/lease_renewal_form.html', context)
-
-
-@login_required
-def tenant_comprehensive_report_view(request, tenant_id):
-    """Generate comprehensive report for a tenant"""
-    tenant = get_object_or_404(Tenant, id=tenant_id)
-    
-    # Get all leases for this tenant
-    current_leases = Lease.objects.filter(tenant=tenant, status='active')
-    lease_history = Lease.objects.filter(tenant=tenant).order_by('-start_date')
-    
-    # Calculate financial statistics
-    total_payments = Decimal('0.00')
-    outstanding_amount = Decimal('0.00')
-    total_expected_rent = Decimal('0.00')
-    
-    # Calculate totals from all leases
-    for lease in lease_history:
-        # Get payments for this lease
-        lease_payments = Payment.objects.filter(lease=lease).aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-        total_payments += lease_payments
-        
-        # Calculate expected rent for active leases
-        if lease.status == 'active' and lease.monthly_rent:
-            if lease.start_date and lease.end_date:
-                months_diff = (lease.end_date.year - lease.start_date.year) * 12 + \
-                             (lease.end_date.month - lease.start_date.month)
-                total_expected_rent += lease.monthly_rent * months_diff
-    
-    # Calculate outstanding amount (simplified calculation)
-    outstanding_amount = total_expected_rent - total_payments
-    
-    # Calculate average monthly rent
-    active_rents = [lease.monthly_rent for lease in current_leases if lease.monthly_rent]
-    average_monthly_rent = sum(active_rents) / len(active_rents) if active_rents else Decimal('0.00')
-    
-    # Get company information
-    try:
-        company = Company.objects.first()
-    except Company.DoesNotExist:
-        company = None
-    
-    context = {
-        'tenant': tenant,
-        'current_leases': current_leases,
-        'lease_history': lease_history,
-        'total_payments': total_payments,
-        'outstanding_amount': outstanding_amount,
-        'average_monthly_rent': average_monthly_rent,
-        'total_expected_rent': total_expected_rent,
-        'company': company,
-        'today': timezone.now().date(),
-    }
-    
-@login_required
-def renewal_reminder_view(request, lease_id):
-    """Generate and display lease renewal reminder for a lease"""
-    lease = get_object_or_404(Lease, id=lease_id)
-
-    # Get or create renewal reminder for this lease
-    reminder_date = lease.end_date - relativedelta(days=30)
-    reminder, created = LeaseRenewalReminder.objects.get_or_create(
-        lease=lease,
-        reminder_date=reminder_date,
-        defaults={'status': 'pending'}
-    )
-
-    # Get company information from database
-    try:
-        company = Company.objects.first()
-    except Company.DoesNotExist:
-        company = None
-
-    context = {
-        'reminder': reminder,
-        'lease': lease,
-        'company': company,
-        'today': timezone.now().date(),
-    }
-    
-    return render(request, 'dashboard/reports/lease_renewal_reminder.html', context)
-
-@login_required
-@require_POST
-def quick_payment_create(request, lease_id):
-    """معالجة الدفع السريع من كشف الحساب"""
-    from django.utils.translation import gettext as _trans
-    
-    lease = get_object_or_404(Lease, id=lease_id)
-    
-    try:
-        # Get form data
-        month = int(request.POST.get('month'))
-        year = int(request.POST.get('year'))
-        payment_type = request.POST.get('payment_type')  # 'full' or 'partial'
-        payment_method = request.POST.get('payment_method', 'cash')
-        notes = request.POST.get('notes', '')
-        
-        # Validate month and year
-        if month < 1 or month > 12:
-            return HttpResponse(json.dumps({
-                'success': False,
-                'error': str(_trans('رقم الشهر غير صحيح'))
-            }), content_type='application/json', status=400)
-        
-        # Determine amount based on payment type
-        if payment_type == 'full':
-            # Check if there's already a payment for this month
-            existing_payment = Payment.objects.filter(
-                lease=lease,
-                payment_for_month=month,
-                payment_for_year=year
-            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-            
-            amount = lease.monthly_rent - existing_payment
-            
-            if amount <= 0:
-                return HttpResponse(json.dumps({
-                    'success': False,
-                    'error': str(_trans('هذا الشهر مدفوع بالكامل'))
-                }), content_type='application/json', status=400)
-                
-        elif payment_type == 'partial':
-            # Get amount from form
-            amount_str = request.POST.get('amount', '').strip()
-            if not amount_str:
-                return HttpResponse(json.dumps({
-                    'success': False,
-                    'error': str(_trans('يرجى إدخال المبلغ'))
-                }), content_type='application/json', status=400)
-            
-            try:
-                amount = Decimal(amount_str)
-            except (ValueError, decimal.InvalidOperation):
-                return HttpResponse(json.dumps({
-                    'success': False,
-                    'error': str(_trans('المبلغ المدخل غير صحيح'))
-                }), content_type='application/json', status=400)
-            
-            if amount <= 0:
-                return HttpResponse(json.dumps({
-                    'success': False,
-                    'error': str(_trans('المبلغ يجب أن يكون أكبر من صفر'))
-                }), content_type='application/json', status=400)
-        else:
-            return HttpResponse(json.dumps({
-                'success': False,
-                'error': str(_trans('نوع الدفع غير صحيح'))
-            }), content_type='application/json', status=400)
-        
-        # Create payment
-        payment = Payment.objects.create(
-            lease=lease,
-            payment_date=timezone.now().date(),
-            amount=amount,
-            payment_for_month=month,
-            payment_for_year=year,
-            payment_method=payment_method,
-            notes=notes
-        )
-        
-        # Create success notification
-        Notification.objects.create(
-            user=lease.tenant.user if hasattr(lease.tenant, 'user') else request.user,
-            message=str(_trans('تم إضافة دفعة جديدة بمبلغ {} ر.ع عن شهر {}/{}').format(
-                amount, month, year
-            ))
-        )
-        
-        messages.success(request, _('تم إضافة الدفعة بنجاح'))
-        
-        return HttpResponse(json.dumps({
-            'success': True,
-            'payment_id': payment.id,
-            'amount': str(amount),
-            'month': month,
-            'year': year,
-            'redirect_url': reverse('lease_detail', kwargs={'pk': lease_id})
-        }), content_type='application/json')
-        
-    except ValueError as e:
-        logger.error(f"ValueError in quick payment: {e}")
-        return HttpResponse(json.dumps({
-            'success': False,
-            'error': str(_trans('خطأ في البيانات المدخلة'))
-        }), content_type='application/json', status=400)
-    except Exception as e:
-        logger.error(f"Error creating quick payment: {e}")
-        return HttpResponse(json.dumps({
-            'success': False,
-            'error': str(_trans('حدث خطأ أثناء إنشاء الدفعة'))
-        }), content_type='application/json', status=500)

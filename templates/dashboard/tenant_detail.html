@@ -1,502 +1,126 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "تفاصيل المستأجر" %} - {{ tenant.name }}{% endblock %}
-
-{% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-.stats-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-.stats-card:hover {
-    transform: translateY(-5px);
-}
-.stats-number {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.stats-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-.chart-container {
-    position: relative;
-    height: 300px;
-    background: white;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-}
-.tenant-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 20px;
-    margin-bottom: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
-.info-card {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-    border: 1px solid #e5e7eb;
-}
-.rating-stars {
-    font-size: 1.5rem;
-    color: #fbbf24;
-}
-.enhanced-table {
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-}
-.table-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-.filter-section {
-    background: #f8fafc;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 20px;
-    border: 1px solid #e5e7eb;
-}
-</style>
-{% endblock %}
-
 {% block content %}
-<!-- Enhanced Header -->
-<div class="tenant-header">
-    <div class="flex justify-between items-center">
-        <div>
-            <h1 class="text-4xl font-bold mb-2">{{ tenant.name }}</h1>
-            <p class="text-lg opacity-90">{{ tenant.get_tenant_type_display }} • {{ tenant.phone }}</p>
-            <div class="rating-stars mt-3">
-                {% for i in "12345" %}
-                    {% if forloop.counter <= tenant.rating %}★{% else %}☆{% endif %}
-                {% endfor %}
-                <span class="text-sm opacity-80 mr-2">({{ tenant.rating }}/5)</span>
-            </div>
-        </div>
-        <div class="text-left">
-            <a href="{% url 'tenant_update' tenant.pk %}" class="bg-white text-purple-600 py-3 px-6 rounded-lg font-semibold mr-2 hover:bg-gray-100 transition-colors">📝 {% trans "تعديل" %}</a>
-            <a href="{% url 'tenant_list' %}" class="bg-purple-800 text-white py-3 px-6 rounded-lg font-semibold hover:bg-purple-900 transition-colors">🔙 {% trans "العودة" %}</a>
-        </div>
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-3xl font-bold text-gray-800">{% trans "تفاصيل المستأجر" %}: {{ tenant.name }}</h2>
+    <div>
+        <a href="{% url 'tenant_update' tenant.pk %}" class="btn-primary py-2 px-4 rounded-lg font-semibold mr-2">{% trans "تعديل" %}</a>
+        <a href="{% url 'tenant_list' %}" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-400">{% trans "العودة" %}</a>
     </div>
 </div>
 
-<!-- Enhanced Statistics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="stats-card">
-        <div class="stats-number">{{ current_leases.count }}</div>
-        <div class="stats-label">{% trans "العقود النشطة" %}</div>
-        <div class="text-xs opacity-80 mt-2">🏠 {% trans "عقود جارية" %}</div>
-    </div>
-    <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-        <div class="stats-number">{{ lease_history.count }}</div>
-        <div class="stats-label">{% trans "إجمالي العقود" %}</div>
-        <div class="text-xs opacity-80 mt-2">📋 {% trans "العقود الكلية" %}</div>
-    </div>
-    <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-        <div class="stats-number">{{ total_payments|floatformat:0 }}</div>
-        <div class="stats-label">{% trans "إجمالي المدفوعات" %} (ر.ع)</div>
-        <div class="text-xs opacity-80 mt-2">💰 {% trans "المبلغ المدفوع" %}</div>
-    </div>
-    <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-        <div class="stats-number">{{ tenant.phone|slice:":4" }}***</div>
-        <div class="stats-label">{% trans "رقم الهاتف" %}</div>
-        <div class="text-xs opacity-80 mt-2">📞 {% trans "للتواصل" %}</div>
-    </div>
-</div>
-
-<!-- Detailed Information and Charts -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-    <!-- Enhanced Info Card -->
-    <div class="info-card">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <span class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3">👤</span>
-            {% trans "المعلومات الأساسية" %}
-        </h3>
-        <div class="space-y-4">
-            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span class="text-gray-600 font-medium">{% trans "الاسم الكامل" %}:</span>
-                <span class="font-bold text-gray-800">{{ tenant.name }}</span>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="card p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">{% trans "المعلومات الأساسية" %}</h3>
+        <div class="space-y-3">
+            <div>
+                <span class="text-sm text-gray-600">{% trans "الاسم" %}:</span>
+                <span class="font-bold">{{ tenant.name }}</span>
             </div>
-            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span class="text-gray-600 font-medium">{% trans "نوع المستأجر" %}:</span>
-                <span class="font-bold text-purple-600">{{ tenant.get_tenant_type_display }}</span>
+            <div>
+                <span class="text-sm text-gray-600">{% trans "النوع" %}:</span>
+                <span class="font-bold">{{ tenant.get_tenant_type_display }}</span>
             </div>
-            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span class="text-gray-600 font-medium">{% trans "رقم الهاتف" %}:</span>
-                <span class="font-bold text-blue-600">{{ tenant.phone }}</span>
+            <div>
+                <span class="text-sm text-gray-600">{% trans "الهاتف" %}:</span>
+                <span class="font-bold">{{ tenant.phone }}</span>
             </div>
-            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span class="text-gray-600 font-medium">{% trans "البريد الإلكتروني" %}:</span>
-                <span class="font-bold text-green-600">{{ tenant.email|default:"-" }}</span>
+            <div>
+                <span class="text-sm text-gray-600">{% trans "البريد الإلكتروني" %}:</span>
+                <span class="font-bold">{{ tenant.email|default:"-" }}</span>
             </div>
             {% if tenant.tenant_type == 'company' and tenant.authorized_signatory %}
-            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span class="text-gray-600 font-medium">{% trans "المفوض بالتوقيع" %}:</span>
-                <span class="font-bold text-orange-600">{{ tenant.authorized_signatory }}</span>
+            <div>
+                <span class="text-sm text-gray-600">{% trans "المفوض بالتوقيع" %}:</span>
+                <span class="font-bold">{{ tenant.authorized_signatory }}</span>
             </div>
             {% endif %}
+            <div>
+                <span class="text-sm text-gray-600">{% trans "التقييم" %}:</span>
+                <span class="text-yellow-500 text-xl">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= tenant.rating %}★{% else %}☆{% endif %}
+                    {% endfor %}
+                </span>
+            </div>
         </div>
     </div>
 
-    <!-- Charts Section -->
-    <div class="info-card">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">📊</span>
-            {% trans "الرسوم البيانية" %}
-        </h3>
-        <div class="chart-container">
-            <canvas id="tenantChart"></canvas>
+    <div class="card p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">{% trans "الإحصائيات" %}</h3>
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span class="text-sm text-gray-600">{% trans "العقود النشطة" %}:</span>
+                <span class="font-bold text-green-600">{{ current_leases.count }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-sm text-gray-600">{% trans "إجمالي العقود" %}:</span>
+                <span class="font-bold">{{ lease_history.count }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-sm text-gray-600">{% trans "إجمالي المدفوعات" %}:</span>
+                <span class="font-bold text-blue-600">{{ total_payments|floatformat:2 }} ر.ع</span>
+            </div>
         </div>
-    </div>
-</div>
-
-<!-- Action Buttons Section -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <a href="#" onclick="generateTenantReport()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl hover:shadow-lg transition-all duration-300 text-center">
-        <div class="text-3xl mb-2">📊</div>
-        <div class="font-bold text-lg">{% trans "كشف حساب شامل" %}</div>
-        <div class="text-sm opacity-90">{% trans "تقرير مفصل للمستأجر" %}</div>
-    </a>
-    <a href="#" onclick="exportTenantData()" class="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl hover:shadow-lg transition-all duration-300 text-center">
-        <div class="text-3xl mb-2">📄</div>
-        <div class="font-bold text-lg">{% trans "تصدير البيانات" %}</div>
-        <div class="text-sm opacity-90">{% trans "تصدير إلى Excel/PDF" %}</div>
-    </a>
-    <a href="#" onclick="printTenantFile()" class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-xl hover:shadow-lg transition-all duration-300 text-center">
-        <div class="text-3xl mb-2">🖨️</div>
-        <div class="font-bold text-lg">{% trans "طباعة الملف" %}</div>
-        <div class="text-sm opacity-90">{% trans "ملف المستأجر كاملاً" %}</div>
-    </a>
-</div>
-
-<!-- Enhanced Filter Section -->
-<div class="filter-section">
-    <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
-        <span class="bg-gray-100 text-gray-600 p-2 rounded-lg mr-3">🔍</span>
-        {% trans "فلاتر البحث والترتيب" %}
-    </h4>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <select id="statusFilter" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-            <option value="">{% trans "جميع الحالات" %}</option>
-            <option value="active">{% trans "نشط" %}</option>
-            <option value="expired">{% trans "منتهي" %}</option>
-            <option value="cancelled">{% trans "ملغي" %}</option>
-        </select>
-        <select id="sortBy" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-            <option value="date_desc">{% trans "الأحدث أولاً" %}</option>
-            <option value="date_asc">{% trans "الأقدم أولاً" %}</option>
-            <option value="rent_desc">{% trans "الإيجار (الأعلى)" %}</option>
-            <option value="rent_asc">{% trans "الإيجار (الأقل)" %}</option>
-        </select>
-        <input type="text" id="searchInput" placeholder="{% trans 'البحث في العقود...' %}" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-        <button onclick="applyFilters()" class="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">
-            🔍 {% trans "تطبيق الفلاتر" %}
-        </button>
     </div>
 </div>
 
 {% if current_leases %}
-<div class="enhanced-table mb-6">
-    <div class="table-header p-4">
-        <h3 class="text-xl font-bold flex items-center">
-            <span class="mr-3">🏠</span>
-            {% trans "العقود النشطة" %} ({{ current_leases.count }})
-        </h3>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-start" id="activeLeases">
-            <thead class="table-header">
-                <tr>
-                    <th class="p-4 text-white">{% trans "رقم العقد" %}</th>
-                    <th class="p-4 text-white">{% trans "الوحدة" %}</th>
-                    <th class="p-4 text-white">{% trans "الإيجار الشهري" %}</th>
-                    <th class="p-4 text-white">{% trans "تاريخ البداية" %}</th>
-                    <th class="p-4 text-white">{% trans "تاريخ الانتهاء" %}</th>
-                    <th class="p-4 text-white">{% trans "المدة المتبقية" %}</th>
-                    <th class="p-4 text-white">{% trans "الحالة" %}</th>
-                    <th class="p-4 text-white">{% trans "إجراءات" %}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for lease in current_leases %}
-                <tr class="border-b hover:bg-purple-50 transition-colors lease-row" data-status="{{ lease.status }}" data-rent="{{ lease.monthly_rent }}" data-date="{{ lease.start_date|date:'Y-m-d' }}">
-                    <td class="p-4">
-                        <a href="{% url 'lease_detail' lease.pk %}" class="font-bold text-purple-600 hover:text-purple-800">
-                            {{ lease.contract_number }}
-                        </a>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-medium">{{ lease.unit }}</div>
-                        <div class="text-sm text-gray-500">{{ lease.unit.unit_type }}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-mono font-bold text-green-600">{{ lease.monthly_rent|floatformat:2 }} ر.ع</div>
-                        <div class="text-sm text-gray-500">{% trans "شهرياً" %}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-medium">{{ lease.start_date|date:"d/m/Y" }}</div>
-                        <div class="text-sm text-gray-500">{{ lease.start_date|timesince }} {% trans "مضت" %}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-medium">{{ lease.end_date|date:"d/m/Y" }}</div>
-                        <div class="text-sm text-gray-500">{{ lease.end_date|timeuntil }} {% trans "متبقية" %}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="text-sm font-medium text-orange-600">
-                            {% if lease.end_date %}
-                                {{ lease.end_date|timeuntil }}
-                            {% else %}
-                                {% trans "غير محدد" %}
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td class="p-4">
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                            {{ lease.get_status_display }}
-                        </span>
-                    </td>
-                    <td class="p-4">
-                        <div class="flex space-x-2">
-                            <a href="{% url 'lease_detail' lease.pk %}" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg text-sm hover:bg-blue-200 transition-colors">
-                                {% trans "تفاصيل" %}
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="card p-6 mb-6">
+    <h3 class="text-xl font-bold text-gray-800 mb-4">{% trans "العقود النشطة" %}</h3>
+    <table class="w-full text-start">
+        <thead class="bg-gray-50 border-b">
+            <tr>
+                <th class="p-4">{% trans "رقم العقد" %}</th>
+                <th class="p-4">{% trans "الوحدة" %}</th>
+                <th class="p-4">{% trans "الإيجار الشهري" %}</th>
+                <th class="p-4">{% trans "تاريخ الانتهاء" %}</th>
+                <th class="p-4">{% trans "الحالة" %}</th>
+                <th class="p-4">{% trans "إجراءات" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lease in current_leases %}
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-4"><a href="{% url 'lease_detail' lease.pk %}" class="font-bold text-blue-600">{{ lease.contract_number }}</a></td>
+                <td class="p-4">{{ lease.unit }}</td>
+                <td class="p-4 font-mono">{{ lease.monthly_rent|floatformat:2 }}</td>
+                <td class="p-4">{{ lease.end_date|date:"d/m/Y" }}</td>
+                <td class="p-4"><span class="status-badge status-{{ lease.get_status_color }}">{{ lease.get_status_display }}</span></td>
+                <td class="p-4"><a href="{% url 'lease_detail' lease.pk %}" class="text-blue-600 hover:underline">{% trans "تفاصيل" %}</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endif %}
 
-<div class="enhanced-table">
-    <div class="table-header p-4">
-        <h3 class="text-xl font-bold flex items-center">
-            <span class="mr-3">📋</span>
-            {% trans "سجل العقود" %} ({{ lease_history.count }})
-        </h3>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-start" id="leaseHistory">
-            <thead class="table-header">
-                <tr>
-                    <th class="p-4 text-white">{% trans "رقم العقد" %}</th>
-                    <th class="p-4 text-white">{% trans "الوحدة" %}</th>
-                    <th class="p-4 text-white">{% trans "الإيجار الشهري" %}</th>
-                    <th class="p-4 text-white">{% trans "فترة العقد" %}</th>
-                    <th class="p-4 text-white">{% trans "المدة" %}</th>
-                    <th class="p-4 text-white">{% trans "الحالة" %}</th>
-                    <th class="p-4 text-white">{% trans "إجراءات" %}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for lease in lease_history %}
-                <tr class="border-b hover:bg-purple-50 transition-colors">
-                    <td class="p-4">
-                        <a href="{% url 'lease_detail' lease.pk %}" class="font-bold text-purple-600 hover:text-purple-800">
-                            {{ lease.contract_number }}
-                        </a>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-medium">{{ lease.unit }}</div>
-                        <div class="text-sm text-gray-500">{{ lease.unit.unit_type }}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-mono font-bold text-green-600">{{ lease.monthly_rent|floatformat:2 }} ر.ع</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-medium">{{ lease.start_date|date:"d/m/Y" }}</div>
-                        <div class="text-sm text-gray-500">{{ lease.end_date|date:"d/m/Y" }}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="text-sm font-medium text-blue-600">
-                            {% if lease.start_date and lease.end_date %}
-                                {% with days_diff=lease.end_date|timesince:lease.start_date %}
-                                    {{ days_diff }}
-                                {% endwith %}
-                            {% else %}
-                                {% trans "غير محدد" %}
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td class="p-4">
-                        {% if lease.status == 'active' %}
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                {{ lease.get_status_display }}
-                            </span>
-                        {% elif lease.status == 'expired' %}
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                                {{ lease.get_status_display }}
-                            </span>
-                        {% elif lease.status == 'cancelled' %}
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
-                                {{ lease.get_status_display }}
-                            </span>
-                        {% else %}
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                {{ lease.get_status_display }}
-                            </span>
-                        {% endif %}
-                    </td>
-                    <td class="p-4">
-                        <div class="flex space-x-2">
-                            <a href="{% url 'lease_detail' lease.pk %}" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg text-sm hover:bg-blue-200 transition-colors">
-                                {% trans "تفاصيل" %}
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="p-8 text-center text-gray-500">
-                        <div class="text-4xl mb-4">📋</div>
-                        <div class="font-medium">{% trans "لا يوجد سجل للعقود" %}</div>
-                        <div class="text-sm">{% trans "لم يتم إنشاء أي عقود لهذا المستأجر بعد" %}</div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="card p-6">
+    <h3 class="text-xl font-bold text-gray-800 mb-4">{% trans "سجل العقود" %}</h3>
+    <table class="w-full text-start">
+        <thead class="bg-gray-50 border-b">
+            <tr>
+                <th class="p-4">{% trans "رقم العقد" %}</th>
+                <th class="p-4">{% trans "الوحدة" %}</th>
+                <th class="p-4">{% trans "الفترة" %}</th>
+                <th class="p-4">{% trans "الحالة" %}</th>
+                <th class="p-4">{% trans "إجراءات" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lease in lease_history %}
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-4"><a href="{% url 'lease_detail' lease.pk %}" class="font-bold text-blue-600">{{ lease.contract_number }}</a></td>
+                <td class="p-4">{{ lease.unit }}</td>
+                <td class="p-4">{{ lease.start_date|date:"d/m/Y" }} - {{ lease.end_date|date:"d/m/Y" }}</td>
+                <td class="p-4"><span class="status-badge status-{{ lease.get_status_color }}">{{ lease.get_status_display }}</span></td>
+                <td class="p-4"><a href="{% url 'lease_detail' lease.pk %}" class="text-blue-600 hover:underline">{% trans "تفاصيل" %}</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="p-6 text-center text-gray-500">{% trans "لا يوجد سجل للعقود." %}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
-
-<script>
-// Chart.js Configuration
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('tenantChart').getContext('2d');
-    
-    // Sample data - replace with actual data from backend
-    const chartData = {
-        labels: ['{% trans "العقود النشطة" %}', '{% trans "العقود المنتهية" %}', '{% trans "العقود الملغية" %}'],
-        datasets: [{
-            data: [{{ current_leases.count }}, 
-                   {% with expired_count=lease_history|length %}{{ expired_count }}{% endwith %} - {{ current_leases.count }}, 
-                   0],
-            backgroundColor: [
-                '#10B981', // Green for active
-                '#EF4444', // Red for expired  
-                '#6B7280'  // Gray for cancelled
-            ],
-            borderWidth: 2,
-            borderColor: '#ffffff'
-        }]
-    };
-
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        font: {
-                            size: 12,
-                            family: 'Arial'
-                        }
-                    }
-                }
-            }
-        }
-    });
-});
-
-// Filter and Search Functions
-function applyFilters() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const sortBy = document.getElementById('sortBy').value;
-    const searchInput = document.getElementById('searchInput').value.toLowerCase();
-    
-    const rows = document.querySelectorAll('.lease-row');
-    let visibleRows = [];
-    
-    rows.forEach(row => {
-        let showRow = true;
-        
-        // Status filter
-        if (statusFilter && row.dataset.status !== statusFilter) {
-            showRow = false;
-        }
-        
-        // Search filter
-        if (searchInput && !row.textContent.toLowerCase().includes(searchInput)) {
-            showRow = false;
-        }
-        
-        if (showRow) {
-            row.style.display = '';
-            visibleRows.push(row);
-        } else {
-            row.style.display = 'none';
-        }
-    });
-    
-    // Sort visible rows
-    if (sortBy && visibleRows.length > 0) {
-        const tbody = visibleRows[0].parentNode;
-        visibleRows.sort((a, b) => {
-            switch(sortBy) {
-                case 'date_desc':
-                    return new Date(b.dataset.date) - new Date(a.dataset.date);
-                case 'date_asc':
-                    return new Date(a.dataset.date) - new Date(b.dataset.date);
-                case 'rent_desc':
-                    return parseFloat(b.dataset.rent) - parseFloat(a.dataset.rent);
-                case 'rent_asc':
-                    return parseFloat(a.dataset.rent) - parseFloat(b.dataset.rent);
-                default:
-                    return 0;
-            }
-        });
-        
-        visibleRows.forEach(row => tbody.appendChild(row));
-    }
-}
-
-// Report Generation Functions
-function generateTenantReport() {
-    // Open comprehensive report in new window
-    window.open('{% url "tenant_comprehensive_report" tenant_id=tenant.pk %}', '_blank');
-}
-
-function exportTenantData() {
-    // This would export tenant data to Excel/PDF
-    alert('{% trans "سيتم تصدير بيانات المستأجر..." %}');
-    // window.open('/tenant/{{ tenant.pk }}/export/', '_blank');
-}
-
-function printTenantFile() {
-    // This would open a printable version of the tenant file
-    alert('{% trans "سيتم فتح ملف المستأجر للطباعة..." %}');
-    // window.print();
-}
-
-// Real-time search
-document.getElementById('searchInput').addEventListener('input', function() {
-    clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(applyFilters, 300);
-});
-
-// Auto-apply filters on change
-document.getElementById('statusFilter').addEventListener('change', applyFilters);
-document.getElementById('sortBy').addEventListener('change', applyFilters);
-</script>
-
 {% endblock %}

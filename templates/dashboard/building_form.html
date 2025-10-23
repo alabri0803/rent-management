@@ -1,222 +1,52 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{{ title }}{% endblock %}
-
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 py-8">
-    <div class="max-w-4xl mx-auto px-4">
-        <!-- Header Section -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                </svg>
+<div class="max-w-3xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-800">{{ title }}</h2>
+        <a href="{% url 'building_list' %}" class="text-blue-600 hover:underline">{% trans "العودة إلى القائمة" %}</a>
+    </div>
+
+    <div class="card p-6">
+        <style>
+            .form-building p { margin: 0; }
+            .form-building label { display:block; font-size:.9rem; font-weight:600; color:#374151; margin-bottom:.25rem; }
+            .form-building input[type="text"],
+            .form-building input[type="number"],
+            .form-building input[type="email"],
+            .form-building input[type="tel"],
+            .form-building select,
+            .form-building textarea { width:100%; border:1px solid #e5e7eb; border-radius:.5rem; padding:.625rem .75rem; background:#fff; color:#111827; }
+            .form-building input:focus,
+            .form-building select:focus,
+            .form-building textarea:focus { outline:none; border-color:#993333; box-shadow:0 0 0 3px rgba(153,51,51,.15); }
+            .form-building .errorlist, .form-building .field-error { margin-top:.25rem; color:#b91c1c; font-size:.8rem; }
+            .badge-hint { display:inline-block; font-size:.75rem; background:#f3f4f6; color:#6b7280; padding:.125rem .5rem; border-radius:9999px; }
+        </style>
+        <form method="post" class="form-building">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label>{{ form.name.label }} <span class="badge-hint">{% trans "اسم واضح للمبنى" %}</span></label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<p class="field-error">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label>{{ form.address.label }}</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}<p class="field-error">{{ form.address.errors.0 }}</p>{% endif %}
+                </div>
             </div>
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">{{ title }}</h1>
-            <p class="text-gray-600">{% trans "أضف مبنى جديد إلى النظام بسهولة" %}</p>
-        </div>
 
-        <!-- Navigation Breadcrumb -->
-        <div class="flex items-center justify-center mb-8">
-            <nav class="flex items-center space-x-2 bg-white rounded-full px-6 py-3 shadow-lg">
-                <a href="{% url 'building_list' %}" class="flex items-center text-green-600 hover:text-green-800 transition-colors">
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    {% trans "العودة إلى القائمة" %}
-                </a>
-            </nav>
-        </div>
-
-        <!-- Main Form Card -->
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Card Header -->
-            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6">
-                <h2 class="text-2xl font-bold text-white flex items-center">
-                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    {% trans "معلومات المبنى الجديد" %}
-                </h2>
+            <div class="flex flex-col sm:flex-row gap-3 pt-6">
+                <button type="submit" class="btn-primary sm:w-auto w-full py-2 px-6 rounded-lg font-semibold">
+                    {% if form.instance.pk %}{% trans "حفظ التعديلات" %}{% else %}{% trans "حفظ" %}{% endif %}
+                </button>
+                <a href="{% url 'building_list' %}" class="sm:w-auto w-full bg-gray-200 text-gray-800 py-2 px-6 rounded-lg font-semibold hover:bg-gray-300 text-center">{% trans "إلغاء" %}</a>
             </div>
-
-            <!-- Form Content -->
-            <div class="p-8">
-                <form method="post" class="space-y-8">
-                    {% csrf_token %}
-                    
-                    <!-- Building Name -->
-                    <div class="group">
-                        <label class="block text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                            <svg class="w-5 h-5 ml-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                            </svg>
-                            {{ form.name.label }}
-                            <span class="mr-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">{% trans "اسم واضح للمبنى" %}</span>
-                        </label>
-                        <div class="relative">
-                            {{ form.name }}
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        {% if form.name.errors %}
-                        <p class="text-red-500 text-sm mt-2 flex items-center">
-                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                            </svg>
-                            {{ form.name.errors.0 }}
-                        </p>
-                        {% endif %}
-                        
-                        <!-- Building Name Examples -->
-                        <div class="mt-3 p-4 bg-green-50 rounded-lg border border-green-200">
-                            <div class="flex items-center mb-2">
-                                <svg class="w-4 h-4 text-green-600 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="text-sm font-medium text-green-800">{% trans "أمثلة على أسماء المباني:" %}</span>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-                                <span class="bg-white px-2 py-1 rounded text-green-700">{% trans "مبنى الأعمال المركزي" %}</span>
-                                <span class="bg-white px-2 py-1 rounded text-green-700">{% trans "برج الخليج التجاري" %}</span>
-                                <span class="bg-white px-2 py-1 rounded text-green-700">{% trans "مجمع الوادي السكني" %}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Building Address -->
-                    <div class="group">
-                        <label class="block text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                            <svg class="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            {{ form.address.label }}
-                        </label>
-                        <div class="relative">
-                            {{ form.address }}
-                            <div class="absolute top-3 left-3 pointer-events-none">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        {% if form.address.errors %}
-                        <p class="text-red-500 text-sm mt-2 flex items-center">
-                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                            </svg>
-                            {{ form.address.errors.0 }}
-                        </p>
-                        {% endif %}
-                        
-                        <!-- Address Guidelines -->
-                        <div class="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <div class="flex items-center mb-2">
-                                <svg class="w-4 h-4 text-blue-600 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="text-sm font-medium text-blue-800">{% trans "نصائح لكتابة العنوان:" %}</span>
-                            </div>
-                            <ul class="text-xs text-blue-700 space-y-1">
-                                <li>• {% trans "اذكر اسم الشارع والحي" %}</li>
-                                <li>• {% trans "أضف رقم المبنى إن وجد" %}</li>
-                                <li>• {% trans "حدد المدينة والمنطقة" %}</li>
-                                <li>• {% trans "يمكن إضافة معالم قريبة للتوضيح" %}</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Preview Section -->
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border-2 border-dashed border-gray-300">
-                        <div class="flex items-center mb-4">
-                            <svg class="w-5 h-5 text-gray-600 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-800">{% trans "معاينة المبنى" %}</h3>
-                        </div>
-                        <div class="bg-white rounded-lg p-4 shadow-sm">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4"></path>
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="font-semibold text-gray-800" id="preview-name">{% trans "اسم المبنى سيظهر هنا" %}</div>
-                                    <div class="text-sm text-gray-500" id="preview-address">{% trans "عنوان المبنى سيظهر هنا" %}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-200">
-                        <button type="submit" class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-8 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            {% if form.instance.pk %}{% trans "حفظ التعديلات" %}{% else %}{% trans "حفظ المبنى" %}{% endif %}
-                        </button>
-                        <a href="{% url 'building_list' %}" class="flex-1 bg-gray-100 text-gray-700 py-4 px-8 rounded-xl font-bold text-lg hover:bg-gray-200 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            {% trans "إلغاء" %}
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
-
-<style>
-/* Custom styles for form elements */
-.group input, .group textarea {
-    @apply w-full px-4 py-3 pl-12 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 text-lg;
-}
-
-.group textarea {
-    @apply min-h-[120px] pt-12 resize-none;
-}
-
-.group input:focus, .group textarea:focus {
-    @apply outline-none shadow-lg;
-}
-
-/* Hover effects */
-.group:hover input, .group:hover textarea {
-    @apply border-green-300 shadow-md;
-}
-
-/* Preview update script */
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const nameInput = document.querySelector('input[name="name"]');
-    const addressInput = document.querySelector('textarea[name="address"]');
-    const previewName = document.getElementById('preview-name');
-    const previewAddress = document.getElementById('preview-address');
-    
-    function updatePreview() {
-        const name = nameInput.value.trim();
-        const address = addressInput.value.trim();
-        
-        previewName.textContent = name || '{% trans "اسم المبنى سيظهر هنا" %}';
-        previewAddress.textContent = address || '{% trans "عنوان المبنى سيظهر هنا" %}';
-    }
-    
-    nameInput.addEventListener('input', updatePreview);
-    addressInput.addEventListener('input', updatePreview);
-    
-    // Initial update
-    updatePreview();
-});
-</script>
 {% endblock %}

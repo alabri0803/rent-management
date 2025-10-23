@@ -1,800 +1,162 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "إدارة العقود" %}{% endblock %}
-
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 py-8">
-    <div class="max-w-7xl mx-auto px-4">
-        <!-- Header Section -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-full mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-            </div>
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "إدارة العقود" %}</h1>
-            <p class="text-gray-600">{% trans "إدارة وعرض جميع عقود الإيجار وحالاتها ومواعيد انتهائها" %}</p>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-            <a href="{% url 'export_leases_excel' %}" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-8 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                {% trans "تصدير Excel" %}
-            </a>
-            <a href="{% url 'lease_create' %}" class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-8 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                {% trans "إضافة عقد جديد" %}
-            </a>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Active Leases -->
-            <a href="?status=active" class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105 block">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-gray-600 mb-2">{% trans "نشط" %}</p>
-                        <p class="text-4xl font-bold text-green-600">{{ stats.active_count|default:0 }}</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-4">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </a>
-
-            <!-- Expired Leases -->
-            <a href="?status=expired" class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105 block">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-gray-600 mb-2">{% trans "منتهي" %}</p>
-                        <p class="text-4xl font-bold text-red-600">{{ stats.expired_count|default:0 }}</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-red-500 to-rose-600 rounded-full p-4">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </a>
-
-            <!-- Expiring Soon -->
-            <a href="?status=expiring_soon" class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105 block">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-gray-600 mb-2">{% trans "قريب الانتهاء" %}</p>
-                        <p class="text-4xl font-bold text-orange-600">{{ stats.expiring_count|default:0 }}</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-orange-500 to-amber-600 rounded-full p-4">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <!-- Main Content Card -->
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Filters Header -->
-            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-6">
-                <h2 class="text-2xl font-bold text-white flex items-center">
-                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
-                    </svg>
-                    {% trans "فلاتر البحث" %}
-                </h2>
-            </div>
-
-            <!-- Status Tabs -->
-            <div class="p-6 bg-gradient-to-r from-emerald-50 to-teal-50">
-                <div class="flex flex-wrap items-center gap-3 mb-6">
-                    <a href="?status=active" class="px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 {% if current_status == 'active' %}bg-green-600 text-white shadow-lg{% else %}bg-white text-green-600 border-2 border-green-200 hover:bg-green-50{% endif %}">
-                        <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        {% trans "نشط" %}
-                    </a>
-                    <a href="?status=expired" class="px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 {% if current_status == 'expired' %}bg-red-600 text-white shadow-lg{% else %}bg-white text-red-600 border-2 border-red-200 hover:bg-red-50{% endif %}">
-                        <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        {% trans "منتهي" %}
-                    </a>
-                    <a href="?status=expiring_soon" class="px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 {% if current_status == 'expiring_soon' %}bg-orange-500 text-white shadow-lg{% else %}bg-white text-orange-500 border-2 border-orange-200 hover:bg-orange-50{% endif %}">
-                        <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        {% trans "قريب الانتهاء" %}
-                    </a>
-                </div>
-
-                <!-- Search Form -->
-                <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Search Input -->
-                    <div class="group">
-                        <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                            <svg class="w-4 h-4 ml-1 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                            {% trans "البحث" %}
-                        </label>
-                        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'ابحث عن عقد...' %}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 text-sm">
-                    </div>
-                    
-                    <!-- Status Filter -->
-                    <div class="group">
-                        <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                            <svg class="w-4 h-4 ml-1 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            {% trans "الحالة" %}
-                        </label>
-                        <select name="status" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200 text-sm">
-                            <option value="" {% if not current_status %}selected{% endif %}>{% trans 'الحالة الافتراضية (نشطة + قريب الانتهاء)' %}</option>
-                            <option value="all" {% if current_status == 'all' %}selected{% endif %}>{% trans 'كل الحالات' %}</option>
-                            {% for value, label in status_choices %}
-                            <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <!-- Search Button -->
-                    <div class="group flex items-end">
-                        <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                            {% trans 'بحث' %}
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <!-- Table Section -->
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                        <tr>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "رقم العقد" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "المستأجر" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الوحدة" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">
-                                {% if current_status == 'expired' %}
-                                    {% trans "مدة التأخير" %}
-                                {% else %}
-                                    {% trans "فترة العقد" %}
-                                {% endif %}
-                            </th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "تاريخ الانتهاء" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "أيام متبقية" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الإيجار الشهري" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الحالة" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "إجراءات" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for lease in leases %}
-                        <tr class="hover:bg-gray-50 transition-colors {% if lease.status == 'expired' %}bg-red-50{% endif %}">
-                            <td class="px-6 py-4">
-                                <a href="{{ lease.get_absolute_url }}" class="font-bold text-emerald-600 hover:text-emerald-800 transition-colors">
-                                    {{ lease.contract_number }}
-                                </a>
-                            </td>
-                            <td class="px-6 py-4 text-gray-900 font-medium">{{ lease.tenant.name }}</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {{ lease.unit }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                {% if current_status == 'expired' %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        {{ lease.overdue_duration_display }}
-                                    </span>
-                                {% else %}
-                                    <span class="text-gray-700">{{ lease.duration_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 text-gray-700">{{ lease.end_date|date:"d M Y" }}</td>
-                            <td class="px-6 py-4">
-                                {% if current_status == 'expired' %}
-                                    <span class="text-gray-400">-</span>
-                                {% else %}
-                                    {% if lease.days_until_expiry != None %}
-                                        {% if lease.days_until_expiry == 0 %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                                {% trans "اليوم" %}
-                                            </span>
-                                        {% elif lease.days_until_expiry < 30 %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                                {{ lease.days_until_expiry }} {% trans "يوم" %}
-                                            </span>
-                                        {% else %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                                {{ lease.days_until_expiry }} {% trans "يوم" %}
-                                            </span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="text-gray-400">-</span>
-                                    {% endif %}
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="font-mono text-lg font-bold text-gray-800">{{ lease.monthly_rent|floatformat:2 }}</span>
-                                <span class="text-sm text-gray-500 block">{% trans "ر.ع" %}</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                {% if lease.get_status_color == 'active' %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        {{ lease.get_status_display }}
-                                    </span>
-                                {% elif lease.get_status_color == 'expired' %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        {{ lease.get_status_display }}
-                                    </span>
-                                {% elif lease.get_status_color == 'warning' %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                        <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        {{ lease.get_status_display }}
-                                    </span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        {{ lease.get_status_display }}
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4">
-                                {% if current_status == 'expired' %}
-                                    <span class="text-gray-400">—</span>
-                                {% else %}
-                                    <a href="{{ lease.get_absolute_url }}" class="bg-emerald-100 text-emerald-700 p-2 rounded-lg hover:bg-emerald-200 transition-colors inline-flex items-center" title="{% trans 'تفاصيل' %}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                    </a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="9" class="px-6 py-12 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                    <p class="text-lg font-medium">{% trans "لم يتم العثور على عقود." %}</p>
-                                    <p class="text-sm text-gray-400 mt-2">{% trans "جرب تغيير فلاتر البحث أو إضافة عقد جديد" %}</p>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            {% if is_paginated %}
-            <div class="p-6 flex justify-center border-t">
-                <nav class="flex items-center space-x-2">
-                    {% if page_obj.has_previous %}
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1" 
-                           class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
-                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
-                            </svg>
-                            {% trans "الأولى" %}
-                        </a>
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}" 
-                           class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
-                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            {% trans "السابق" %}
-                        </a>
-                    {% endif %}
-
-                    <span class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2 px-6 rounded-lg font-semibold">
-                        {% trans "صفحة" %} {{ page_obj.number }} {% trans "من" %} {{ page_obj.paginator.num_pages }}
-                    </span>
-
-                    {% if page_obj.has_next %}
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}" 
-                           class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
-                            {% trans "التالي" %}
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </a>
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}" 
-                           class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
-                            {% trans "الأخيرة" %}
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
-                            </svg>
-                        </a>
-                    {% endif %}
-                </nav>
-            </div>
-            {% endif %}
-        </div>
+<div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+    <h2 class="text-2xl md:text-3xl font-bold text-gray-800">{% trans "العقود" %}</h2>
+    <div class="flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'export_leases_excel' %}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg font-semibold text-center text-sm md:text-base">
+            📊 {% trans "تصدير Excel" %}
+        </a>
+        <a href="{% url 'lease_create' %}" class="btn-primary py-2 px-5 rounded-lg font-semibold text-center text-sm md:text-base">{% trans "إضافة عقد جديد" %}</a>
     </div>
 </div>
 
-<style>
-/* Custom animations and styles for lease management */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-.slide-in-right {
-    animation: slideInRight 0.4s ease-out;
-}
-
-/* Enhanced card hover effects */
-.hover\:shadow-3xl:hover {
-    box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
-}
-
-/* Status badge animations */
-@keyframes pulse-active {
-    0%, 100% { 
-        background-color: rgb(220 252 231);
-        color: rgb(22 101 52);
-    }
-    50% { 
-        background-color: rgb(187 247 208);
-        color: rgb(20 83 45);
-    }
-}
-
-@keyframes pulse-expired {
-    0%, 100% { 
-        background-color: rgb(254 226 226);
-        color: rgb(153 27 27);
-    }
-    50% { 
-        background-color: rgb(252 165 165);
-        color: rgb(127 29 29);
-    }
-}
-
-@keyframes pulse-warning {
-    0%, 100% { 
-        background-color: rgb(254 243 199);
-        color: rgb(146 64 14);
-    }
-    50% { 
-        background-color: rgb(253 230 138);
-        color: rgb(120 53 15);
-    }
-}
-
-.status-active {
-    animation: pulse-active 3s infinite;
-}
-
-.status-expired {
-    animation: pulse-expired 3s infinite;
-}
-
-.status-warning {
-    animation: pulse-warning 3s infinite;
-}
-
-/* Enhanced table row effects */
-tbody tr {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-tbody tr:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Expired lease special styling */
-tbody tr.bg-red-50 {
-    border-right: 4px solid #ef4444;
-    background: linear-gradient(90deg, #fef2f2 0%, #ffffff 100%);
-}
-
-/* Statistics card enhanced animations */
-.stats-card {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.stats-card:hover {
-    transform: translateY(-12px) rotate(2deg);
-}
-
-/* Tab button enhanced effects */
-.tab-button {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.tab-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.tab-button:hover::before {
-    left: 100%;
-}
-
-/* Action button enhanced effects */
-.action-btn {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-}
-
-.action-btn:hover {
-    transform: translateY(-3px) scale(1.1);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-}
-
-/* Money display enhancement */
-.money-display {
-    position: relative;
-}
-
-.money-display::after {
-    content: '💰';
-    position: absolute;
-    right: -25px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.money-display:hover::after {
-    opacity: 1;
-}
-
-/* Days remaining color coding */
-.days-critical {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    animation: pulse-expired 2s infinite;
-}
-
-.days-warning {
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
-    animation: pulse-warning 3s infinite;
-}
-
-.days-safe {
-    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-    animation: pulse-active 4s infinite;
-}
-
-/* Loading states */
-.search-loading {
-    position: relative;
-}
-
-.search-loading::after {
-    content: '';
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    border: 2px solid #e5e7eb;
-    border-top-color: #10b981;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: translateY(-50%) rotate(360deg); }
-}
-
-/* Filter enhancement */
-.filter-group {
-    transition: all 0.3s ease;
-}
-
-.filter-group:focus-within {
-    transform: scale(1.02);
-}
-
-/* Responsive enhancements */
-@media (max-width: 768px) {
-    .stats-card:hover {
-        transform: translateY(-8px) rotate(1deg);
-    }
+<div class="card overflow-hidden">
+    <div class="p-4 space-y-3">
+        <!-- Status summary -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <a href="?status=active" class="block rounded-lg border p-4 hover:bg-green-50">
+                <div class="text-sm text-gray-600">{% trans "نشط" %}</div>
+                <div class="text-2xl font-bold text-green-700">{{ stats.active_count|default:0 }}</div>
+            </a>
+            <a href="?status=expired" class="block rounded-lg border p-4 hover:bg-red-50">
+                <div class="text-sm text-gray-600">{% trans "منتهي" %}</div>
+                <div class="text-2xl font-bold text-red-700">{{ stats.expired_count|default:0 }}</div>
+            </a>
+            <a href="?status=expiring_soon" class="block rounded-lg border p-4 hover:bg-orange-50">
+                <div class="text-sm text-gray-600">{% trans "قريب الانتهاء" %}</div>
+                <div class="text-2xl font-bold text-orange-700">{{ stats.expiring_count|default:0 }}</div>
+            </a>
+        </div>
+        <!-- Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pt-1">
+            <a href="?status=active" class="px-4 py-2 rounded-full border text-sm whitespace-nowrap {% if current_status == 'active' %}bg-green-600 text-white border-green-600{% else %}hover:bg-green-50{% endif %}">{% trans "نشط" %}</a>
+            <a href="?status=expired" class="px-4 py-2 rounded-full border text-sm whitespace-nowrap {% if current_status == 'expired' %}bg-red-600 text-white border-red-600{% else %}hover:bg-red-50{% endif %}">{% trans "منتهي" %}</a>
+            <a href="?status=expiring_soon" class="px-4 py-2 rounded-full border text-sm whitespace-nowrap {% if current_status == 'expiring_soon' %}bg-orange-500 text-white border-orange-500{% else %}hover:bg-orange-50{% endif %}">{% trans "قريب الانتهاء" %}</a>
+        </div>
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'ابحث عن عقد...' %}" class="w-full p-3 border rounded-md text-base">
+            <select name="status" class="w-full p-3 border rounded-md text-base">
+                <option value="" {% if not current_status %}selected{% endif %}>{% trans 'الحالة الافتراضية (نشطة + قريب الانتهاء)' %}</option>
+                <option value="all" {% if current_status == 'all' %}selected{% endif %}>{% trans 'كل الحالات' %}</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn-primary px-4 py-3 rounded-md">{% trans 'بحث' %}</button>
+        </form>
+    </div>
     
-    tbody tr:hover {
-        transform: translateX(2px);
-    }
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Add fade-in animation to main content
-    const mainContent = document.querySelector('.max-w-7xl');
-    if (mainContent) {
-        mainContent.classList.add('fade-in-up');
-    }
+    <div>
+        <table class="w-full table-fixed text-start">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "رقم العقد" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "المستأجر" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "الوحدة" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">
+                        {% if current_status == 'expired' %}
+                            {% trans "مدة التأخير" %}
+                        {% else %}
+                            {% trans "فترة العقد" %}
+                        {% endif %}
+                    </th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "تاريخ الانتهاء" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "أيام متبقية" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "الإيجار الشهري" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "الحالة" %}</th>
+                    <th class="p-2 md:p-3 text-xs md:text-sm">{% trans "إجراءات" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lease in leases %}
+                <tr class="border-b hover:bg-gray-50 {% if lease.status == 'expired' %}bg-red-50{% endif %}">
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">
+                        <a href="{{ lease.get_absolute_url }}" class="font-bold text-blue-600">{{ lease.contract_number }}</a>
+                    </td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">{{ lease.tenant.name }}</td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">{{ lease.unit }}</td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">
+                        {% if current_status == 'expired' %}
+                            <span class="text-red-700 font-semibold">{{ lease.overdue_duration_display }}</span>
+                        {% else %}
+                            {{ lease.duration_display }}
+                        {% endif %}
+                    </td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">{{ lease.end_date|date:"d M Y" }}</td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm break-words">
+                        {% if current_status == 'expired' %}
+                            <span class="text-gray-400">-</span>
+                        {% else %}
+                            {% if lease.days_until_expiry != None %}
+                                {% if lease.days_until_expiry == 0 %}
+                                    <span class="text-orange-600 font-bold">{% trans "اليوم" %}</span>
+                                {% elif lease.days_until_expiry < 30 %}
+                                    <span class="text-orange-600 font-bold">{{ lease.days_until_expiry }} {% trans "يوم" %}</span>
+                                {% else %}
+                                    <span class="text-green-600">{{ lease.days_until_expiry }} {% trans "يوم" %}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-gray-400">-</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="p-2 md:p-3 font-mono text-xs md:text-sm break-words">{{ lease.monthly_rent|floatformat:2 }}</td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm">
+                        <span class="status-badge status-{{ lease.get_status_color }}">{{ lease.get_status_display }}</span>
+                    </td>
+                    <td class="p-2 md:p-3 text-xs md:text-sm">
+                        {% if current_status == 'expired' %}
+                            <span class="text-gray-400">—</span>
+                        {% else %}
+                            <a href="{{ lease.get_absolute_url }}" class="text-blue-600 hover:underline">{% trans "تفاصيل" %}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="p-6 text-center text-gray-500 text-sm">{% trans "لم يتم العثور على عقود." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
-    // Add stats card class for animations
-    const statsCards = document.querySelectorAll('a.bg-white.rounded-2xl.shadow-2xl');
-    statsCards.forEach((card, index) => {
-        card.classList.add('stats-card');
-        // Staggered animation
-        setTimeout(() => {
-            card.classList.add('slide-in-right');
-        }, index * 200);
-    });
-    
-    // Enhanced status badge animations
-    const statusBadges = document.querySelectorAll('.inline-flex.items-center.px-3.py-1.rounded-full');
-    statusBadges.forEach(badge => {
-        if (badge.classList.contains('bg-green-100')) {
-            badge.classList.add('status-active');
-        } else if (badge.classList.contains('bg-red-100')) {
-            badge.classList.add('status-expired');
-        } else if (badge.classList.contains('bg-orange-100')) {
-            badge.classList.add('status-warning');
-        }
-    });
-    
-    // Add tab button class for animations
-    const tabButtons = document.querySelectorAll('a[href*="status="]');
-    tabButtons.forEach(button => {
-        button.classList.add('tab-button');
-    });
-    
-    // Add action button class for animations
-    const actionButtons = document.querySelectorAll('a[href*="lease"]');
-    actionButtons.forEach(button => {
-        if (button.querySelector('svg')) {
-            button.classList.add('action-btn');
-        }
-    });
-    
-    // Enhanced money display
-    const moneyElements = document.querySelectorAll('.font-mono.text-lg.font-bold');
-    moneyElements.forEach(element => {
-        element.classList.add('money-display');
-    });
-    
-    // Enhanced days remaining styling
-    const daysElements = document.querySelectorAll('td:nth-child(6) span');
-    daysElements.forEach(element => {
-        const text = element.textContent.trim();
-        if (text.includes('اليوم') || (text.includes('يوم') && parseInt(text) <= 7)) {
-            element.classList.add('days-critical');
-        } else if (text.includes('يوم') && parseInt(text) <= 30) {
-            element.classList.add('days-warning');
-        } else if (text.includes('يوم')) {
-            element.classList.add('days-safe');
-        }
-    });
-    
-    // Enhanced search functionality
-    const searchInput = document.querySelector('input[name="q"]');
-    const searchForm = document.querySelector('form[method="get"]');
-    let searchTimeout;
-    
-    if (searchInput && searchForm) {
-        // Add search loading state
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            this.classList.add('search-loading');
-            
-            searchTimeout = setTimeout(() => {
-                this.classList.remove('search-loading');
-            }, 1000);
-        });
-        
-        // Enhanced filter interactions
-        const filterGroups = document.querySelectorAll('.group');
-        filterGroups.forEach(group => {
-            group.classList.add('filter-group');
-        });
-        
-        // Auto-submit on status change with visual feedback
-        const statusSelect = searchForm.querySelector('select[name="status"]');
-        if (statusSelect) {
-            statusSelect.addEventListener('change', function() {
-                this.style.borderColor = '#10b981';
-                this.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
-                
-                setTimeout(() => {
-                    this.style.borderColor = '';
-                    this.style.boxShadow = '';
-                }, 500);
-            });
-        }
-    }
-    
-    // Enhanced number counter animation for statistics
-    const numberElements = document.querySelectorAll('.text-4xl.font-bold');
-    numberElements.forEach((element, index) => {
-        const finalNumber = parseInt(element.textContent) || 0;
-        let currentNumber = 0;
-        const increment = Math.ceil(finalNumber / 25);
-        
-        // Delay animation based on card index
-        setTimeout(() => {
-            const counter = setInterval(() => {
-                currentNumber += increment;
-                if (currentNumber >= finalNumber) {
-                    currentNumber = finalNumber;
-                    clearInterval(counter);
-                }
-                element.textContent = currentNumber;
-            }, 40);
-        }, index * 300);
-    });
-    
-    // Enhanced pagination with loading states
-    const paginationLinks = document.querySelectorAll('nav a[href*="page="]');
-    paginationLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Add loading state
-            this.style.opacity = '0.7';
-            this.style.pointerEvents = 'none';
-            
-            const originalContent = this.innerHTML;
-            this.innerHTML = `
-                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                جاري التحميل...
-            `;
-            
-            // Restore after delay
-            setTimeout(() => {
-                this.innerHTML = originalContent;
-                this.style.opacity = '1';
-                this.style.pointerEvents = 'auto';
-            }, 3000);
-        });
-    });
-    
-    // Enhanced keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // Ctrl+F to focus search
-        if (e.ctrlKey && e.key === 'f' && searchInput) {
-            e.preventDefault();
-            searchInput.focus();
-            searchInput.select();
-        }
-        
-        // Escape to clear search
-        if (e.key === 'Escape' && searchInput && searchInput === document.activeElement) {
-            searchInput.value = '';
-            searchInput.blur();
-        }
-        
-        // Number keys for quick status filtering
-        if (e.key >= '1' && e.key <= '3' && !e.ctrlKey && !e.altKey) {
-            const statusLinks = document.querySelectorAll('a[href*="status="]');
-            const index = parseInt(e.key) - 1;
-            if (statusLinks[index]) {
-                statusLinks[index].click();
-            }
-        }
-    });
-    
-    // Enhanced tooltip functionality
-    const tooltipButtons = document.querySelectorAll('[title]');
-    tooltipButtons.forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'absolute bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap';
-            tooltip.textContent = this.getAttribute('title');
-            tooltip.id = 'tooltip';
-            
-            // Add arrow
-            const arrow = document.createElement('div');
-            arrow.className = 'absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800';
-            tooltip.appendChild(arrow);
-            
-            this.style.position = 'relative';
-            this.appendChild(tooltip);
-        });
-        
-        button.addEventListener('mouseleave', function() {
-            const tooltip = this.querySelector('#tooltip');
-            if (tooltip) {
-                tooltip.remove();
-            }
-        });
-    });
-    
-    // Real-time lease status monitoring (simulated)
-    setInterval(() => {
-        const expiredRows = document.querySelectorAll('tr.bg-red-50');
-        expiredRows.forEach(row => {
-            // Add subtle pulse effect to expired leases
-            row.style.animation = 'pulse 2s infinite';
-        });
-    }, 5000);
-    
-    // Enhanced table interactions
-    const tableRows = document.querySelectorAll('tbody tr');
-    tableRows.forEach(row => {
-        row.addEventListener('click', function(e) {
-            // If clicking on a link, don't trigger row click
-            if (e.target.tagName === 'A' || e.target.closest('a')) {
-                return;
-            }
-            
-            // Find the details link and navigate to it
-            const detailsLink = this.querySelector('a[href*="lease"]');
-            if (detailsLink) {
-                detailsLink.click();
-            }
-        });
-        
-        // Add cursor pointer for clickable rows
-        if (row.querySelector('a[href*="lease"]')) {
-            row.style.cursor = 'pointer';
-        }
-    });
-    
-    console.log('صفحة العقود - تم تحميل الصفحة بنجاح مع التحسينات المتقدمة');
-});
-</script>
+    {% if is_paginated %}
+    <div class="p-4 flex justify-center">
+        <nav class="inline-flex items-center gap-1" aria-label="Pagination">
+            <a class="px-3 py-1 rounded border text-sm {% if not page_obj.has_previous %}opacity-50 pointer-events-none{% endif %}"
+               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1">
+                {% trans "الأولى" %}
+            </a>
+            {% if page_obj.has_previous %}
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                    {% trans "السابق" %}
+                </a>
+            {% else %}
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "السابق" %}</span>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+                    <a class="px-3 py-1 rounded border text-sm {% if num == page_obj.number %}bg-blue-600 text-white border-blue-600{% endif %}"
+                       href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                    {% trans "التالي" %}
+                </a>
+                <a class="px-3 py-1 rounded border text-sm"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                    {% trans "الأخيرة" %}
+                </a>
+            {% else %}
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "التالي" %}</span>
+                <span class="px-3 py-1 rounded border text-sm opacity-50">{% trans "الأخيرة" %}</span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

@@ -22,23 +22,6 @@ from django.conf.urls.i18n import i18n_patterns
 from django.contrib.auth import views as auth_views
 from dashboard.views import login_redirect
 from dashboard.auth_views import EnhancedLoginView
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-
-# Swagger/OpenAPI Schema
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Rent Management API",
-        default_version='v1',
-        description="REST API for Rent Management System - نظام إدارة الإيجارات",
-        terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="contact@rentmanagement.local"),
-        license=openapi.License(name="BSD License"),
-    ),
-    public=True,
-    permission_classes=(permissions.AllowAny,),
-)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -66,14 +49,6 @@ urlpatterns += [
     path('api/auth/send-otp/', send_login_otp, name='api_send_login_otp'),
     path('api/auth/verify-otp/', verify_login_otp, name='api_verify_login_otp'),
     path('api/auth/send-phone-otp/', send_phone_verification_otp, name='api_send_phone_otp'),
-    
-    # REST API URLs
-    path('api/v1/', include('dashboard.api_urls')),
-    
-    # API Documentation
-    path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs'),
-    path('api/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='api-redoc'),
-    path('api/swagger.json', schema_view.without_ui(cache_timeout=0), name='api-schema-json'),
 ]
 
 # Serve media files

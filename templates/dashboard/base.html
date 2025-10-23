@@ -150,108 +150,73 @@
     </div>
 
     <nav class="flex-1 overflow-y-auto" role="navigation" aria-label="{% trans 'Primary' %}">
-        <a href="{% url 'dashboard_home' %}" class="block py-3 px-4 rounded-lg mb-2 text-sm md:text-base nav-item {% if perms.dashboard.view_building or perms.dashboard.view_unit or perms.dashboard.view_lease %}active{% endif %}">
+        <a href="{% url 'dashboard_home' %}" class="block py-3 px-4 rounded-lg mb-2 text-sm md:text-base nav-item {% if request.resolver_match.url_name == 'dashboard_home' %}active{% endif %}">
             <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-7 9 7v7a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V12H9v7a2 2 0 0 1-2 2H3z"/></svg>
             {% trans "لوحة المعلومات" %}
         </a>
 
-        {% if user|has_perm:'can_view_buildings' or user|has_perm:'can_view_units' or user|has_perm:'can_view_leases' %}
         <div class="mt-4">
             <div class="px-4 text-xs uppercase tracking-wider text-gray-400 mb-2">{% trans "إدارة العقارات" %}</div>
             <div class="space-y-1">
-                {% if user|has_perm:'can_view_buildings' %}
                 <a href="{% url 'building_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'building' in request.resolver_match.url_name %}active{% endif %}">
                     <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21V7a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v14M3 21h18"/></svg>
                     {% trans "المباني" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_view_units' %}
                 <a href="{% url 'unit_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'unit' in request.resolver_match.url_name %}active{% endif %}">
                     <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
                     {% trans "الوحدات" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_view_leases' %}
                 <a href="{% url 'lease_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'lease' in request.resolver_match.url_name or request.path == '/dashboard/' %}active{% endif %}">
-                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6M9 8h6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     {% trans "العقود" %}
                 </a>
-                {% endif %}
             </div>
         </div>
-        {% endif %}
 
-        {% if user|has_perm:'can_view_payments' or user|has_perm:'can_view_expenses' or user|has_perm:'can_view_invoices' or user|has_perm:'can_view_notices' %}
         <div class="mt-6">
             <div class="px-4 text-xs uppercase tracking-wider text-gray-400 mb-2">{% trans "المالية" %}</div>
             <div class="space-y-1">
-                {% if user|has_perm:'can_view_payments' %}
                 <a href="{% url 'payment_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
-                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3v4M8 3v4"/></svg>
                     {% trans "المدفوعات" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_view_expenses' %}
                 <a href="{% url 'expense_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
                     <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2"/></svg>
                     {% trans "المصاريف" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_view_invoices' %}
                 <a href="{% url 'invoice_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
-                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 0 2 2h-4"/></svg>
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     {% trans "الفواتير" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_view_payments' %}
                 <a href="{% url 'security_deposit_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'security_deposit' in request.resolver_match.url_name %}active{% endif %}">
-                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg>
                     {% trans "التأمينات" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_view_payments' %}
                 <a href="{% url 'check_management' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'check' in request.resolver_match.url_name %}active{% endif %}">
-                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H4a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M21 12v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h11"/></svg>
                     {% trans "إدارة الشيكات" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_view_notices' %}
-                <a href="{% url 'overdue_notices_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'overdue_notices' in request.resolver_match.url_name %}active{% endif %}">
-                    <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-                    {% trans "إدارة الإنذارات" %}
-                </a>
-                {% endif %}
             </div>
         </div>
-        {% endif %}
 
-        {% if user|has_perm:'can_view_tenants' or user|has_perm:'can_manage_users' %}
         <div class="mt-6">
             <div class="px-4 text-xs uppercase tracking-wider text-gray-400 mb-2">{% trans "العمليات" %}</div>
             <div class="space-y-1">
-                {% if user|has_perm:'can_view_tenants' %}
                 <a href="{% url 'tenant_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'tenant' in request.resolver_match.url_name %}active{% endif %}">
                     <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.6 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     {% trans "المستأجرين" %}
                 </a>
-                {% endif %}
-                {% if perms.dashboard.view_maintenancerequest %}
                 <a href="{% url 'maintenance_admin_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'maintenance' in request.resolver_match.url_name %}active{% endif %}">
                     <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.24 13.78l-7.07-7.07a4 4 0 00-5.66 5.66l7.07 7.07a4 4 0 005.66-5.66z"/></svg>
                     {% trans "الصيانة" %}
                 </a>
-                {% endif %}
-                {% if user|has_perm:'can_manage_users' %}
-                <a href="{% url 'user_list' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+                <a href="{% url 'user_management' %}" class="block py-2 px-4 rounded-lg text-sm md:text-base nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
                     <svg class="nav-icon text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 12a4 4 0 100-8 4 4 0 000 8z"/></svg>
                     {% trans "إدارة المستخدمين" %}
                 </a>
-                {% endif %}
             </div>
         </div>
-        {% endif %}
 
-        {% if user|has_perm:'can_view_reports' %}
         <div class="mt-6">
             <div class="px-4 text-xs uppercase tracking-wider text-gray-400 mb-2">{% trans "التقارير" %}</div>
             <div class="space-y-1">
@@ -273,13 +238,10 @@
                 </a>
             </div>
         </div>
-        {% endif %}
     </nav>
 
     <div class="mt-auto pt-4 border-t border-gray-700">
-        {% if user|has_perm:'can_access_settings' %}
         <a href="{% url 'company_update' %}" class="block py-2 px-4 rounded-lg mb-2 text-sm md:text-base text-gray-300 hover:bg-gray-700">{% trans "الاعدادات" %}</a>
-        {% endif %}
         <!-- تم نقل اللغة/النسخ الاحتياطي/تسجيل الخروج إلى الشريط العلوي -->
     </div>
 </aside>

@@ -6,552 +6,84 @@
 {% block page_header_actions %}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-    <div class="max-w-7xl mx-auto px-4">
-        <!-- Header Section -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-            </div>
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "إدارة المدفوعات" %}</h1>
-            <p class="text-gray-600">{% trans "إدارة وعرض جميع المدفوعات وطرق الدفع والإيصالات" %}</p>
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-            <a href="{% url 'export_payments_excel' %}" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-8 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                {% trans "تصدير Excel" %}
-            </a>
-            <a href="{% url 'payment_create' %}" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-8 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                {% trans "إضافة دفعة جديدة" %}
-            </a>
-        </div>
-
-        <!-- Main Content Card -->
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <!-- Filters Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-                <h2 class="text-2xl font-bold text-white flex items-center">
-                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
-                    </svg>
-                    {% trans "فلاتر البحث" %}
-                </h2>
-            </div>
-            
-            <!-- Filters Form -->
-            <div class="p-8 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Search Input -->
-                    <div class="group">
-                        <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                            <svg class="w-4 h-4 ml-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                            {% trans "البحث" %}
-                        </label>
-                        <input type="text" name="q" value="{{ search_query }}" placeholder="{% trans 'ابحث عن دفعة...' %}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-sm">
-                    </div>
-                    
-                    <!-- Payment Method Filter -->
-                    <div class="group">
-                        <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                            <svg class="w-4 h-4 ml-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                            {% trans "طريقة الدفع" %}
-                        </label>
-                        <select name="payment_method" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200 text-sm">
-                            <option value="">{% trans "كل طرق الدفع" %}</option>
-                            {% for value, label in payment_method_choices %}
-                            <option value="{{ value }}" {% if current_payment_method == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <!-- Search Button -->
-                    <div class="group flex items-end">
-                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
-                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                            {% trans "بحث" %}
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <!-- Table Section -->
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                        <tr>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "رقم العقد" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "المستأجر" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الوحدة" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "المبلغ" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "طريقة الدفع" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "وذلك عن" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "تاريخ الدفع" %}</th>
-                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "إجراءات" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for payment in payments %}
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4">
-                                <span class="font-bold text-blue-600">{{ payment.lease.contract_number }}</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-900 font-medium">{{ payment.lease.tenant.name }}</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {{ payment.lease.unit.unit_number }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex flex-col">
-                                    <span class="font-mono text-lg font-bold text-gray-800">{{ payment.amount|floatformat:2 }}</span>
-                                    <span class="text-sm text-gray-500">{% trans "ر.ع" %}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex flex-col gap-2">
-                                    {% if payment.payment_method == 'cash' %}
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                            </svg>
-                                            {{ payment.get_payment_method_display }}
-                                        </span>
-                                    {% elif payment.payment_method == 'check' %}
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                            </svg>
-                                            {{ payment.get_payment_method_display }}
-                                        </span>
-                                        {% if payment.check_number %}
-                                            <span class="text-xs text-gray-600">#{{ payment.check_number }}</span>
-                                        {% endif %}
-                                        {% if payment.check_status %}
-                                            {% if payment.check_status == 'pending' %}
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                    </svg>
-                                                    {{ payment.get_check_status_display }}
-                                                </span>
-                                            {% elif payment.check_status == 'cashed' %}
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                    </svg>
-                                                    {{ payment.get_check_status_display }}
-                                                </span>
-                                            {% elif payment.check_status == 'returned' %}
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                    </svg>
-                                                    {{ payment.get_check_status_display }}
-                                                </span>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% elif payment.payment_method == 'bank_transfer' %}
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
-                                            </svg>
-                                            {{ payment.get_payment_method_display }}
-                                        </span>
-                                    {% else %}
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                            </svg>
-                                            {{ payment.get_payment_method_display }}
-                                        </span>
-                                    {% endif %}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                    </svg>
-                                    {{ payment.payment_for_month }}/{{ payment.payment_for_year }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-700">{{ payment.payment_date|date:"d M Y" }}</td>
-                            <td class="px-6 py-4">
-                                <div class="flex space-x-2">
-                                    <a href="{% url 'payment_update' payment.pk %}" class="bg-blue-100 text-blue-700 p-2 rounded-lg hover:bg-blue-200 transition-colors" title="{% trans 'تعديل' %}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                    </a>
-                                    <a href="{% url 'payment_receipt' payment.pk %}" target="_blank" class="bg-green-100 text-green-700 p-2 rounded-lg hover:bg-green-200 transition-colors" title="{% trans 'سند قبض' %}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                    </a>
-                                    <a href="{% url 'payment_delete' payment.pk %}" class="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition-colors" title="{% trans 'حذف' %}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                    </svg>
-                                    <p class="text-lg font-medium">{% trans "لا توجد دفعات مسجلة." %}</p>
-                                    <p class="text-sm text-gray-400 mt-2">{% trans "جرب تغيير فلاتر البحث أو إضافة دفعة جديدة" %}</p>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<!-- Top actions with title -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+    <h2 class="text-2xl font-bold text-gray-800">{% trans "المدفوعات" %}</h2>
+    <div class="flex items-center gap-2">
+        <a href="{% url 'export_payments_excel' %}" class="items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm">📊 {% trans "تصدير" %}</a>
+        <a href="{% url 'payment_create' %}" class="btn-primary px-3 py-2 rounded-md text-sm">{% trans "إضافة" %}</a>
     </div>
 </div>
 
-<style>
-/* Custom animations and styles for payments */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.fade-in-up {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-.slide-in-left {
-    animation: slideInLeft 0.4s ease-out;
-}
-
-/* Enhanced card hover effects */
-.hover\:shadow-3xl:hover {
-    box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
-}
-
-/* Payment method badge animations */
-@keyframes pulse-cash {
-    0%, 100% { 
-        background-color: rgb(220 252 231);
-        color: rgb(22 101 52);
-    }
-    50% { 
-        background-color: rgb(187 247 208);
-        color: rgb(20 83 45);
-    }
-}
-
-@keyframes pulse-check {
-    0%, 100% { 
-        background-color: rgb(254 243 199);
-        color: rgb(146 64 14);
-    }
-    50% { 
-        background-color: rgb(253 230 138);
-        color: rgb(120 53 15);
-    }
-}
-
-@keyframes pulse-bank {
-    0%, 100% { 
-        background-color: rgb(219 234 254);
-        color: rgb(30 64 175);
-    }
-    50% { 
-        background-color: rgb(191 219 254);
-        color: rgb(29 78 216);
-    }
-}
-
-.payment-cash {
-    animation: pulse-cash 3s infinite;
-}
-
-.payment-check {
-    animation: pulse-check 3s infinite;
-}
-
-.payment-bank {
-    animation: pulse-bank 3s infinite;
-}
-
-/* Enhanced table row effects */
-tbody tr {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-tbody tr:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Action button enhanced effects */
-.action-btn {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.action-btn:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* Money display enhancement */
-.money-display {
-    position: relative;
-}
-
-.money-display::after {
-    content: '💰';
-    position: absolute;
-    right: -25px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.money-display:hover::after {
-    opacity: 1;
-}
-
-/* Loading states */
-.search-loading {
-    position: relative;
-}
-
-.search-loading::after {
-    content: '';
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    border: 2px solid #e5e7eb;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: translateY(-50%) rotate(360deg); }
-}
-
-/* Filter enhancement */
-.filter-group {
-    transition: all 0.3s ease;
-}
-
-.filter-group:focus-within {
-    transform: scale(1.02);
-}
-
-/* Check status specific styling */
-.check-pending {
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
-    animation: pulse-check 2s infinite;
-}
-
-.check-cashed {
-    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-    animation: pulse-cash 3s infinite;
-}
-
-.check-returned {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    animation: pulse 2s infinite;
-}
-
-/* Responsive enhancements */
-@media (max-width: 768px) {
-    tbody tr:hover {
-        transform: translateX(2px);
-    }
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Add fade-in animation to main content
-    const mainContent = document.querySelector('.max-w-7xl');
-    if (mainContent) {
-        mainContent.classList.add('fade-in-up');
-    }
-    
-    // Enhanced payment method badge animations
-    const paymentBadges = document.querySelectorAll('.inline-flex.items-center.px-3.py-1.rounded-full');
-    paymentBadges.forEach(badge => {
-        if (badge.classList.contains('bg-green-100')) {
-            badge.classList.add('payment-cash');
-        } else if (badge.classList.contains('bg-yellow-100')) {
-            badge.classList.add('payment-check');
-        } else if (badge.classList.contains('bg-blue-100')) {
-            badge.classList.add('payment-bank');
-        }
-    });
-    
-    // Add action button class for animations
-    const actionButtons = document.querySelectorAll('a[href*="payment"]');
-    actionButtons.forEach(button => {
-        if (button.querySelector('svg')) {
-            button.classList.add('action-btn');
-        }
-    });
-    
-    // Enhanced money display
-    const moneyElements = document.querySelectorAll('.font-mono.text-lg.font-bold');
-    moneyElements.forEach(element => {
-        element.classList.add('money-display');
-    });
-    
-    // Enhanced search functionality
-    const searchInput = document.querySelector('input[name="q"]');
-    const searchForm = document.querySelector('form[method="get"]');
-    let searchTimeout;
-    
-    if (searchInput && searchForm) {
-        // Add search loading state
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            this.classList.add('search-loading');
-            
-            searchTimeout = setTimeout(() => {
-                this.classList.remove('search-loading');
-            }, 1000);
-        });
-        
-        // Enhanced filter interactions
-        const filterGroups = document.querySelectorAll('.group');
-        filterGroups.forEach(group => {
-            group.classList.add('filter-group');
-        });
-        
-        // Auto-submit on payment method change with visual feedback
-        const methodSelect = searchForm.querySelector('select[name="payment_method"]');
-        if (methodSelect) {
-            methodSelect.addEventListener('change', function() {
-                this.style.borderColor = '#3b82f6';
-                this.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                
-                setTimeout(() => {
-                    this.style.borderColor = '';
-                    this.style.boxShadow = '';
-                }, 500);
-            });
-        }
-    }
-    
-    // Enhanced keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // Ctrl+F to focus search
-        if (e.ctrlKey && e.key === 'f' && searchInput) {
-            e.preventDefault();
-            searchInput.focus();
-            searchInput.select();
-        }
-        
-        // Escape to clear search
-        if (e.key === 'Escape' && searchInput && searchInput === document.activeElement) {
-            searchInput.value = '';
-            searchInput.blur();
-        }
-    });
-    
-    // Enhanced tooltip functionality
-    const tooltipButtons = document.querySelectorAll('[title]');
-    tooltipButtons.forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'absolute bg-gray-800 text-white text-xs rounded py-1 px-2 z-50 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap';
-            tooltip.textContent = this.getAttribute('title');
-            tooltip.id = 'tooltip';
-            
-            // Add arrow
-            const arrow = document.createElement('div');
-            arrow.className = 'absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800';
-            tooltip.appendChild(arrow);
-            
-            this.style.position = 'relative';
-            this.appendChild(tooltip);
-        });
-        
-        button.addEventListener('mouseleave', function() {
-            const tooltip = this.querySelector('#tooltip');
-            if (tooltip) {
-                tooltip.remove();
-            }
-        });
-    });
-    
-    // Enhanced table interactions
-    const tableRows = document.querySelectorAll('tbody tr');
-    tableRows.forEach(row => {
-        row.addEventListener('click', function(e) {
-            // If clicking on a link, don't trigger row click
-            if (e.target.tagName === 'A' || e.target.closest('a')) {
-                return;
-            }
-            
-            // Find the update link and navigate to it
-            const updateLink = this.querySelector('a[href*="payment_update"]');
-            if (updateLink) {
-                updateLink.click();
-            }
-        });
-        
-        // Add cursor pointer for clickable rows
-        if (row.querySelector('a[href*="payment_update"]')) {
-            row.style.cursor = 'pointer';
-        }
-    });
-    
-    // Add staggered animations to table rows
-    const rows = document.querySelectorAll('tbody tr');
-    rows.forEach((row, index) => {
-        setTimeout(() => {
-            row.classList.add('slide-in-left');
-        }, index * 100);
-    });
-    
-    console.log('صفحة المدفوعات - تم تحميل الصفحة بنجاح مع التحسينات المتقدمة');
-});
-</script>
+<div class="card overflow-hidden">
+    <div class="p-3 border-b bg-gray-50">
+        <form method="get" class="flex flex-wrap items-center gap-2">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="{% trans 'ابحث...' %}"
+                   class="p-2 md:p-2.5 border rounded-md text-sm md:text-base">
+            <select name="payment_method" class="p-2 md:p-2.5 border rounded-md text-sm md:text-base">
+                <option value="">{% trans "كل طرق الدفع" %}</option>
+                {% for value, label in payment_method_choices %}
+                <option value="{{ value }}" {% if current_payment_method == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="px-3 py-2 rounded-md border text-sm text-gray-700 hover:bg-gray-50">{% trans "بحث" %}</button>
+        </form>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-start min-w-max">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "رقم العقد" %}</th>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "المستأجر" %}</th>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "الوحدة" %}</th>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "المبلغ" %}</th>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "طريقة الدفع" %}</th>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "وذلك عن" %}</th>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "تاريخ الدفع" %}</th>
+                    <th class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{% trans "إجراءات" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3 md:p-4 text-xs md:text-sm">{{ payment.lease.contract_number }}</td>
+                    <td class="p-3 md:p-4 text-xs md:text-sm">{{ payment.lease.tenant.name }}</td>
+                    <td class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{{ payment.lease.unit.unit_number }}</td>
+                    <td class="p-3 md:p-4 font-mono text-xs md:text-sm whitespace-nowrap">{{ payment.amount|floatformat:2 }}</td>
+                    <td class="p-3 md:p-4 text-xs md:text-sm">
+                        {{ payment.get_payment_method_display }}
+                        {% if payment.payment_method == 'check' %}
+                            {% if payment.check_number %}
+                            <br><span class="text-xs text-gray-600">(#{{ payment.check_number }})</span>
+                            {% endif %}
+                            {% if payment.check_status %}
+                            <br>
+                            {% if payment.check_status == 'pending' %}
+                                <span class="inline-block px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800 mt-1">{{ payment.get_check_status_display }}</span>
+                            {% elif payment.check_status == 'cashed' %}
+                                <span class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-800 mt-1">{{ payment.get_check_status_display }}</span>
+                            {% elif payment.check_status == 'returned' %}
+                                <span class="inline-block px-2 py-1 text-xs rounded bg-red-100 text-red-800 mt-1">{{ payment.get_check_status_display }}</span>
+                            {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{{ payment.payment_for_month }}/{{ payment.payment_for_year }}</td>
+                    <td class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">{{ payment.payment_date|date:"d M Y" }}</td>
+                    <td class="p-3 md:p-4 text-xs md:text-sm whitespace-nowrap">
+                        <div class="flex flex-col gap-1">
+                            <a href="{% url 'payment_update' payment.pk %}" class="text-blue-600 hover:underline">{% trans "تعديل" %}</a>
+                            <a href="{% url 'payment_receipt' payment.pk %}" target="_blank" class="text-green-600 hover:underline">{% trans "سند قبض" %}</a>
+                            <a href="{% url 'payment_delete' payment.pk %}" class="text-red-600 hover:underline">{% trans "حذف" %}</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="p-6 text-center text-gray-500 text-sm">{% trans "لا توجد دفعات مسجلة." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
