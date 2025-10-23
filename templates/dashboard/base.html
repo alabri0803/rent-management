@@ -6,35 +6,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="description" content="{% block meta_description %}{% trans 'نظام إدارة الإيجارات - إدارة شاملة للعقارات والعقود والمدفوعات' %}{% endblock %}">
-    <meta name="keywords" content="{% block meta_keywords %}{% trans 'إدارة إيجارات, عقارات, عقود, مدفوعات' %}{% endblock %}">
-    <meta name="author" content="{% get_company_name %}">
-    <meta name="theme-color" content="#993333">
-    
-    <!-- Open Graph / Social Media -->
-    <meta property="og:title" content="{% block og_title %}{% block title %}{% trans "لوحة التحكم" %}{% endblock %} - {% get_company_name %}{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}{% trans 'نظام إدارة الإيجارات' %}{% endblock %}">
-    <meta property="og:type" content="website">
-    
-    <title>{% block title %}{% trans "لوحة التحكم" %}{% endblock %} - {% get_company_name %}</title>
+   <title>{% block title %}{% trans "لوحة التحكم" %}{% endblock %} - {% get_company_name %}</title>
     <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
     <link rel="apple-touch-icon" href="{% static 'favicon.svg' %}">
-    
-    <!-- Preload Critical Resources -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Tailwind CSS (Local with CDN fallback) -->
-    <link rel="stylesheet" href="{% static 'css/output.css' %}" onerror="this.onerror=null;this.href='https://cdn.tailwindcss.com';">
-    
-    <!-- Base Styles -->
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    
-    <!-- Chart.js (only loaded when needed) -->
-    {% block extra_css %}{% endblock %}
-    <!-- Inline Critical CSS for Above-the-Fold Content -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Critical styles only - rest loaded from base.css */
-        body { font-family: '{% if LANGUAGE_CODE == 'ar' %}Tajawal{% else %}Inter{% endif %}', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Inter:wght@400;700&display=swap');
+        body { font-family: '{% if LANGUAGE_CODE == 'ar' %}Tajawal{% else %}Inter{% endif %}', sans-serif; background-color: #f7fafc; color: #374151; }
+        :root {
+            --primary-color: #993333; /* Burgundy */
+            --primary-700: #7c2a2a;
+            --primary-50: #fdf2f2;
+            --secondary-color: #D4AF37; /* Gold */
+            --card-radius: 0.75rem;
+            --ring: 0 0 0 3px rgba(153, 51, 51, 0.25);
+        }
+        /* Sidebar */
+        .sidebar {
+            background: radial-gradient(1200px 600px at 10% -10%, rgba(255,255,255,0.04), transparent), linear-gradient(180deg, #1f2937, #111827 65%);
+            transition: transform 0.3s ease-in-out, box-shadow .2s ease;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+        }
+        .sidebar nav a {
+            color: #cbd5e1; /* slate-300 */
+            transition: background-color .2s ease, color .2s ease, transform .08s ease;
+            min-height: 44px; display: flex; align-items: center; border: 1px solid transparent;
+        }
+        .sidebar nav a:hover { background-color: rgba(255,255,255,0.06); color: #fff; }
+        .sidebar nav a.active {
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-700));
+            color: white; border-color: rgba(255,255,255,0.08);
+            box-shadow: 0 6px 14px rgba(153,51,51,.25), inset 0 1px 0 rgba(255,255,255,.08);
+        }
+        /* Cards */
+        .card {
+            background-color: #ffffff; border-radius: var(--card-radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #eef2f7;
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+        .card:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08), 0 3px 10px rgba(0,0,0,.05); }
+        /* Buttons */
+        .btn-primary { background-color: var(--primary-color); color: white; transition: background-color 0.2s, transform .06s; min-height: 44px; }
+        .btn-primary:hover { background-color: var(--primary-700); }
+        .btn-primary:active { transform: translateY(1px); }
+        .btn-primary:focus-visible { outline: none; box-shadow: var(--ring); }
+        /* Status badges */
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; letter-spacing: .02em; }
+        .status-active { background-color: #dcfce7; color: #166534; }
+        .status-expiring { background-color: #fef9c3; color: #854d0e; }
+        .status-expired { background-color: #fee2e2; color: #991b1b; }
+        .status-cancelled { background-color: #e5e7eb; color: #374151; }
+
+
+        /* Icon & nav layout */
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; }
+        .nav-icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: currentColor; display: inline-block; }
+        .lang-ar .nav-item { flex-direction: row-reverse; }
+
+        /* Dropdown containers */
+        .nav-dropdown-content { border-left: 2px solid rgba(255,255,255,0.06); }
+        .lang-ar .nav-dropdown-content { border-right: 2px solid rgba(255,255,255,0.06); border-left: 0; }
+
+        /* Tables */
+        table { border-collapse: separate; border-spacing: 0; }
+        thead th { background: #f8fafc; color: #475569; font-weight: 700; }
+        tbody tr { transition: background-color .12s; }
+        tbody tr:hover { background-color: #f9fafb; }
+        th, td { border-bottom: 1px solid #eef2f7; }
+
+        /* Messages */
+        .message-enter { animation: fadeIn .25s ease-out both; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: auto;
+                height: 100vh;
+                z-index: 50;
+                transform: translateX(-100%);
+            }
+            .lang-ar .sidebar { left: auto; right: 0; transform: translateX(100%); }
+            .sidebar.open { transform: translateX(0) !important; }
+            .overlay {
+                position: fixed;
+                inset: 0;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 40;
+                display: none;
+            }
+            .overlay.show { display: block; }
+        }
+
+
+        button, a, input, select, textarea {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        /* Scrollbar styling */
+        * { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9; }
+        ::-webkit-scrollbar { height: 10px; width: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+
+        @media (max-width: 640px) {
+            body { font-size: 16px; }
+        }
+
+        /* Desktop toggle: hide sidebar when requested */
+        @media (min-width: 768px) {
+            .hidden-desktop { display: none !important; }
+        }
     </style>
 </head>
 <body class="text-gray-700">
