@@ -1,15 +1,328 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{{ title }}{% endblock %}
+
 {% block content %}
-<div class="card max-w-2xl mx-auto p-8">
-    <h2 class="text-2xl font-bold mb-6">{{ title }}</h2>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="space-y-4">
-            {{ form.as_p }}
+<div class="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "إعدادات الشركة والهوية" %}</h1>
+            <p class="text-gray-600">{% trans "قم بتحديث معلومات الشركة والهوية التجارية" %}</p>
         </div>
-        <button type="submit" class="btn-primary w-full mt-6 py-2 rounded-lg">{% trans "حفظ" %}</button>
-    </form>
+
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Card Header -->
+            <div class="bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6">
+                <h2 class="text-2xl font-bold text-white flex items-center">
+                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    {% trans "معلومات الشركة" %}
+                </h2>
+            </div>
+
+            <!-- Form Content -->
+            <div class="p-8">
+                <form method="post" enctype="multipart/form-data" class="space-y-8">
+                    {% csrf_token %}
+                    
+                    <!-- Company Identity -->
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border-l-4 border-amber-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4"></path>
+                            </svg>
+                            {% trans "هوية الشركة" %}
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Company Name -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4"></path>
+                                    </svg>
+                                    {{ form.name.label }}
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Company ID -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    {{ form.company_id.label }}
+                                </label>
+                                {{ form.company_id }}
+                                <div class="mt-1 text-xs text-gray-500">
+                                    {% trans "مثال: 1234567890 (رقم السجل التجاري أو الهوية الضريبية)" %}
+                                </div>
+                                {% if form.company_id.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.company_id.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Company Logo -->
+                            <div class="group md:col-span-2">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    {{ form.logo.label }}
+                                </label>
+                                <div class="border-2 border-dashed border-purple-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors">
+                                    {{ form.logo }}
+                                    <div class="mt-2 text-sm text-gray-500">
+                                        <svg class="w-8 h-8 mx-auto mb-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                        </svg>
+                                        {% trans "اسحب الشعار هنا أو انقر للاختيار" %}
+                                    </div>
+                                </div>
+                                {% if form.logo.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.logo.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                            {% trans "معلومات الاتصال" %}
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Contact Email -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                    {{ form.contact_email.label }}
+                                </label>
+                                {{ form.contact_email }}
+                                {% if form.contact_email.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.contact_email.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Contact Phone -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                    </svg>
+                                    {{ form.contact_phone.label }}
+                                </label>
+                                {{ form.contact_phone }}
+                                {% if form.contact_phone.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.contact_phone.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Company Address -->
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            {% trans "عنوان الشركة" %}
+                        </h3>
+                        
+                        <div class="group">
+                            <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                <svg class="w-4 h-4 ml-1 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                {{ form.address.label }}
+                            </label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.address.errors.0 }}</p>
+                            {% endif %}
+                            
+                            <!-- Address Guidelines -->
+                            <div class="mt-3 p-3 bg-green-100 rounded-lg border border-green-200">
+                                <div class="flex items-center mb-2">
+                                    <svg class="w-4 h-4 text-green-600 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium text-green-800">{% trans "نصائح لكتابة العنوان:" %}</span>
+                                </div>
+                                <ul class="text-xs text-green-700 space-y-1">
+                                    <li>• {% trans "اذكر اسم الشارع والحي بوضوح" %}</li>
+                                    <li>• {% trans "أضف رقم المبنى والطابق إن وجد" %}</li>
+                                    <li>• {% trans "حدد المدينة والمحافظة" %}</li>
+                                    <li>• {% trans "أضف الرمز البريدي إن أمكن" %}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-6 border-l-4 border-yellow-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            {% trans "معاينة بيانات الشركة" %}
+                        </h3>
+                        
+                        <div class="bg-white rounded-lg p-6 shadow-sm border">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-16 h-16 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-bold text-xl text-gray-800 mb-2" id="preview-name">{% trans "اسم الشركة سيظهر هنا" %}</div>
+                                    <div class="space-y-1 text-sm text-gray-600">
+                                        <div class="flex items-center" id="preview-email">
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                            </svg>
+                                            {% trans "البريد الإلكتروني سيظهر هنا" %}
+                                        </div>
+                                        <div class="flex items-center" id="preview-phone">
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                            </svg>
+                                            {% trans "رقم الهاتف سيظهر هنا" %}
+                                        </div>
+                                        <div class="flex items-start" id="preview-address">
+                                            <svg class="w-4 h-4 ml-1 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            {% trans "عنوان الشركة سيظهر هنا" %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div class="flex justify-center pt-8 border-t border-gray-200">
+                        <button type="submit" class="bg-gradient-to-r from-amber-600 to-orange-600 text-white py-4 px-12 rounded-xl font-bold text-lg hover:from-amber-700 hover:to-orange-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            {% trans "حفظ إعدادات الشركة" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+/* Custom styles for form elements */
+.group select, .group input, .group textarea {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200 text-sm;
+}
+
+.group textarea {
+    @apply min-h-[120px] resize-none;
+}
+
+.group select:focus, .group input:focus, .group textarea:focus {
+    @apply outline-none shadow-lg;
+}
+
+/* Hover effects */
+.group:hover select, .group:hover input, .group:hover textarea {
+    @apply border-amber-300 shadow-md;
+}
+
+/* File input styling */
+input[type="file"] {
+    @apply w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.querySelector('input[name="name"]');
+    const emailInput = document.querySelector('input[name="contact_email"]');
+    const phoneInput = document.querySelector('input[name="contact_phone"]');
+    const addressInput = document.querySelector('textarea[name="address"]');
+    
+    const previewName = document.getElementById('preview-name');
+    const previewEmail = document.getElementById('preview-email');
+    const previewPhone = document.getElementById('preview-phone');
+    const previewAddress = document.getElementById('preview-address');
+    
+    function updatePreview() {
+        const name = nameInput?.value.trim();
+        const email = emailInput?.value.trim();
+        const phone = phoneInput?.value.trim();
+        const address = addressInput?.value.trim();
+        
+        if (previewName) {
+            previewName.textContent = name || '{% trans "اسم الشركة سيظهر هنا" %}';
+        }
+        
+        if (previewEmail) {
+            previewEmail.innerHTML = `
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                ${email || '{% trans "البريد الإلكتروني سيظهر هنا" %}'}
+            `;
+        }
+        
+        if (previewPhone) {
+            previewPhone.innerHTML = `
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                </svg>
+                ${phone || '{% trans "رقم الهاتف سيظهر هنا" %}'}
+            `;
+        }
+        
+        if (previewAddress) {
+            previewAddress.innerHTML = `
+                <svg class="w-4 h-4 ml-1 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                ${address || '{% trans "عنوان الشركة سيظهر هنا" %}'}
+            `;
+        }
+    }
+    
+    // Add event listeners
+    nameInput?.addEventListener('input', updatePreview);
+    emailInput?.addEventListener('input', updatePreview);
+    phoneInput?.addEventListener('input', updatePreview);
+    addressInput?.addEventListener('input', updatePreview);
+    
+    // Initial update
+    updatePreview();
+});
+</script>
 {% endblock %}

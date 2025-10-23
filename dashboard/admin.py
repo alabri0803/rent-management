@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Building, Unit, Tenant, Lease, Payment, MaintenanceRequest, Document, Expense, Notification, Company, ContractTemplate, Invoice, InvoiceItem,
-    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution
+    RealEstateOffice, BuildingOwner, CommissionAgreement, RentCollection, CommissionDistribution, PaymentOverdueNotice, NoticeTemplate, LeaseRenewalReminder
 )
 
 @admin.register(Company)
@@ -125,3 +125,138 @@ class CommissionDistributionAdmin(admin.ModelAdmin):
     search_fields = ('building_owner__name', 'rent_collection__lease__contract_number', 'payment_reference')
     date_hierarchy = 'distribution_date'
     ordering = ('-created_at',)
+
+
+@admin.register(PaymentOverdueNotice)
+class PaymentOverdueNoticeAdmin(admin.ModelAdmin):
+    list_display = ('lease', 'overdue_month', 'overdue_year', 'overdue_amount', 'notice_date', 'legal_deadline', 'status')
+    list_filter = ('status', 'potential_legal_action', 'notice_date')
+    search_fields = ('lease__contract_number', 'lease__tenant__name', 'lease__unit__unit_number')
+    date_hierarchy = 'notice_date'
+    readonly_fields = ('legal_deadline',)
+    
+    fieldsets = (
+        ('معلومات الإنذار', {
+            'fields': ('lease', 'overdue_month', 'overdue_year', 'overdue_amount', 'due_date')
+        }),
+        ('تواريخ مهمة', {
+            'fields': ('notice_date', 'legal_deadline', 'status', 'potential_legal_action')
+        }),
+        ('متابعة الإنذار', {
+            'fields': ('sent_date', 'acknowledged_date', 'resolved_date', 'delivery_method', 'recipient_signature')
+        }),
+        ('ملاحظات', {
+            'fields': ('notes',)
+        }),
+    )
+    
+    actions = ['mark_as_sent', 'mark_as_acknowledged', 'mark_as_resolved', 'generate_notice_content']
+    
+    def mark_as_sent(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(status='sent', sent_date=timezone.now())
+        self.message_user(request, f"تم تحديث حالة {queryset.count()} إنذار إلى 'تم الإرسال'")
+    mark_as_sent.short_description = "تحديد كـ مُرسل"
+    
+    def mark_as_acknowledged(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(status='acknowledged', acknowledged_date=timezone.now())
+        self.message_user(request, f"تم تحديث حالة {queryset.count()} إنذار إلى 'تم الاستلام'")
+    mark_as_acknowledged.short_description = "تحديد كـ مُستلم"
+    
+    def mark_as_resolved(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(status='resolved', resolved_date=timezone.now())
+        self.message_user(request, f"تم تحديث حالة {queryset.count()} إنذار إلى 'تم الحل'")
+    mark_as_resolved.short_description = "تحديد كـ محلول"
+    
+    def generate_notice_content(self, request, queryset):
+        for notice in queryset:
+            content = notice.get_notice_content()
+            # يمكن إضافة منطق لحفظ المحتوى أو إرساله
+        self.message_user(request, f"تم إنشاء محتوى الإنذار لـ {queryset.count()} إنذار")
+    generate_notice_content.short_description = "إنشاء محتوى الإنذار"
+
+
+@admin.register(NoticeTemplate)
+class NoticeTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'template_type', 'is_active', 'created_date', 'updated_date')
+    list_filter = ('template_type', 'is_active', 'created_date')
+    search_fields = ('name', 'subject', 'content')
+    
+    fieldsets = (
+        ('معلومات القالب', {
+            'fields': ('name', 'template_type', 'subject', 'is_active')
+        }),
+        ('المحتوى', {
+            'fields': ('content',),
+            'classes': ('wide',)
+        }),
+        ('ملاحظات قانونية', {
+            'fields': ('legal_compliance_notes',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+@admin.register(LeaseRenewalReminder)
+class LeaseRenewalReminderAdmin(admin.ModelAdmin):
+    list_display = ('lease', 'reminder_date', 'days_before_expiry', 'status', 'response', 'sent_date')
+    list_filter = ('status', 'response', 'reminder_date', 'days_before_expiry')
+    search_fields = ('lease__contract_number', 'lease__tenant__name', 'lease__unit__unit_number')
+    date_hierarchy = 'reminder_date'
+    readonly_fields = ('reminder_date',)
+
+    fieldsets = (
+        ('معلومات التذكير', {
+            'fields': ('lease', 'reminder_date', 'days_before_expiry', 'status')
+        }),
+        ('رد المستأجر', {
+            'fields': ('response', 'response_date', 'response_notes')
+        }),
+        ('معلومات الإرسال', {
+            'fields': ('sent_date', 'delivery_method', 'recipient_signature')
+        }),
+        ('شروط التجديد المقترحة', {
+            'fields': ('proposed_renewal_date', 'proposed_monthly_rent', 'proposed_terms'),
+            'classes': ('collapse',)
+        }),
+        ('ملاحظات', {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    actions = ['mark_as_sent', 'mark_response_interested', 'mark_response_not_interested', 'generate_reminder_content']
+
+    def mark_as_sent(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(status='sent', sent_date=timezone.now())
+        self.message_user(request, f"تم تحديث حالة {queryset.count()} تذكير إلى 'تم الإرسال'")
+    mark_as_sent.short_description = "تحديد كـ مُرسل"
+
+    def mark_response_interested(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(
+            status='responded',
+            response='interested',
+            response_date=timezone.now()
+        )
+        self.message_user(request, f"تم تحديث رد {queryset.count()} تذكير إلى 'مهتم بالتجديد'")
+    mark_response_interested.short_description = "تحديد كـ مهتم بالتجديد"
+
+    def mark_response_not_interested(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(
+            status='responded',
+            response='not_interested',
+            response_date=timezone.now()
+        )
+        self.message_user(request, f"تم تحديث رد {queryset.count()} تذكير إلى 'غير مهتم بالتجديد'")
+    mark_response_not_interested.short_description = "تحديد كـ غير مهتم بالتجديد"
+
+    def generate_reminder_content(self, request, queryset):
+        for reminder in queryset:
+            content = reminder.get_reminder_content()
+            # يمكن إضافة منطق لحفظ المحتوى أو إرساله
+        self.message_user(request, f"تم إنشاء محتوى التذكير لـ {queryset.count()} تذكير")
+    generate_reminder_content.short_description = "إنشاء محتوى التذكير"

@@ -1,56 +1,539 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h2 class="text-2xl font-semibold mb-6">{{ title }}</h2>
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 py-8">
+    <div class="max-w-6xl mx-auto px-4">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "إنشاء فاتورة جديدة" %}</h1>
+            <p class="text-gray-600">{% trans "أنشئ فاتورة احترافية بسهولة وسرعة" %}</p>
+        </div>
 
-    <form method="post">
-        {% csrf_token %}
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{ form.as_p }}
+        <!-- Navigation Breadcrumb -->
+        <div class="flex items-center justify-center mb-8">
+            <nav class="flex items-center space-x-2 bg-white rounded-full px-6 py-3 shadow-lg">
+                <a href="{% url 'invoice_list' %}" class="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors">
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    {% trans "العودة إلى قائمة الفواتير" %}
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Card Header -->
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
+                <h2 class="text-2xl font-bold text-white flex items-center">
+                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    {% trans "معلومات الفاتورة الجديدة" %}
+                </h2>
             </div>
 
-            <hr class="my-6">
+            <!-- Form Content -->
+            <div class="p-8">
+                <form method="post" class="space-y-8">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Invoice Information -->
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border-l-4 border-indigo-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {% trans "المعلومات الأساسية" %}
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Tenant -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    {{ form.tenant.label }}
+                                </label>
+                                {{ form.tenant }}
+                                {% if form.tenant.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.tenant.errors.0 }}</p>
+                                {% endif %}
+                            </div>
 
-            <h3 class="text-xl font-semibold mb-4">{% trans "بنود الفاتورة" %}</h3>
-            {{ items.management_form }}
-            <div id="item-forms-container">
-                {% for form in items.forms %}
-                <div class="item-form mb-4 p-4 border rounded-md">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {{ form.as_p }}
+                            <!-- Lease -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    {{ form.lease.label }}
+                                </label>
+                                {{ form.lease }}
+                                {% if form.lease.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.lease.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                </div>
-                {% endfor %}
-            </div>
-            <button type="button" id="add-item-form" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">{% trans "إضافة بند" %}</button>
 
-            <div class="mt-6 flex justify-end">
-                <a href="{% url 'invoice_list' %}" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 mr-2">{% trans "إلغاء" %}</a>
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">{% trans "حفظ" %}</button>
+                    <!-- Invoice Details -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            {% trans "تفاصيل الفاتورة" %}
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2">{{ form.invoice_number.label }}</label>
+                                {{ form.invoice_number }}
+                                {% if form.invoice_number.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.invoice_number.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2">{{ form.issue_date.label }}</label>
+                                {{ form.issue_date }}
+                                {% if form.issue_date.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.issue_date.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2">{{ form.due_date.label }}</label>
+                                {{ form.due_date }}
+                                {% if form.due_date.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ form.due_date.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Status -->
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border-l-4 border-yellow-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {% trans "حالة الفاتورة" %}
+                        </h3>
+                        
+                        <!-- Custom Status Selection -->
+                        <div class="invoice-status-grid">
+                            {% for value,label in form.fields.status.choices %}
+                            {% if value %}
+                            {% with status_id="id_"|add:form.status.name|add:"_"|add:value %}
+                            <div class="invoice-status-option">
+                                <input
+                                    id="{{ status_id }}"
+                                    type="radio"
+                                    name="{{ form.status.name }}"
+                                    value="{{ value }}"
+                                    class="invoice-status-radio"
+                                    {% if form.status.value == value %}checked{% endif %}
+                                >
+                                <label for="{{ status_id }}" class="invoice-status-card">
+                                    <span class="invoice-status-card__icon
+                                        {% if value == 'draft' %}invoice-status-card__icon--gray
+                                        {% elif value == 'sent' %}invoice-status-card__icon--blue
+                                        {% elif value == 'paid' %}invoice-status-card__icon--green
+                                        {% elif value == 'overdue' %}invoice-status-card__icon--red
+                                        {% else %}invoice-status-card__icon--orange{% endif %}">
+                                        {% if value == 'draft' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        {% elif value == 'sent' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                        {% elif value == 'paid' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                        {% elif value == 'overdue' %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        {% else %}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        {% endif %}
+                                    </span>
+                                    <span class="invoice-status-card__body">
+                                        <span class="invoice-status-card__title">{{ label }}</span>
+                                        <span class="invoice-status-card__subtitle">
+                                            {% if value == 'draft' %}{% trans "يمكن تعديلها قبل الإرسال" %}
+                                            {% elif value == 'sent' %}{% trans "تم إرسالها إلى المستأجر" %}
+                                            {% elif value == 'paid' %}{% trans "تم استلام المبلغ بالكامل" %}
+                                            {% elif value == 'overdue' %}{% trans "تحتاج متابعة عاجلة" %}
+                                            {% else %}{% trans "تم إلغاء الفاتورة" %}{% endif %}
+                                        </span>
+                                    </span>
+                                    <span class="invoice-status-card__indicator">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </span>
+                                </label>
+                            </div>
+                            {% endwith %}
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% if form.status.errors %}
+                        <p class="text-red-500 text-sm mt-3 flex items-center">
+                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            {{ form.status.errors.0 }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-l-4 border-purple-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            {% trans "ملاحظات" %}
+                        </h3>
+                        
+                        <div class="group">
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.notes.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Invoice Items -->
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            {% trans "بنود الفاتورة" %}
+                        </h3>
+                        
+                        {{ items.management_form }}
+                        <div id="item-forms-container" class="space-y-4">
+                            {% for form in items.forms %}
+                            <div class="item-form bg-white p-4 rounded-lg border-2 border-gray-200 shadow-sm">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                    <div class="group">
+                                        <label class="block text-sm font-semibold text-gray-800 mb-2">{{ form.description.label }}</label>
+                                        {{ form.description }}
+                                        {% if form.description.errors %}
+                                        <p class="text-red-500 text-xs mt-1">{{ form.description.errors.0 }}</p>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="group">
+                                        <label class="block text-sm font-semibold text-gray-800 mb-2">{{ form.amount.label }}</label>
+                                        {{ form.amount }}
+                                        {% if form.amount.errors %}
+                                        <p class="text-red-500 text-xs mt-1">{{ form.amount.errors.0 }}</p>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="flex justify-center">
+                                        <button type="button" class="remove-item bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-4 flex justify-center">
+                            <button type="button" id="add-item-form" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center">
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                {% trans "إضافة بند" %}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-200 justify-center">
+                        <a href="{% url 'invoice_list' %}" class="flex-1 max-w-xs bg-gray-100 text-gray-700 py-4 px-8 rounded-xl font-bold text-lg hover:bg-gray-200 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            {% trans "إلغاء" %}
+                        </a>
+                        <button type="submit" class="flex-1 max-w-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-8 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            {% if title == "تعديل الفاتورة" %}
+                                {% trans "حفظ التعديلات" %}
+                            {% else %}
+                                {% trans "حفظ الفاتورة" %}
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
-    </form>
+    </div>
 </div>
 
-<script>
-document.getElementById('add-item-form').addEventListener('click', function() {
-    var formContainer = document.getElementById('item-forms-container');
-    var totalForms = document.getElementById('id_items-TOTAL_FORMS');
-    var formIdx = totalForms.value;
-    var newForm = formContainer.children[0].cloneNode(true);
+<style>
+.group select, .group input, .group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: #fff;
+}
 
-    // Clear input values and update names
-    newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
-        input.name = input.name.replace('-0-', '-' + formIdx + '-');
-        input.id = input.id.replace('-0-', '-' + formIdx + '-');
-        input.value = '';
+.group textarea {
+    min-height: 100px;
+    resize: none;
+}
+
+.group select:focus, .group input:focus, .group textarea:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.group:hover select, .group:hover input, .group:hover textarea {
+    border-color: #a5b4fc;
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
+}
+
+.invoice-status-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.invoice-status-option {
+    position: relative;
+}
+
+.invoice-status-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.invoice-status-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(254, 249, 195, 0.8));
+    box-shadow: 0 12px 30px rgba(251, 191, 36, 0.15);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    overflow: hidden;
+}
+
+.invoice-status-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(254, 240, 138, 0.25), rgba(253, 186, 116, 0.25));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.invoice-status-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.9rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.invoice-status-card__icon--gray { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+.invoice-status-card__icon--blue { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.invoice-status-card__icon--green { background: linear-gradient(135deg, #34d399, #059669); }
+.invoice-status-card__icon--red { background: linear-gradient(135deg, #fb7185, #ef4444); }
+.invoice-status-card__icon--orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+
+.invoice-status-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.invoice-status-card__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.invoice-status-card__subtitle {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.invoice-status-card__indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    border: 2px solid #fcd34d;
+    color: transparent;
+    background: rgba(255,255,255,0.65);
+    transition: all 0.25s ease;
+}
+
+.invoice-status-radio:checked + .invoice-status-card {
+    border-color: #f59e0b;
+    box-shadow: 0 18px 45px rgba(251, 191, 36, 0.35);
+}
+
+.invoice-status-radio:checked + .invoice-status-card::after {
+    opacity: 1;
+}
+
+.invoice-status-radio:checked + .invoice-status-card .invoice-status-card__indicator {
+    border-color: transparent;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #fff;
+}
+
+.invoice-status-card:hover {
+    transform: translateY(-4px);
+    border-color: #fbbf24;
+}
+
+.invoice-status-card:hover .invoice-status-card__indicator {
+    border-color: transparent;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #fff;
+}
+
+@media (max-width: 640px) {
+    .invoice-status-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .invoice-status-card__indicator {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+    }
+}
+</style>
+
+<!-- Flatpickr date picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Date picker configuration with multi-language support
+    if (window.flatpickr) {
+        // تحديد اللغة بناءً على اللغة الحالية للصفحة
+        const currentLang = document.documentElement.lang || 'ar';
+        const isArabic = currentLang === 'ar';
+        
+        const dateOpts = {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: isArabic ? 'd/m/Y' : 'M d, Y',
+            allowInput: true,
+            locale: isArabic ? flatpickr.l10ns.ar : flatpickr.l10ns.default,
+            disableMobile: false
+        };
+        
+        try { flatpickr("input[name='issue_date']", dateOpts); } catch(e){}
+        try { flatpickr("input[name='due_date']", dateOpts); } catch(e){}
+    }
+
+    // Invoice items management
+    const addItemButton = document.getElementById('add-item-form');
+    if (addItemButton) {
+        addItemButton.addEventListener('click', function() {
+            const formContainer = document.getElementById('item-forms-container');
+            const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+            if (!formContainer || !totalForms) {
+                return;
+            }
+            const formIdx = totalForms.value;
+            const firstForm = formContainer.children[0];
+            if (!firstForm) {
+                return;
+            }
+            const newForm = firstForm.cloneNode(true);
+            newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
+                if (!input.name || !input.id) {
+                    return;
+                }
+                input.name = input.name.replace('-0-', '-' + formIdx + '-');
+                input.id = input.id.replace('-0-', '-' + formIdx + '-');
+                if (input.type !== 'hidden') {
+                    input.value = '';
+                }
+            });
+            formContainer.appendChild(newForm);
+            totalForms.value = parseInt(formIdx, 10) + 1;
+        });
+    }
+
+    const statusOptions = Array.from(document.querySelectorAll('.invoice-status-option'));
+    const refreshStatusCards = () => {
+        statusOptions.forEach((option) => {
+            const input = option.querySelector('.invoice-status-radio');
+            const card = option.querySelector('.invoice-status-card');
+            if (!input || !card) {
+                return;
+            }
+            if (input.checked) {
+                card.classList.add('is-selected');
+            } else {
+                card.classList.remove('is-selected');
+            }
+        });
+    };
+
+    statusOptions.forEach((option) => {
+        const input = option.querySelector('.invoice-status-radio');
+        const card = option.querySelector('.invoice-status-card');
+        if (!input || !card) {
+            return;
+        }
+        card.addEventListener('click', (event) => {
+            event.preventDefault();
+            input.checked = true;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            refreshStatusCards();
+        });
+        input.addEventListener('change', refreshStatusCards);
     });
 
-    formContainer.appendChild(newForm);
-    totalForms.value = parseInt(formIdx) + 1;
+    refreshStatusCards();
 });
 </script>
 {% endblock %}

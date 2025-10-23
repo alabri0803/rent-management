@@ -1,0 +1,49 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "تفاصيل المكتب العقاري" %}{% endblock %}
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+  <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">{{ office.name }}</h2>
+  <div class="flex gap-2 flex-wrap">
+    <a href="{% url 'real_estate_office_update' office.pk %}" class="btn-primary px-4 py-2 rounded-lg">{% trans "تعديل" %}</a>
+    <a href="{% url 'real_estate_office_delete' office.pk %}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">{% trans "حذف" %}</a>
+    <a href="{% url 'real_estate_office_list' %}" class="text-blue-600 hover:underline px-2 py-2">{% trans "عودة للقائمة" %}</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="card p-6">
+    <h3 class="text-xl font-bold mb-4">{% trans "معلومات المكتب" %}</h3>
+    <div class="space-y-2 text-sm">
+      <div><span class="text-gray-500">{% trans "اسم المكتب" %}:</span> <span class="font-medium">{{ office.name }}</span></div>
+      <div><span class="text-gray-500">{% trans "رقم الترخيص" %}:</span> <span class="font-mono">{{ office.license_number }}</span></div>
+      <div><span class="text-gray-500">{% trans "الشخص المسؤول" %}:</span> <span class="font-medium">{{ office.contact_person }}</span></div>
+      <div><span class="text-gray-500">{% trans "الهاتف" %}:</span> <span class="font-medium">{{ office.phone }}</span></div>
+      <div><span class="text-gray-500">{% trans "البريد الإلكتروني" %}:</span> <span class="font-medium">{{ office.email|default:"—" }}</span></div>
+      <div><span class="text-gray-500">{% trans "العنوان" %}:</span> <span class="font-medium">{{ office.address|default:"—" }}</span></div>
+      <div><span class="text-gray-500">{% trans "نسبة العمولة (%)" %}:</span> <span class="font-medium">{{ office.commission_rate }}</span></div>
+      <div><span class="text-gray-500">{% trans "الحالة" %}:</span> 
+        {% if office.is_active %}
+          <span class="status-badge status-active">{% trans "نشط" %}</span>
+        {% else %}
+          <span class="status-badge status-cancelled">{% trans "متوقف" %}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-6">
+    <h3 class="text-xl font-bold mb-4">{% trans "إحصائيات" %}</h3>
+    <div class="grid grid-cols-2 gap-4 text-center">
+      <div class="bg-gray-50 p-4 rounded">
+        <div class="text-xs text-gray-500">{% trans "اتفاقيات عمولة" %}</div>
+        <div class="text-2xl font-bold">{{ office.commissionagreement_set.count }}</div>
+      </div>
+      <div class="bg-gray-50 p-4 rounded">
+        <div class="text-xs text-gray-500">{% trans "تحصيلات الإيجار" %}</div>
+        <div class="text-2xl font-bold">{{ office.rentcollection_set.count }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

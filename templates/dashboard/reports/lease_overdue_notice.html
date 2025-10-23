@@ -1,0 +1,67 @@
+{% load i18n %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>{% if type == 'payment' %}{% trans "إنذار تأخر سداد الإيجار" %}{% else %}{% trans "إنذار تأخير تجديد عقد الإيجار" %}{% endif %}</title>
+  <style>
+    @font-face {
+      font-family: 'Amiri';
+      src: url("{% static 'fonts/Amiri-Regular.ttf' %}") format('truetype');
+      font-weight: normal; font-style: normal;
+    }
+    body { font-family: 'Amiri', 'Arial', sans-serif; direction: rtl; text-align: right; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .box { border: 1px solid #888; padding: 12px; margin-bottom: 12px; }
+    .label { color: #555; font-size: 12px; }
+    .value { font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: start; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>
+      {% if type == 'payment' %}{% trans "إنذار تأخر سداد الإيجار" %}{% else %}{% trans "إنذار تأخير تجديد عقد الإيجار" %}{% endif %}
+    </h2>
+    <div class="label">{% trans "تاريخ" %}: {{ today|date:"d/m/Y" }}</div>
+    {% if company %}
+      <div class="label">{{ company.name }}</div>
+    {% endif %}
+  </div>
+
+  <div class="box">
+    <div class="label">{% trans "رقم العقد" %}</div>
+    <div class="value">{{ lease.contract_number }}</div>
+  </div>
+
+  <div class="box">
+    <div class="label">{% trans "المستأجر" %}</div>
+    <div class="value">{{ lease.tenant.name }}</div>
+  </div>
+
+  <div class="box">
+    <div class="label">{% trans "الوحدة" %}</div>
+    <div class="value">{{ lease.unit }}</div>
+  </div>
+
+  <div class="box">
+    {% if type == 'payment' %}
+      <div class="label">{% trans "عدد أشهر التأخير في السداد" %}</div>
+      <div class="value">{{ months }}</div>
+    {% else %}
+      <div class="label">{% trans "عدد أشهر التأخير في التجديد" %}</div>
+      <div class="value">{{ months }}</div>
+    {% endif %}
+  </div>
+
+  <p style="margin-top: 16px;">
+    {% if type == 'payment' %}
+      {% trans "هذا إشعار بالتأخر في سداد الإيجار. يرجى السداد فوراً لتجنب الإجراءات القانونية." %}
+    {% else %}
+      {% trans "هذا إشعار بالتأخر في تجديد عقد الإيجار. يرجى التواصل لتجديد العقد أو إخلاء الوحدة حسب الإجراءات." %}
+    {% endif %}
+  </p>
+</body>
+</html>

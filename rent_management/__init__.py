@@ -1,2 +1,2 @@
-import pymysql
-pymysql.install_as_MySQLdb()
+# Django app initialization
+# Using PostgreSQL database via psycopg2

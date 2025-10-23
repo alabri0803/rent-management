@@ -1,0 +1,350 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$600000$NqMKGC4t0a7d04iCLTiCVh$LgcnDdgnM0+6tGiwK0JFk4wpyMreWwKI5BjQ3EKCjgk=",
+    "last_login": "2025-10-21T13:11:10.364Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-19T14:50:45.394Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$600000$CfS94SE71JvkJM5DdvIZDI$Rf+l6hjjdH3WpF69Q3EVotR99wBo+HIv1cTaY96BUls=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "archleogl",
+    "first_name": "ايلين رافيلا للتجارة",
+    "last_name": "",
+    "email": "archleogl@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-10-19T15:22:59.249Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "cpkvtu31dd04o7i80312bwb6x36f303s",
+  "fields": {
+    "session_data": ".eJxVjEEOgjAQRe_StSEtLR3C0sQjuG5mmGloFDBUEo3x7hbDQrf_vf9eKuB6H8KaZQmJVaeMOvxuhP1Fpg0w5oFmXLj60h3k6jRiup6LO-Eox13_awzlWQIajNdk0UL0pOtoSFzrhcGXFtRsgWtpBS02ZLBHaDg6BHCOIqP4LZol5zRPQR63tDxVp98frtZBnA:1vAaUY:7DmLOn1yzERo5RiAzIRKeD6Zy_82A8VxT6ayO53iZJI",
+    "expire_date": "2025-11-02T20:59:02.611Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "lc4migzmho5d9hg1steu1jin5uxf7kvt",
+  "fields": {
+    "session_data": ".eJxVjEEOgjAQRe_StSEtLR3C0sQjuG5mmGloFDBUEo3x7hbDQrf_vf9eKuB6H8KaZQmJVaeMOvxuhP1Fpg0w5oFmXLj60h3k6jRiup6LO-Eox13_awzlWQIajNdk0UL0pOtoSFzrhcGXFtRsgWtpBS02ZLBHaDg6BHCOIqP4LZol5zRPQR63tDxVp98frtZBnA:1vBC8s:bq495HLjKZwRNJU-gREKFJgLA66_yBphtAT5_9satsc",
+    "expire_date": "2025-11-04T13:11:10.380Z"
+  }
+},
+{
+  "model": "sites.site",
+  "pk": 1,
+  "fields": {
+    "domain": "example.com",
+    "name": "example.com"
+  }
+},
+{
+  "model": "dashboard.company",
+  "pk": 1,
+  "fields": {
+    "name": "شركة افتراضية",
+    "name_ar": "شركة افتراضية",
+    "name_en": null,
+    "company_id": null,
+    "logo": "",
+    "contact_email": "default@company.com",
+    "contact_phone": "1234567890",
+    "address": null,
+    "address_ar": null,
+    "address_en": null
+  }
+},
+{
+  "model": "dashboard.building",
+  "pk": 1,
+  "fields": {
+    "name": "إدارة بيت الحمد",
+    "name_ar": "إدارة بيت الحمد",
+    "name_en": "Management of the House of Praise",
+    "address": "محافظة مسقط ولاية بوشر منطقة الخوير الجنوبية",
+    "address_ar": "محافظة مسقط ولاية بوشر منطقة الخوير الجنوبية",
+    "address_en": "Muscat Governorate, Bawshar Wilayat, Al Khuwair Southern Region"
+  }
+},
+{
+  "model": "dashboard.unit",
+  "pk": 1,
+  "fields": {
+    "building": 1,
+    "unit_number": "11",
+    "unit_type": "apartment",
+    "floor": 1,
+    "is_available": false
+  }
+},
+{
+  "model": "dashboard.unit",
+  "pk": 2,
+  "fields": {
+    "building": 1,
+    "unit_number": "12",
+    "unit_type": "apartment",
+    "floor": 1,
+    "is_available": false
+  }
+},
+{
+  "model": "dashboard.tenant",
+  "pk": 1,
+  "fields": {
+    "user": 2,
+    "name": "ايلين رافيلا للتجارة",
+    "name_ar": "ايلين رافيلا للتجارة",
+    "name_en": "Eileen Ravilla Trading",
+    "tenant_type": "company",
+    "phone": "٩٥٢٣١٦٣٠",
+    "email": "archleogl@gmail.com",
+    "authorized_signatory": "ايلين رافيل رافائيل",
+    "authorized_signatory_ar": "ايلين رافيل رافائيل",
+    "authorized_signatory_en": "Eileen Ravel Raphael",
+    "rating": 3
+  }
+},
+{
+  "model": "dashboard.lease",
+  "pk": 1,
+  "fields": {
+    "unit": 1,
+    "tenant": 1,
+    "contract_number": "2023/21314",
+    "contract_form_number": "20251235654",
+    "monthly_rent": "180.00",
+    "start_date": "2025-05-01",
+    "end_date": "2026-04-30",
+    "electricity_meter": "Q14661",
+    "water_meter": null,
+    "status": "active",
+    "office_fee": "5.00",
+    "admin_fee": "1.00",
+    "registration_fee": "64.80",
+    "cancellation_date": null,
+    "cancellation_reason": null
+  }
+},
+{
+  "model": "dashboard.lease",
+  "pk": 6,
+  "fields": {
+    "unit": 2,
+    "tenant": 1,
+    "contract_number": "LC1020920",
+    "contract_form_number": "LC1020920",
+    "monthly_rent": "300.00",
+    "start_date": "2025-06-01",
+    "end_date": "2026-05-31",
+    "electricity_meter": "Q14663",
+    "water_meter": null,
+    "status": "active",
+    "office_fee": "5.00",
+    "admin_fee": "1.00",
+    "registration_fee": "108.00",
+    "cancellation_date": null,
+    "cancellation_reason": null
+  }
+},
+{
+  "model": "dashboard.document",
+  "pk": 1,
+  "fields": {
+    "lease": 1,
+    "title": "فاتورة رسوم تسجيل عقد - 2023/21314",
+    "file": "lease_documents/lease_initial_invoice_2023/21314.pdf",
+    "uploaded_at": "2025-10-19T15:24:57.469Z"
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 1,
+  "fields": {
+    "lease": 1,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 2,
+  "fields": {
+    "lease": 1,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "sent",
+    "potential_legal_action": "contract_termination",
+    "sent_date": "2025-10-19T19:54:46.661Z",
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 3,
+  "fields": {
+    "lease": 1,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 4,
+  "fields": {
+    "lease": 1,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 5,
+  "fields": {
+    "lease": 1,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 6,
+  "fields": {
+    "lease": 6,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 7,
+  "fields": {
+    "lease": 6,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 8,
+  "fields": {
+    "lease": 6,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 9,
+  "fields": {
+    "lease": 6,
+    "notice_date": "2025-10-19",
+    "legal_deadline": "2025-11-18",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+},
+{
+  "model": "dashboard.paymentoverduenotice",
+  "pk": 10,
+  "fields": {
+    "lease": 1,
+    "notice_date": "2025-10-21",
+    "legal_deadline": "2025-11-20",
+    "status": "draft",
+    "potential_legal_action": "contract_termination",
+    "sent_date": null,
+    "acknowledged_date": null,
+    "resolved_date": null,
+    "notes": null,
+    "delivery_method": null,
+    "recipient_signature": null
+  }
+}

@@ -1,0 +1,658 @@
+{% extends 'dashboard/base.html' %}
+{% load i18n %}
+{% block title %}إنذارات عدم السداد{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 py-8">
+    <div class="max-w-7xl mx-auto px-4">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-red-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "إنذارات عدم السداد" %}</h1>
+            <p class="text-gray-600">{% trans "إدارة ومتابعة إنذارات المدفوعات المتأخرة" %}</p>
+        </div>
+
+        <!-- Action Button -->
+        <div class="flex justify-center mb-8">
+            <a href="{% url 'generate_automatic_notices' %}" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-8 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                </svg>
+                {% trans "إنشاء إنذارات تلقائية" %}
+            </a>
+        </div>
+
+        <!-- Main Content Card -->
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Card Header -->
+            <div class="bg-gradient-to-r from-red-600 to-orange-600 px-8 py-6">
+                <h2 class="text-2xl font-bold text-white flex items-center">
+                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    {% trans "قائمة الإنذارات" %}
+                </h2>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="p-8">
+                <!-- Statistics Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Total Notices -->
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-100 text-sm font-medium">{% trans "إجمالي الإنذارات" %}</p>
+                                <p class="text-3xl font-bold">{{ stats.total }}</p>
+                            </div>
+                            <div class="bg-blue-400 bg-opacity-30 rounded-full p-3">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Draft Notices -->
+                    <div class="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-yellow-100 text-sm font-medium">{% trans "في المسودة" %}</p>
+                                <p class="text-3xl font-bold">{{ stats.draft }}</p>
+                            </div>
+                            <div class="bg-yellow-400 bg-opacity-30 rounded-full p-3">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sent Notices -->
+                    <div class="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-100 text-sm font-medium">{% trans "تم الإرسال" %}</p>
+                                <p class="text-3xl font-bold">{{ stats.sent }}</p>
+                            </div>
+                            <div class="bg-green-400 bg-opacity-30 rounded-full p-3">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overdue Legal -->
+                    <div class="bg-gradient-to-br from-red-500 to-pink-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-red-100 text-sm font-medium">{% trans "تجاوز الموعد القانوني" %}</p>
+                                <p class="text-3xl font-bold">{{ stats.overdue_legal }}</p>
+                            </div>
+                            <div class="bg-red-400 bg-opacity-30 rounded-full p-3">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border-l-4 border-blue-500 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 ml-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
+                        </svg>
+                        {% trans "فلاتر البحث" %}
+                    </h3>
+                    
+                    <form method="get" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Status Filter -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                    </svg>
+                                    {% trans "الحالة" %}
+                                </label>
+                                <select name="status" id="status" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-sm">
+                                    <option value="">{% trans "جميع الحالات" %}</option>
+                                    {% for value, label in status_choices %}
+                                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Year Filter -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    {% trans "السنة" %}
+                                </label>
+                                <input type="number" name="year" id="year" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 text-sm" 
+                                       value="{{ current_year }}" placeholder="2024" min="2020" max="2030">
+                            </div>
+
+                            <!-- Search Filter -->
+                            <div class="group">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                    <svg class="w-4 h-4 ml-1 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                    {% trans "البحث" %}
+                                </label>
+                                <input type="text" name="search" id="search" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all duration-200 text-sm" 
+                                       value="{{ search_query }}" placeholder="{% trans 'رقم العقد، اسم المستأجر، رقم الوحدة' %}">
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-3 justify-center">
+                            <button type="submit" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                {% trans "بحث" %}
+                            </button>
+                            <a href="{% url 'overdue_notices_list' %}" class="bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-200 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                {% trans "إلغاء" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bulk Actions Section -->
+                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border-l-4 border-purple-500 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 ml-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                        {% trans "الإجراءات المجمعة" %}
+                    </h3>
+
+                    <form method="post" action="{% url 'notices_bulk_actions' %}" id="bulk-form">
+                        {% csrf_token %}
+                        
+                        <!-- Selection Controls -->
+                        <div class="flex flex-wrap gap-3 mb-6">
+                            <button type="button" class="bg-blue-100 text-blue-700 py-2 px-4 rounded-lg font-semibold hover:bg-blue-200 transition-colors flex items-center" onclick="selectAll()">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {% trans "تحديد الكل" %}
+                            </button>
+                            <button type="button" class="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center" onclick="selectNone()">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                {% trans "إلغاء التحديد" %}
+                            </button>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-3">
+                            <button type="submit" name="action" value="mark_sent" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 px-4 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all flex items-center" onclick="return confirmBulkAction('تحديد كـ مُرسل')">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                                {% trans "تحديد كـ مُرسل" %}
+                            </button>
+                            <button type="submit" name="action" value="mark_acknowledged" class="bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-2 px-4 rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all flex items-center" onclick="return confirmBulkAction('تحديد كـ مُستلم')">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                {% trans "تحديد كـ مُستلم" %}
+                            </button>
+                            <button type="submit" name="action" value="mark_resolved" class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-2 px-4 rounded-lg font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all flex items-center" onclick="return confirmBulkAction('تحديد كـ محلول')">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {% trans "تحديد كـ محلول" %}
+                            </button>
+                            <button type="submit" name="action" value="delete" class="bg-gradient-to-r from-red-500 to-pink-500 text-white py-2 px-4 rounded-lg font-semibold hover:from-red-600 hover:to-pink-600 transition-all flex items-center" onclick="return confirmBulkAction('حذف الإنذارات المحددة')">
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                {% trans "حذف" %}
+                            </button>
+                        </div>
+
+                        <!-- Notices Table -->
+                        <div class="mt-8 bg-white rounded-xl shadow-lg overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+                                        <tr>
+                                            <th class="px-4 py-4 text-right text-sm font-semibold">
+                                                <input type="checkbox" id="select-all" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                            </th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "رقم العقد" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "المستأجر" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الوحدة" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الشهر المتأخر" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "المبلغ" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "تاريخ الإنذار" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الموعد النهائي" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الحالة" %}</th>
+                                            <th class="px-6 py-4 text-right text-sm font-semibold">{% trans "الإجراءات" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        {% for notice in notices %}
+                                            <tr class="hover:bg-gray-50 transition-colors">
+                                                <td class="px-4 py-4">
+                                                    <input type="checkbox" name="notice_ids" value="{{ notice.id }}" class="notice-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <a href="{% url 'overdue_notice_detail' notice.pk %}" class="text-blue-600 hover:text-blue-800 font-semibold">
+                                                        {{ notice.lease.contract_number }}
+                                                    </a>
+                                                </td>
+                                                <td class="px-6 py-4 text-gray-900 font-medium">{{ notice.lease.tenant.name }}</td>
+                                                <td class="px-6 py-4 text-gray-700">{{ notice.lease.unit.unit_number }} - {{ notice.lease.unit.building.name }}</td>
+                                                <td class="px-6 py-4 text-gray-700">{{ notice.overdue_month }}/{{ notice.overdue_year }}</td>
+                                                <td class="px-6 py-4">
+                                                    <span class="font-bold text-red-600">{{ notice.overdue_amount }} ر.ع</span>
+                                                </td>
+                                                <td class="px-6 py-4 text-gray-700">{{ notice.notice_date|date:"d/m/Y" }}</td>
+                                                <td class="px-6 py-4">
+                                                    <span class="font-semibold {% if notice.get_days_until_legal_deadline < 0 %}text-red-600{% elif notice.get_days_until_legal_deadline < 7 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                                                        {{ notice.legal_deadline|date:"d/m/Y" }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                                                        {% if notice.status == 'draft' %}bg-gray-100 text-gray-800
+                                                        {% elif notice.status == 'sent' %}bg-blue-100 text-blue-800
+                                                        {% elif notice.status == 'acknowledged' %}bg-indigo-100 text-indigo-800
+                                                        {% elif notice.status == 'resolved' %}bg-green-100 text-green-800
+                                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                                        {{ notice.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex space-x-2">
+                                                        <a href="{% url 'overdue_notice_detail' notice.pk %}" class="bg-blue-100 text-blue-700 p-2 rounded-lg hover:bg-blue-200 transition-colors" title="{% trans 'عرض التفاصيل' %}">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="{% url 'notice_print_view' notice.pk %}" target="_blank" class="bg-gray-100 text-gray-700 p-2 rounded-lg hover:bg-gray-200 transition-colors" title="{% trans 'طباعة' %}">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="10" class="px-6 py-12 text-center text-gray-500">
+                                                    <div class="flex flex-col items-center">
+                                                        <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                        </svg>
+                                                        <p class="text-lg font-medium">{% trans "لا توجد إنذارات مطابقة للمعايير المحددة" %}</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                            </table>
+                        </div>
+                    </form>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <div class="mt-8 flex justify-center">
+                            <nav class="flex items-center space-x-2">
+                                {% if page_obj.has_previous %}
+                                    <a href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                                       class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                                        </svg>
+                                        {% trans "الأولى" %}
+                                    </a>
+                                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                                       class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                        </svg>
+                                        {% trans "السابقة" %}
+                                    </a>
+                                {% endif %}
+
+                                <span class="bg-gradient-to-r from-red-600 to-orange-600 text-white py-2 px-6 rounded-lg font-semibold">
+                                    {% trans "صفحة" %} {{ page_obj.number }} {% trans "من" %} {{ page_obj.paginator.num_pages }}
+                                </span>
+
+                                {% if page_obj.has_next %}
+                                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                                       class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                                        {% trans "التالية" %}
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </a>
+                                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                                       class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                                        {% trans "الأخيرة" %}
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+                                        </svg>
+                                    </a>
+                                {% endif %}
+                            </nav>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styles for form elements */
+.group select, .group input, .group textarea {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-200 text-sm;
+}
+
+.group select:focus, .group input:focus, .group textarea:focus {
+    @apply outline-none shadow-lg;
+}
+
+/* Hover effects */
+.group:hover select, .group:hover input, .group:hover textarea {
+    @apply border-red-300 shadow-md;
+}
+
+/* Table hover effects */
+tbody tr:hover {
+    @apply bg-gray-50 transform scale-[1.01] transition-all duration-200;
+}
+
+/* Status badge animations */
+.inline-flex {
+    @apply transition-all duration-200 hover:scale-110;
+}
+
+/* Button hover effects */
+button:hover, a:hover {
+    @apply transform transition-all duration-200;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    @apply transition-all duration-200 hover:scale-110;
+}
+
+/* Card hover effects */
+.shadow-lg:hover {
+    @apply shadow-2xl transform scale-105;
+}
+
+/* Gradient animations */
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.bg-gradient-to-br {
+    background-size: 200% 200%;
+    animation: gradient-shift 6s ease infinite;
+}
+
+/* Loading animation for buttons */
+.loading {
+    @apply opacity-75 cursor-not-allowed;
+}
+
+.loading::after {
+    content: '';
+    @apply inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-2;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Selection functions
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.notice-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            animateCheckbox(checkbox);
+        });
+        updateSelectionCount();
+    }
+
+    function selectNone() {
+        const checkboxes = document.querySelectorAll('.notice-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            animateCheckbox(checkbox);
+        });
+        updateSelectionCount();
+    }
+
+    // Animate checkbox selection
+    function animateCheckbox(checkbox) {
+        checkbox.parentElement.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            checkbox.parentElement.style.transform = 'scale(1)';
+        }, 150);
+    }
+
+    // Update selection count display
+    function updateSelectionCount() {
+        const selectedCount = document.querySelectorAll('.notice-checkbox:checked').length;
+        const totalCount = document.querySelectorAll('.notice-checkbox').length;
+        
+        // Update select all checkbox state
+        const selectAllCheckbox = document.getElementById('select-all');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = selectedCount === totalCount && totalCount > 0;
+            selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < totalCount;
+        }
+        
+        // Show/hide bulk action buttons based on selection
+        const bulkActionButtons = document.querySelectorAll('button[name="action"]');
+        bulkActionButtons.forEach(button => {
+            if (selectedCount > 0) {
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+                button.disabled = false;
+            } else {
+                button.classList.add('opacity-50', 'cursor-not-allowed');
+                button.disabled = true;
+            }
+        });
+    }
+
+    // Confirm bulk actions
+    function confirmBulkAction(action) {
+        const selectedCount = document.querySelectorAll('.notice-checkbox:checked').length;
+        if (selectedCount === 0) {
+            // Show custom alert
+            showAlert('يرجى اختيار إنذار واحد على الأقل', 'warning');
+            return false;
+        }
+        
+        // Show custom confirmation
+        return showConfirmation(
+            `هل أنت متأكد من ${action} للإنذارات المحددة؟`,
+            `سيتم تطبيق العملية على ${selectedCount} إنذار`
+        );
+    }
+
+    // Custom alert function
+    function showAlert(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+        
+        const bgColor = type === 'warning' ? 'bg-yellow-500' : 
+                       type === 'error' ? 'bg-red-500' : 
+                       type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+        
+        alertDiv.classList.add(bgColor, 'text-white');
+        alertDiv.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="mr-2 text-white hover:text-gray-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Animate in
+        setTimeout(() => {
+            alertDiv.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            alertDiv.classList.add('translate-x-full');
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 5000);
+    }
+
+    // Custom confirmation function
+    function showConfirmation(title, message) {
+        return confirm(`${title}\n\n${message}`);
+    }
+
+    // Event listeners
+    const selectAllBtn = document.querySelector('button[onclick="selectAll()"]');
+    if (selectAllBtn) {
+        selectAllBtn.onclick = selectAll;
+    }
+
+    const selectNoneBtn = document.querySelector('button[onclick="selectNone()"]');
+    if (selectNoneBtn) {
+        selectNoneBtn.onclick = selectNone;
+    }
+
+    // Master checkbox event listener
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.notice-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+                animateCheckbox(checkbox);
+            });
+            updateSelectionCount();
+        });
+    }
+
+    // Individual checkbox event listeners
+    document.querySelectorAll('.notice-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            animateCheckbox(this);
+            updateSelectionCount();
+        });
+    });
+
+    // Bulk action button event listeners
+    document.querySelectorAll('button[onclick*="confirmBulkAction"]').forEach(button => {
+        const action = button.textContent.trim();
+        button.onclick = () => confirmBulkAction(action);
+    });
+
+    // Add loading state to form submission
+    const bulkForm = document.getElementById('bulk-form');
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function(e) {
+            const submitButton = e.submitter;
+            if (submitButton) {
+                submitButton.classList.add('loading');
+                submitButton.disabled = true;
+            }
+        });
+    }
+
+    // Initialize selection count
+    updateSelectionCount();
+
+    // Add smooth scrolling for better UX
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+A to select all
+        if (e.ctrlKey && e.key === 'a' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            selectAll();
+        }
+        
+        // Escape to deselect all
+        if (e.key === 'Escape') {
+            selectNone();
+        }
+    });
+
+    // Add search input enhancements
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Add visual feedback for search
+                this.style.borderColor = '#3B82F6';
+                setTimeout(() => {
+                    this.style.borderColor = '';
+                }, 200);
+            }, 300);
+        });
+    }
+
+    // Add status filter enhancements
+    const statusSelect = document.getElementById('status');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            // Add visual feedback for filter change
+            this.style.borderColor = '#10B981';
+            setTimeout(() => {
+                this.style.borderColor = '';
+            }, 200);
+        });
+    }
+
+    console.log('إنذارات عدم السداد - تم تحميل الصفحة بنجاح');
+});
+</script>
+{% endblock %}

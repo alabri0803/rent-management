@@ -4,6 +4,11 @@
 {% block title %}{{ title|default:_('تسجيل استلام إيجار') }}{% endblock %}
 
 {% block content %}
+<!-- Flatpickr date picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
+
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">{{ title|default:_('تسجيل استلام إيجار') }}</h1>
@@ -72,4 +77,26 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Date picker configuration with multi-language support
+    if (window.flatpickr) {
+        // تحديد اللغة بناءً على اللغة الحالية للصفحة
+        const currentLang = document.documentElement.lang || 'ar';
+        const isArabic = currentLang === 'ar';
+        
+        const dateOpts = {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: isArabic ? 'd/m/Y' : 'M d, Y',
+            allowInput: true,
+            locale: isArabic ? flatpickr.l10ns.ar : flatpickr.l10ns.default,
+            disableMobile: false
+        };
+        
+        try { flatpickr("input[name='collection_date']", dateOpts); } catch(e){}
+    }
+});
+</script>
 {% endblock %}

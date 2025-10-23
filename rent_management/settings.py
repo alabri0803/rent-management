@@ -1,14 +1,15 @@
 """
 Django settings for rent_management project.
-Optimized for Render deployment
 """
 
 import os
 from django.utils.translation import gettext_lazy as _
 from pathlib import Path
-import dj_database_url
 from dotenv import load_dotenv
+import pymysql
 
+# تثبيت PyMySQL كبديل لـ MySQLdb
+pymysql.install_as_MySQLdb()
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,22 +25,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-rm=85vc+pgs=^4+m+=d*3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# ✅ ALLOWED_HOSTS المصححة لـ Render
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '.onrender.com',
-    'rent-management-4x1h.onrender.com',
-    '44.229.227.142',
-    '54.188.71.94', 
-    '52.13.128.108',
-]
-
-# ✅ CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS = [
-    'https://rent-management-4x1h.onrender.com',
-    'https://*.onrender.com',
-]
+# ✅ ALLOWED_HOSTS for local/LAN development
+# You can override with env: ALLOWED_HOSTS="localhost,127.0.0.1,[::1],192.168.10.164"
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -80,7 +68,7 @@ ROOT_URLCONF = 'rent_management.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [os.path.join(str(BASE_DIR), 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -102,17 +90,23 @@ TEMPLATES = [
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# إعدادات قاعدة بيانات MySQL
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'rent_management_n94m',
-        "USER": 'rent_management_n94m_user',
-        "PASSWORD": 'dO3pvfHlR8t2mZY5OVqkqMNbLaazrNz6',
-        "HOST": 'dpg-d3jmg3fdiees73cl8l9g-a',
-        "PORT": '5432',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'rent-management'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),  # كلمة المرور فارغة في XAMPP افتراضياً
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
+ 
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -149,17 +143,23 @@ LANGUAGES = [
     ('en', _('English')),
 ]
 LOCALE_PATHS = [
-    os.path.join(BASE_DIR, 'locale')
+    os.path.join(str(BASE_DIR), 'locale')
 ]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(str(BASE_DIR), 'static')]
+STATIC_ROOT = os.path.join(str(BASE_DIR), 'staticfiles')
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join(str(BASE_DIR), 'media')
+
+# File Upload Settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -184,16 +184,12 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-TEMPLATES[0]['OPTIONS']['context_processors'] += [
-    'django.template.context_processors.request',
-]
 SITE_ID = 1
 
-# إعدادات Allauth إضافية (اختيارية)
+# إعدادات Allauth
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
-ACCOUNT_LOGIN_METHODS = ['email']
-ACCOUNT_SIGNUP_FIELDS = ['email', 'password1', 'password2']
-ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         # These are the permissions you want to request from Google.
@@ -227,24 +223,17 @@ SMS_PROVIDER = 'console'  # Options: 'console', 'twilio', 'aws_sns'
 # AWS_SECRET_ACCESS_KEY = 'your_aws_secret_access_key'
 # AWS_SNS_REGION = 'us-east-1'
 
-# ✅ إعدادات الأمان للإنتاج
+# ✅ إعدادات الأمان
 if not DEBUG:
-    # HTTPS settings
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # إعدادات HTTPS للإنتاج
+    SECURE_SSL_REDIRECT = False  # تعيين True عند استخدام HTTPS
+    SESSION_COOKIE_SECURE = False  # تعيين True عند استخدام HTTPS
+    CSRF_COOKIE_SECURE = False  # تعيين True عند استخدام HTTPS
     
-    # HSTS settings
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    
-    # Other security settings
+    # إعدادات أمان أخرى
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    
-    # Referrer policy
     SECURE_REFERRER_POLICY = 'same-origin'
 
 # ✅ إعدادات البريد الإلكتروني (للتطوير)
@@ -275,11 +264,14 @@ LOGGING = {
 # ✅ Create required directories on startup
 def create_directories():
     directories = [
-        os.path.join(BASE_DIR, 'staticfiles'),
-        os.path.join(BASE_DIR, 'media'),
-        os.path.join(BASE_DIR, 'locale'),
+        os.path.join(str(BASE_DIR), 'staticfiles'),
+        os.path.join(str(BASE_DIR), 'media'),
+        os.path.join(str(BASE_DIR), 'locale'),
     ]
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
+        # Set write permissions for media directory
+        if 'media' in directory:
+            os.chmod(directory, 0o755)
 
 create_directories()

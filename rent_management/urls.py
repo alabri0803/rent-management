@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls.i18n import i18n_patterns
@@ -51,6 +51,13 @@ urlpatterns += [
     path('api/auth/send-phone-otp/', send_phone_verification_otp, name='api_send_phone_otp'),
 ]
 
-# Serve media files during development
+# Serve media files
 if settings.DEBUG:
+    # Development helper
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # Production: use protected media serving
+    from dashboard.views import serve_protected_media
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve_protected_media, name='serve_media'),
+    ]

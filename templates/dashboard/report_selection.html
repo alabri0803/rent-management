@@ -1,37 +1,206 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "التقارير" %}{% endblock %}
+
 {% block content %}
-<h2 class="text-3xl font-bold text-gray-800 mb-6">{% trans "إنشاء التقارير" %}</h2>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <div class="card p-8">
-        <h3 class="text-xl font-bold mb-4">{% trans "تقارير الأرباح والخسائر" %}</h3>
-        <form action="{% url 'report_monthly_pl' %}" method="get" target="_blank" class="flex items-end space-x-4 rtl:space-x-reverse border-b pb-4 mb-4">
-            <div>
-                <label for="year" class="block mb-1">{% trans "تقرير شهري" %}</label>
-                <input type="number" name="year" id="year" value="{% now 'Y' %}" class="p-2 border rounded-md" required placeholder="{% trans 'السنة' %}">
+<div class="bg-gradient-to-br from-green-50 to-teal-100 rounded-2xl p-8 -mx-4 -mb-4">
+    <div class="max-w-7xl mx-auto px-4">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-full mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
             </div>
-            <div>
-                <label for="month" class="block mb-1">&nbsp;</label>
-                <select name="month" id="month" class="p-2 border rounded-md" required>
-                    {% for i in "123456789012"|make_list %}<option value="{{ forloop.counter }}">{{ forloop.counter }}</option>{% endfor %}
-                </select>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "إنشاء التقارير" %}</h1>
+            <p class="text-gray-600">{% trans "إنشاء وعرض تقارير مفصلة عن الأداء المالي والتشغيلي" %}</p>
+        </div>
+
+        <!-- Reports Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Financial Reports Card -->
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Card Header -->
+                <div class="bg-gradient-to-r from-teal-600 to-emerald-600 px-8 py-6">
+                    <h2 class="text-2xl font-bold text-white flex items-center">
+                        <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                        {% trans "تقارير الأرباح والخسائر" %}
+                    </h2>
+                </div>
+
+                <!-- Card Content -->
+                <div class="p-8">
+                    <!-- Monthly Report Form -->
+                    <form action="{% url 'report_monthly_pl' %}" method="get" target="_blank" class="border-b pb-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            {% trans "تقرير شهري" %}
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                            <div>
+                                <label for="year" class="block text-sm font-semibold text-gray-800 mb-2">{% trans "السنة" %}</label>
+                                <input type="number" name="year" id="year" value="{% now 'Y' %}" 
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200" 
+                                       required placeholder="{% trans 'السنة' %}">
+                            </div>
+                            <div>
+                                <label for="month" class="block text-sm font-semibold text-gray-800 mb-2">{% trans "الشهر" %}</label>
+                                <select name="month" id="month" 
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all duration-200" 
+                                        required>
+                                    {% for i in "123456789012"|make_list %}
+                                        <option value="{{ forloop.counter }}" {% if forloop.counter == "now"|date:"n"|add:0 %}selected{% endif %}>
+                                            {{ forloop.counter }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <button type="submit" class="w-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-6 rounded-xl font-bold hover:from-teal-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    {% trans "إنشاء" %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Annual Report Form -->
+                    <form action="{% url 'report_annual_pl' %}" method="get" target="_blank">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 ml-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            {% trans "تقرير سنوي" %}
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <div>
+                                <label for="year_annual" class="block text-sm font-semibold text-gray-800 mb-2">{% trans "السنة" %}</label>
+                                <input type="number" name="year" id="year_annual" value="{% now 'Y' %}" 
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200" 
+                                       required placeholder="{% trans 'السنة' %}">
+                            </div>
+                            <div>
+                                <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-6 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center">
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    {% trans "إنشاء" %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <button type="submit" class="btn-primary py-2 px-6 rounded-lg">{% trans "إنشاء" %}</button>
-        </form>
-        <form action="{% url 'report_annual_pl' %}" method="get" target="_blank" class="flex items-end space-x-4 rtl:space-x-reverse">
-            <div>
-                <label for="year_annual" class="block mb-1">{% trans "تقرير سنوي" %}</label>
-                <input type="number" name="year" id="year_annual" value="{% now 'Y' %}" class="p-2 border rounded-md" required placeholder="{% trans 'السنة' %}">
+
+            <!-- Other Reports Card -->
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Card Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+                    <h2 class="text-2xl font-bold text-white flex items-center">
+                        <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        {% trans "تقارير أخرى" %}
+                    </h2>
+                </div>
+
+                <!-- Card Content -->
+                <div class="p-8">
+                    <div class="space-y-4">
+                        <!-- Occupancy Report -->
+                        <a href="{% url 'report_occupancy' %}" target="_blank" 
+                           class="block w-full bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-2 border-blue-200 hover:border-blue-300 p-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full p-3 ml-4">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m0 0h2M7 8h3m-3 4h3m-3 4h3m6-8h.01M17 12h.01M17 16h.01"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800">{% trans "تقرير إشغال الوحدات" %}</h3>
+                                        <p class="text-sm text-gray-600">{% trans "عرض حالة إشغال جميع الوحدات" %}</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </a>
+
+                        <!-- Lease Report -->
+                        <a href="{% url 'report_leases' %}" target="_blank" 
+                           class="block w-full bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border-2 border-green-200 hover:border-green-300 p-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-3 ml-4">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800">{% trans "تقرير العقود" %}</h3>
+                                        <p class="text-sm text-gray-600">{% trans "عرض تفاصيل جميع العقود النشطة والمنتهية" %}</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </a>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn-primary py-2 px-6 rounded-lg">{% trans "إنشاء" %}</button>
-        </form>
-    </div>
-    <div class="card p-8">
-        <h3 class="text-xl font-bold mb-4">{% trans "تقارير أخرى" %}</h3>
-        <div class="space-y-4">
-            <a href="{% url 'report_occupancy' %}" target="_blank" class="block w-full text-center bg-gray-100 hover:bg-gray-200 p-4 rounded-lg">{% trans "تقرير إشغال الوحدات" %}</a>
-            </div>
+        </div>
     </div>
 </div>
+
+<style>
+/* Reports-specific animations */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up { animation: fadeInUp 0.6s ease-out; }
+
+/* Form input focus effects */
+input:focus, select:focus {
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+/* Button hover effects */
+button:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Card hover effects */
+.bg-white:hover {
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mainContent = document.querySelector('.max-w-7xl');
+    if (mainContent) {
+        mainContent.classList.add('fade-in-up');
+    }
+    
+    // Set current month as default
+    const monthSelect = document.getElementById('month');
+    if (monthSelect) {
+        const currentMonth = new Date().getMonth() + 1;
+        monthSelect.value = currentMonth;
+    }
+    
+    console.log('صفحة التقارير - تم تحميل الصفحة بنجاح');
+});
+</script>
 {% endblock %}

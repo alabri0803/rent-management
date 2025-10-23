@@ -1,170 +1,277 @@
 {% extends 'dashboard/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "لوحة المعلومات الرئيسية" %}{% endblock %}
+
 {% block content %}
-
-{% if expiring_leases %}
-<div class="bg-orange-50 border-r-4 border-orange-500 p-4 mb-6 rounded-lg">
-    <div class="flex items-start">
-        <div class="flex-shrink-0">
-            <svg class="h-5 w-5 md:h-6 md:w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-        </div>
-        <div class="mr-3 flex-1">
-            <h3 class="text-base md:text-lg font-bold text-orange-800">{% trans "تنبيه: عقود قريبة من الانتهاء" %}</h3>
-            <div class="mt-2 text-xs md:text-sm text-orange-700">
-                <ul class="list-disc list-inside space-y-1">
-                    {% for lease in expiring_leases %}
-                    <li>
-                        <a href="{{ lease.get_absolute_url }}" class="font-semibold hover:underline">
-                            {% trans "عقد" %} {{ lease.contract_number }} - {{ lease.tenant.name }}
-                        </a>
-                        {% trans "ينتهي بعد" %} <span class="font-bold">{{ lease.days_until_expiry }} {% trans "يوم" %}</span>
-                        ({{ lease.end_date|date:"d/m/Y" }})
-                    </li>
-                    {% endfor %}
-                </ul>
+<div class="bg-gradient-to-br from-slate-50 to-blue-100 rounded-2xl p-8 -mx-4 -mb-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Welcome Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-700 rounded-full mb-4 shadow-2xl">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
             </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{% trans "مرحباً بك في لوحة التحكم" %}</h1>
+            <p class="text-gray-600 text-lg">{% trans "نظرة شاملة على أداء عقاراتك" %}</p>
         </div>
-    </div>
-</div>
-{% endif %}
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-    <div class="card p-4 md:p-5">
-        <h3 class="text-gray-500 text-xs md:text-sm font-medium">{% trans "العقود النشطة" %}</h3>
-        <p class="text-2xl md:text-3xl font-bold text-gray-800 mt-2">{{ stats.active_count }}</p>
-    </div>
-    <div class="card p-4 md:p-5">
-        <h3 class="text-gray-500 text-xs md:text-sm font-medium">{% trans "الدخل الشهري المتوقع" %}</h3>
-        <p class="text-2xl md:text-3xl font-bold text-blue-600 mt-2">
-            {% if finance_unlocked %}
-                {{ stats.expected_monthly_income|floatformat:2 }} <span class="text-sm md:text-lg">{% trans "ر.ع" %}</span>
-            {% else %}
-                <span class="tracking-widest select-none">••••</span>
-            {% endif %}
-        </p>
-    </div>
-    <div class="card p-4 md:p-5">
-        <h3 class="text-gray-500 text-xs md:text-sm font-medium">{% trans "مصاريف هذا الشهر" %}</h3>
-        <p class="text-2xl md:text-3xl font-bold text-red-500 mt-2">
-            {% if finance_unlocked %}
-                {{ stats.monthly_expenses|floatformat:2 }} <span class="text-sm md:text-lg">{% trans "ر.ع" %}</span>
-            {% else %}
-                <span class="tracking-widest select-none">••••</span>
-            {% endif %}
-        </p>
-    </div>
-    <div class="card p-4 md:p-5 bg-green-50">
-        <h3 class="text-green-800 text-xs md:text-sm font-medium">{% trans "صافي الدخل الشهري" %}</h3>
-        <p class="text-2xl md:text-3xl font-bold text-green-600 mt-2">
-            {% if finance_unlocked %}
-                {{ stats.net_income|floatformat:2 }} <span class="text-sm md:text-lg">{% trans "ر.ع" %}</span>
-            {% else %}
-                <span class="tracking-widest select-none">••••</span>
-            {% endif %}
-        </p>
-    </div>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-    <div class="lg:col-span-2 space-y-6 md:space-y-8">
-        <div class="card p-4 md:p-6">
-            <h3 class="text-lg md:text-xl font-bold mb-4">{% trans "تقويم تجديد العقود" %}</h3>
-            <div id="calendar" class="text-sm"></div>
-        </div>
-        <div class="card p-4 md:p-6">
-            <h3 class="text-lg md:text-xl font-bold mb-4">{% trans "اتجاه الإيرادات مقابل المصاريف (آخر 12 شهر)" %}</h3>
-            <div class="h-64 md:h-auto">
-                <canvas id="financialTrendChart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <div class="lg:col-span-1 space-y-6">
-        <div>
-            <h3 class="text-lg md:text-xl font-bold text-gray-800 mb-4">{% trans "إشغال الوحدات" %}</h3>
-            <div class="card p-4 md:p-6">
-                <div class="h-64">
-                    <canvas id="occupancyChart"></canvas>
+        <!-- Alert for Expiring Leases -->
+        {% if expiring_leases %}
+        <div class="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 mb-8 text-white shadow-2xl">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-8 w-8 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="mr-4 flex-1">
+                    <h3 class="text-xl font-bold mb-3">⚠️ {% trans "تنبيه: عقود قريبة من الانتهاء" %}</h3>
+                    <div class="grid gap-3">
+                        {% for lease in expiring_leases %}
+                        <div class="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm">
+                            <a href="{{ lease.get_absolute_url }}" class="font-semibold hover:underline block">
+                                📋 {% trans "عقد" %} {{ lease.contract_number }} - {{ lease.tenant.name }}
+                            </a>
+                            <p class="text-sm mt-1">
+                                ⏰ {% trans "ينتهي بعد" %} <span class="font-bold text-yellow-200">{{ lease.days_until_expiry }} {% trans "يوم" %}</span>
+                                ({{ lease.end_date|date:"d/m/Y" }})
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div>
-            <h3 class="text-lg md:text-xl font-bold text-gray-800 mb-4">{% trans "آخر الحركات المالية" %}</h3>
-            <div class="card p-4 md:p-6">
-                {% if finance_unlocked %}
-                    <div class="flex justify-end mb-4">
+        {% endif %}
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {% load dashboard_extras %}
+            <!-- Active Contracts -->
+            {% if user|has_perm:'can_view_leases' %}
+            <div class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-600 mb-2">{% trans "العقود النشطة" %}</h3>
+                        <p class="text-4xl font-bold text-blue-600">{{ stats.active_count }}</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full p-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Expected Monthly Income -->
+            {% if user|has_perm:'can_view_dashboard_financial' %}
+            <div class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-600 mb-2">{% trans "الدخل الشهري المتوقع" %}</h3>
+                        <p class="text-4xl font-bold text-green-600">
+                            {% if finance_unlocked %}
+                                {{ stats.expected_monthly_income|floatformat:2 }}
+                                <span class="text-lg text-gray-500">{% trans "ر.ع" %}</span>
+                            {% else %}
+                                <span class="tracking-widest select-none">••••</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Monthly Expenses -->
+            {% if user|has_perm:'can_view_dashboard_financial' %}
+            <div class="bg-white rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-600 mb-2">{% trans "مصاريف هذا الشهر" %}</h3>
+                        <p class="text-4xl font-bold text-red-600">
+                            {% if finance_unlocked %}
+                                {{ stats.monthly_expenses|floatformat:2 }}
+                                <span class="text-lg text-gray-500">{% trans "ر.ع" %}</span>
+                            {% else %}
+                                <span class="tracking-widest select-none">••••</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-500 to-pink-600 rounded-full p-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 0h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Net Monthly Income -->
+            {% if user|has_perm:'can_view_dashboard_financial' %}
+            <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl shadow-2xl p-6 hover:shadow-3xl transition-all duration-300 transform hover:scale-105 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-purple-100 mb-2">{% trans "صافي الدخل الشهري" %}</h3>
+                        <p class="text-4xl font-bold">
+                            {% if finance_unlocked %}
+                                {{ stats.net_income|floatformat:2 }}
+                                <span class="text-lg text-purple-200">{% trans "ر.ع" %}</span>
+                            {% else %}
+                                <span class="tracking-widest select-none">••••</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Charts -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Calendar Card -->
+                {% if user|has_perm:'can_view_leases' %}
+                <div class="bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full p-3 ml-4">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800">📅 {% trans "تقويم تجديد العقود" %}</h3>
+                    </div>
+                    <div id="calendar" class="text-sm"></div>
+                </div>
+                {% endif %}
+
+                <!-- Financial Trend Chart -->
+                {% if user|has_perm:'can_view_dashboard_charts' %}
+                <div class="bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-br from-green-500 to-blue-600 rounded-full p-3 ml-4">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800">📈 {% trans "اتجاه الإيرادات مقابل المصاريف" %}</h3>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="financialTrendChart"></canvas>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column - Sidebar -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- Occupancy Chart -->
+                {% if user|has_perm:'can_view_dashboard_charts' %}
+                <div class="bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-full p-3 ml-4">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m0 0h2M7 8h3m-3 4h3m-3 4h3m6-8h.01M17 12h.01M17 16h.01"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">🏠 {% trans "إشغال الوحدات" %}</h3>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="occupancyChart"></canvas>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Financial Transactions -->
+                {% if user|has_perm:'can_view_dashboard_transactions' %}
+                <div class="bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-full p-3 ml-4">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">💰 {% trans "آخر الحركات المالية" %}</h3>
+                        </div>
+                        {% if finance_unlocked %}
                         <form method="post" action="{% url 'finance_lock' %}">
                             {% csrf_token %}
                             <button type="submit" class="text-xs px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded">{% trans "إخفاء" %}</button>
                         </form>
+                        {% endif %}
                     </div>
-                    <h4 class="font-bold mb-3 text-sm md:text-base">{% trans "آخر الدفعات" %}</h4>
-                    <ul class="space-y-2">
-                        {% for payment in recent_payments %}
-                        <li class="flex justify-between items-center py-2 border-b text-xs md:text-sm">
-                            <p class="flex-1">{{ payment.lease.tenant.name }} - <span class="font-mono text-green-600">{{ payment.amount|floatformat:2 }}</span></p>
-                            <span class="text-xs text-gray-500 whitespace-nowrap ml-2">{{ payment.payment_date|date:"d M" }}</span>
-                        </li>
-                        {% empty %}
-                        <p class="text-gray-500 text-sm">{% trans "لا توجد دفعات." %}</p>
-                        {% endfor %}
-                    </ul>
-
-                    <h4 class="font-bold mb-3 mt-4 text-sm md:text-base">{% trans "آخر المصاريف" %}</h4>
-                    <ul class="space-y-2">
-                        {% for expense in recent_expenses %}
-                        <li class="flex justify-between items-center py-2 border-b text-xs md:text-sm">
-                            <p class="flex-1">{{ expense.description }} - <span class="font-mono text-red-600">{{ expense.amount|floatformat:2 }}</span></p>
-                            <span class="text-xs text-gray-500 whitespace-nowrap ml-2">{{ expense.expense_date|date:"d M" }}</span>
-                        </li>
-                        {% empty %}
-                        <p class="text-gray-500 text-sm">{% trans "لا توجد مصاريف." %}</p>
-                        {% endfor %}
-                    </ul>
-
-                    <h4 class="font-bold mb-3 mt-4 text-sm md:text-base">{% trans "توزيعات آخر إيجارات (حصة المالك وعمولة المكتب)" %}</h4>
-                    <ul class="space-y-2">
-                        {% for d in recent_distributions %}
-                        <li class="py-2 border-b text-xs md:text-sm">
-                            <div class="flex justify-between items-center">
-                                <p class="flex-1">
-                                    {{ d.rent_collection.lease.tenant.name }}
-                                    - <span class="text-gray-500">#{{ d.rent_collection.lease.contract_number }}</span>
-                                </p>
-                                <span class="text-xs text-gray-500 whitespace-nowrap ml-2">{{ d.created_at|date:"d M" }}</span>
+                    
+                    {% if finance_unlocked %}
+                    <div class="space-y-6">
+                        <!-- Recent Payments -->
+                        <div>
+                            <h4 class="font-bold mb-3 text-lg text-green-700 flex items-center">
+                                💳 {% trans "آخر الدفعات" %}
+                            </h4>
+                            <div class="space-y-2">
+                                {% for payment in recent_payments %}
+                                <div class="flex justify-between items-center py-3 px-4 bg-green-50 rounded-lg">
+                                    <div class="flex-1">
+                                        <p class="font-medium text-gray-800">{{ payment.lease.tenant.name }}</p>
+                                        <p class="font-mono text-green-600 font-bold">{{ payment.amount|floatformat:2 }} ر.ع</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">{{ payment.payment_date|date:"d M" }}</span>
+                                </div>
+                                {% empty %}
+                                <p class="text-gray-500 text-center py-4">{% trans "لا توجد دفعات." %}</p>
+                                {% endfor %}
                             </div>
-                            <div class="mt-1 grid grid-cols-3 gap-2">
-                                <div class="text-green-700">
-                                    <span class="text-[11px] text-gray-500">{% trans "الإجمالي" %}</span>
-                                    <div class="font-mono">{{ d.rent_collection.amount_collected|floatformat:2 }}</div>
+                        </div>
+                        
+                        <!-- Recent Expenses -->
+                        <div>
+                            <h4 class="font-bold mb-3 text-lg text-red-700 flex items-center">
+                                💸 {% trans "آخر المصاريف" %}
+                            </h4>
+                            <div class="space-y-2">
+                                {% for expense in recent_expenses %}
+                                <div class="flex justify-between items-center py-3 px-4 bg-red-50 rounded-lg">
+                                    <div class="flex-1">
+                                        <p class="font-medium text-gray-800">{{ expense.description }}</p>
+                                        <p class="font-mono text-red-600 font-bold">{{ expense.amount|floatformat:2 }} ر.ع</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">{{ expense.expense_date|date:"d M" }}</span>
                                 </div>
-                                <div class="text-blue-700">
-                                    <span class="text-[11px] text-gray-500">{% trans "حصة المالك" %}</span>
-                                    <div class="font-mono">{{ d.owner_share|floatformat:2 }}</div>
-                                </div>
-                                <div class="text-purple-700">
-                                    <span class="text-[11px] text-gray-500">{% trans "عمولة المكتب" %}</span>
-                                    <div class="font-mono">{{ d.office_commission|floatformat:2 }}</div>
-                                </div>
+                                {% empty %}
+                                <p class="text-gray-500 text-center py-4">{% trans "لا توجد مصاريف." %}</p>
+                                {% endfor %}
                             </div>
-                        </li>
-                        {% empty %}
-                        <p class="text-gray-500 text-sm">{% trans "لا توجد توزيعات عمولة." %}</p>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <div class="text-sm text-gray-700">
-                        <p class="mb-3">{% trans "هذه المعلومات مخفية. يرجى إدخال كلمة المرور لإظهار آخر الدفعات والمصاريف." %}</p>
-                        <form method="post" action="{% url 'finance_unlock' %}" class="flex gap-2 items-center">
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <div class="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 mb-4">{% trans "هذه المعلومات مخفية. يرجى إدخال كلمة المرور." %}</p>
+                        <form method="post" action="{% url 'finance_unlock' %}" class="flex gap-2 items-center justify-center">
                             {% csrf_token %}
-                            <input type="password" name="password" placeholder="{% trans 'كلمة المرور' %}" class="p-2 border rounded w-48">
-                            <button type="submit" class="px-3 py-2 bg-[#993333] text-white rounded hover:opacity-90">{% trans "إظهار" %}</button>
+                            <input type="password" name="password" placeholder="{% trans 'كلمة المرور' %}" class="p-2 border rounded">
+                            <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">{% trans "إظهار" %}</button>
                         </form>
                     </div>
+                    {% endif %}
+                </div>
                 {% endif %}
             </div>
         </div>

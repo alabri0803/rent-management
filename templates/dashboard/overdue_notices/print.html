@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+{% load dashboard_extras %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنذار رسمي بطلب السداد - {{ notice.lease.contract_number }}</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+            .page-break { page-break-before: always; }
+        }
+        
+        body {
+            font-family: 'Traditional Arabic', 'Arial Unicode MS', Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: white;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #d32f2f;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .company-logo {
+            max-height: 80px;
+            margin-bottom: 10px;
+        }
+        
+        .company-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .notice-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d32f2f;
+            margin: 20px 0;
+            text-decoration: underline;
+        }
+        
+        .notice-content {
+            margin: 30px 0;
+        }
+        
+        .info-section {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-section h4 {
+            color: #495057;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .info-table th,
+        .info-table td {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            text-align: right;
+        }
+        
+        .info-table th {
+            background-color: #e9ecef;
+            font-weight: bold;
+            width: 30%;
+        }
+        
+        .warning-box {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .legal-notes {
+            background-color: #f8d7da;
+            border: 2px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .legal-notes h4 {
+            color: #721c24;
+            margin-bottom: 15px;
+        }
+        
+        .legal-notes ul {
+            margin-right: 20px;
+        }
+        
+        .legal-notes li {
+            margin-bottom: 8px;
+        }
+        
+        .signature-section {
+            margin-top: 50px;
+            border-top: 1px solid #dee2e6;
+            padding-top: 30px;
+        }
+        
+        .signature-box {
+            border: 1px solid #dee2e6;
+            padding: 40px 20px;
+            margin: 20px 0;
+            text-align: center;
+            min-height: 80px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            border-top: 2px solid #d32f2f;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        
+        .amount-highlight {
+            background-color: #ffeb3b;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .deadline-highlight {
+            background-color: #f44336;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- زر الطباعة -->
+    <div class="no-print print-button">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fas fa-print"></i> طباعة
+        </button>
+        <button onclick="window.close()" class="btn btn-secondary">
+            إغلاق
+        </button>
+    </div>
+
+    <!-- رأس الصفحة -->
+    <div class="header">
+        {% if company and company.logo %}
+            <img src="{{ company.logo.url }}" alt="{{ company.name }}" class="company-logo">
+        {% endif %}
+        
+        <div class="company-info">
+            {% if company %}
+                <strong>{{ company.name }}</strong><br>
+                {% if company.address %}{{ company.address }}<br>{% endif %}
+                {% if company.contact_phone %}هاتف: {{ company.contact_phone }}{% endif %}
+                {% if company.contact_email %} | بريد إلكتروني: {{ company.contact_email }}{% endif %}
+            {% endif %}
+        </div>
+        
+        <div class="notice-title">
+            إنذار رسمي بطلب السداد
+        </div>
+    </div>
+
+    <!-- محتوى الإنذار -->
+    <div class="notice-content">
+        <!-- معلومات أساسية -->
+        <div class="info-section">
+            <h4>معلومات الإنذار</h4>
+            <table class="info-table">
+                <tr>
+                    <th>رقم المرجع:</th>
+                    <td>{{ notice.id }}</td>
+                </tr>
+                <tr>
+                    <th>تاريخ الإنذار:</th>
+                    <td>{{ notice.notice_date|date:"d/m/Y" }}</td>
+                </tr>
+                <tr>
+                    <th>إلى السيد/السيدة:</th>
+                    <td><strong>{{ notice.lease.tenant.name }}</strong></td>
+                </tr>
+                <tr>
+                    <th>رقم العقد:</th>
+                    <td>{{ notice.lease.contract_number }}</td>
+                </tr>
+                <tr>
+                    <th>الوحدة المؤجرة:</th>
+                    <td>{{ notice.lease.unit.unit_number }} - {{ notice.lease.unit.building.name }}</td>
+                </tr>
+                {% if notice.lease.unit.building.address %}
+                <tr>
+                    <th>العنوان:</th>
+                    <td>{{ notice.lease.unit.building.address }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <!-- موضوع الإنذار -->
+        <div class="warning-box">
+            <h4>الموضوع: إنذار رسمي لعدم سداد إيجار الوحدة رقم {{ notice.lease.unit.unit_number }}</h4>
+
+            <p><strong>المحتوى:</strong></p>
+            <p>
+                نتشرف بإحاطتكم علماً بأنه قد تأخر سداد إيجار الوحدة المؤجرة لكم لعدة شهور كما هو موضح في الجدول أدناه.
+            </p>
+
+            <!-- جدول شهور التأخير -->
+            <table class="info-table">
+                <thead>
+                    <tr>
+                        <th>الشهر والسنة</th>
+                        <th>المبلغ المستحق (ر.ع)</th>
+                        <th>تاريخ الاستحقاق</th>
+                        <th>عدد أيام التأخير</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in notice.details.all %}
+                    <tr>
+                        <td>{{ detail.get_month_name }} {{ detail.overdue_year }}</td>
+                        <td class="amount-highlight">{{ detail.overdue_amount|floatformat:2 }}</td>
+                        <td>{{ detail.due_date|date:"d/m/Y" }}</td>
+                        <td>{{ detail.get_days_since_due }} يوم</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="background-color: #ffebee; font-weight: bold;">
+                        <td colspan="3"><strong>إجمالي المبالغ المتأخرة:</strong></td>
+                        <td class="amount-highlight"><strong>{{ notice.total_overdue_amount|floatformat:2 }} ريال عماني</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- الإجراء المطلوب -->
+        <div class="warning-box">
+            <h4>الإجراء المطلوب:</h4>
+            <p>
+                يجب عليكم سداد جميع المبالغ المتأخرة المذكورة أعلاه كاملة خلال
+                <span class="deadline-highlight">المدة القانونية المحددة في سلطنة عمان (30 يوماً)</span>
+                من تاريخ هذا الإنذار وذلك لتجنب اتخاذ الإجراءات القانونية اللازمة بما في ذلك فسخ العقد و/أو الإخلاء.
+            </p>
+
+            <table class="info-table">
+                <tr>
+                    <th>الموعد النهائي للسداد:</th>
+                    <td class="deadline-highlight">{{ notice.legal_deadline|date:"d/m/Y" }}</td>
+                </tr>
+                <tr>
+                    <th>الإجراء في حالة عدم السداد:</th>
+                    <td>{{ notice.get_potential_legal_action_display }}</td>
+                </tr>
+                <tr>
+                    <th>عدد شهور التأخير:</th>
+                    <td><strong>{{ notice.overdue_months_count }} شهر</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- الملاحظات القانونية -->
+        <div class="legal-notes">
+            <h4>ملاحظات قانونية هامة:</h4>
+            <ul>
+                <li>هذا الإنذار صادر وفقاً لأحكام قانون الإيجار في سلطنة عمان</li>
+                <li>عدم الاستجابة خلال المدة المحددة قد يؤدي إلى اتخاذ الإجراءات القانونية اللازمة</li>
+                <li>يحق للمؤجر المطالبة بالتعويضات والأضرار الناتجة عن التأخير في السداد</li>
+                <li>في حالة عدم السداد خلال المدة المحددة، سيتم اتخاذ إجراءات فسخ العقد والإخلاء وفقاً للقانون</li>
+                <li>يمكن للمستأجر التواصل مع إدارة العقارات لمناقشة ترتيبات السداد قبل انتهاء المدة المحددة</li>
+                <li>هذا الإنذار يعتبر سارياً من تاريخ تسليمه أو إعلانه وفقاً للأصول القانونية</li>
+            </ul>
+        </div>
+
+        <!-- معلومات التواصل -->
+        {% if company %}
+        <div class="info-section">
+            <h4>للاستفسار والتواصل:</h4>
+            <table class="info-table">
+                {% if company.contact_phone %}
+                <tr>
+                    <th>الهاتف:</th>
+                    <td>{{ company.contact_phone }}</td>
+                </tr>
+                {% endif %}
+                {% if company.contact_email %}
+                <tr>
+                    <th>البريد الإلكتروني:</th>
+                    <td>{{ company.contact_email }}</td>
+                </tr>
+                {% endif %}
+                {% if company.address %}
+                <tr>
+                    <th>العنوان:</th>
+                    <td>{{ company.address }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- قسم التوقيعات -->
+    <div class="signature-section">
+        <div style="display: flex; justify-content: space-between;">
+            <div style="width: 45%;">
+                <h4>إدارة العقارات</h4>
+                <div class="signature-box">
+                    <p>التوقيع: ________________________</p>
+                    <p>الاسم: ________________________</p>
+                    <p>التاريخ: {{ notice.notice_date|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+            
+            <div style="width: 45%;">
+                <h4>استلام المستأجر</h4>
+                <div class="signature-box">
+                    <p>التوقيع: ________________________</p>
+                    <p>الاسم: {{ notice.lease.tenant.name }}</p>
+                    <p>التاريخ: ________________________</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تذييل الصفحة -->
+    <div class="footer">
+        <p>
+            <strong>رقم المرجع:</strong> {{ notice.id }} |
+            <strong>تاريخ الطباعة:</strong> {% now "d/m/Y H:i" %} |
+            <strong>هذا المستند مُنشأ إلكترونياً</strong>
+        </p>
+        {% if company %}
+            <p>{{ company.name }} - نظام إدارة العقارات</p>
+        {% endif %}
+    </div>
+
+    <script>
+        // طباعة تلقائية عند فتح الصفحة (اختياري)
+        // window.onload = function() { window.print(); }
+        
+        // إغلاق النافذة بعد الطباعة
+        window.onafterprint = function() {
+            // يمكن إضافة منطق إضافي هنا
+        }
+    </script>
+</body>
+</html>
