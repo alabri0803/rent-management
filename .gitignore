@@ -14,8 +14,16 @@ build/
 *.log
 db.sqlite3
 db.sqlite3-journal
+*.db
 media/
 staticfiles/
+static_collected/
+
+# Backups
+backups/
+*.backup
+backup.json
+backup_data.json
 
 # Environment
 .env
